@@ -19,7 +19,7 @@ in
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
     (sysImport ./../../common/containers.nix)
-    (sysImport ./../../common/printing.nix)
+    #(sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/programs/fish.nix)
     (sysImport ./../../common/programs/brave.nix)
@@ -36,11 +36,7 @@ in
     "video=${screenName}:1920x1080@60"
   ];
 
-  hardware.graphics.extraPackages = with pkgs; [ vaapiIntel intel-media-driver ];
-  hardware.opengl = {
-    enable = true;
-    extraPackages = with pkgs; [ vpl-gpu-rt ];
-  };
+  hardware.graphics.extraPackages = with pkgs; [ vaapiIntel intel-media-driver vpl-gpu-rt ];
 
   networking.firewall = rec {
     allowedTCPPorts = [
