@@ -53,7 +53,6 @@
               flameshot = getExe (pkgs.flameshot.override { enableWlrSupport = true; });
             in
             lib.mkMerge [
-              config.myCfg.hyprland
               {
 
                 exec-once = [
@@ -119,6 +118,7 @@
                   ", XF86AudioRaiseVolume, exec, wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"
                   ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
                   ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+                  ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
                   ", XF86MonBrightnessUp, exec, ${brillo} -e -A 5"
                   ", XF86MonBrightnessDown, exec, ${brillo} -e -U 5"
                 ];
@@ -134,9 +134,9 @@
                   "kb_options" = "grp:win_space_toggle";
                 };
                 general = {
-                  gaps_in = 5;
-                  gaps_out = 20;
-                  border_size = 2;
+                  gaps_in = lib.mkDefault 5;
+                  gaps_out = lib.mkDefault 20;
+                  border_size = lib.mkDefault 2;
                   "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
                   "col.inactive_border" = "rgba(595959aa)";
                 };
@@ -147,6 +147,7 @@
                 misc."disable_hyprland_logo" = true;
                 misc."enable_anr_dialog" = false;
               }
+              config.myCfg.hyprland
             ];
 
           package = null;
@@ -161,7 +162,6 @@
           overwrite.enable = true;
 
           settings = lib.mkMerge [
-            config.myCfg.hyprpanel
             {
               layout = {
                 "theme.osd.location" = "bottom";
@@ -172,6 +172,7 @@
                 "menus.dashboard.directories.left.directory3.command" = ''bash -c "xdg-open $HOME/Syncthing/BYU/"'';
               };
             }
+            config.myCfg.hyprpanel
           ];
         };
 

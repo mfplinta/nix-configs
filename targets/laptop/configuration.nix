@@ -5,6 +5,7 @@ in
   inputs,
   wrapper-manager,
   pkgs,
+  config,
   ...
 }:
 let
@@ -31,10 +32,12 @@ in
     mode=1920x1080@60
   '';
 
-  boot.initrd.kernelModules = [ "i915" ];
+  boot.kernelModules = [ "msi-ec" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.msi-ec ];
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
   ];
+  boot.initrd.kernelModules = [ "i915" ];
 
   hardware.graphics.extraPackages = with pkgs; [ vaapiIntel intel-media-driver vpl-gpu-rt ];
 
@@ -98,6 +101,11 @@ in
           workspace = map (
             i: "1,monitor:${screenName},persistent:true"
           ) (range 1 9);
+          general = {
+            gaps_in = 5;
+            gaps_out = 5;
+            border_size = 2;
+          };
         };
 
         hyprpanel.layout = {
@@ -105,22 +113,19 @@ in
           "bar.layouts" = {
             "0" = {
               left = [
-                "workspaces"
                 "cpu"
                 "ram"
                 "storage"
                 "kbinput"
+                "media"
               ];
               middle = [
-                "media"
-                "netstat"
+                "workspaces"
               ];
               right = [
                 "hypridle"
                 "hyprsunset"
-                "custom/brightness"
                 "volume"
-                "network"
                 "bluetooth"
                 "systray"
                 "clock"
@@ -128,6 +133,8 @@ in
               ];
             };
           };
+          "menus.clock.time.hideSeconds" = true;
+          "theme.font.size" = "1rem";
         };
       };
 
