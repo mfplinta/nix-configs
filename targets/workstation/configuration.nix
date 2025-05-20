@@ -168,7 +168,7 @@ in
             "monitor ${centerMonitor},initialTitle:^(.*)(- Moonlight)"
           ];
           bind = [
-            ",XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
+            ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
           ];
         };
 

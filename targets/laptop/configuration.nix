@@ -31,7 +31,7 @@ in
     mode=1920x1080@60
   '';
 
-  boot.initrd.kernelModules = [ "iwlwifi" "i915" ];
+  boot.initrd.kernelModules = [ "i915" ];
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
   ];
