@@ -9,7 +9,9 @@
     { pkgs, ... }:
     {
       systemd.tmpfiles.rules = [
+        "d /home/matheus/Downloads 0755 matheus users -"
         "d /home/matheus/Downloads/JD 0755 matheus users -"
+        "d /home/matheus/.config 0755 matheus users -"
         "d /home/matheus/.config/containers 0755 matheus users -"
         "d /home/matheus/.config/containers/jdownloader2 0755 matheus users -"
       ];

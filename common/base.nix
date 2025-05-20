@@ -64,6 +64,7 @@
       boot.initrd.network.flushBeforeStage2 = true;
       boot.initrd.systemd.network.enable = true;
       boot.initrd.systemd.network.wait-online.anyInterface = true;
+      boot.initrd.systemd.network.wait-online.timeout = 10;
       boot.initrd.systemd.network.networks."10-lan" = {
         matchConfig.Type = "ether";
         networkConfig.DHCP = "ipv4";

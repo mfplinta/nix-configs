@@ -4,6 +4,7 @@ in
 {
   inputs,
   wrapper-manager,
+  pkgs,
   ...
 }:
 let
@@ -30,9 +31,16 @@ in
     mode=1920x1080@60
   '';
 
+  boot.initrd.kernelModules = [ "iwlwifi" "i915" ];
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
   ];
+
+  hardware.graphics.extraPackages = with pkgs; [ vaapiIntel intel-media-driver ];
+  hardware.opengl = {
+    enable = true;
+    extraPackages = with pkgs; [ vpl-gpu-rt ];
+  };
 
   networking.firewall = rec {
     allowedTCPPorts = [
@@ -89,7 +97,7 @@ in
 
         hyprland = with lib; {
           monitor = [
-            "${mainMonitor},1920x1080@60,0x0,1"
+            "${screenName},1920x1080@60,0x0,1"
           ];
           workspace = map (
             i: "1,monitor:${screenName},persistent:true"
