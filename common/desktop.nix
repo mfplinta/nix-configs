@@ -89,6 +89,9 @@
                     "keepaspectratio,title:^(Picture in picture)"
                   ];
                 bind =
+                let
+                  wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true)";
+                in
                   [
                     # Command binds
                     "${mod}, Q, killactive"
@@ -97,7 +100,8 @@
                     "${mod}, E, exec, uwsm app -- ${wofi-emoji}"
                     "${mod}, X, exec, uwsm app -- ${wofi-power-menu}"
                     "${mod}, Return, exec, uwsm app -- kitty"
-                    "${mod}, F1, exec, uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true)"
+                    "${mod}, F1, exec, ${wofi-drun}"
+                    "${mod}, XF86AudioMute, exec, ${wofi-drun}"
                     ",Print, exec, uwsm app -- ${flameshot} gui"
                     # Scroll through workspaces
                     "${mod}, mouse_down, workspace, e+1"
