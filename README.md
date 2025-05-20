@@ -6,7 +6,7 @@ Installation:
 sudo nix --experimental-features "nix-command flakes" run github:nix-community/disko/latest -- --mode destroy,format,mount ./targets/machinename/disko.nix
 
 # Install system
-nixos-install --flake #hostname
+nixos-install --flake .#hostname
 ```
 
 Upgrading configuration:

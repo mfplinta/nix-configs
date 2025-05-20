@@ -29,7 +29,7 @@
           modules = [ ./targets/workstation/configuration.nix ];
         };
         "mfp-nix-laptop" = {
-          modules = [ ];
+          modules = [ ./targets/laptop/configuration.nix ];
         };
       };
       arch = "x86_64-linux";
