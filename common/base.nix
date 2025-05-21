@@ -73,6 +73,10 @@
       boot.initrd.clevis.useTang = true;
       boot.initrd.clevis.devices."crypted".secretFile = /root/tang.jwe;
 
+      security.sudo.extraConfig = ''
+        Defaults pwfeedback,insults
+      '';
+
       programs.appimage = {
         enable = true;
         binfmt = true;

@@ -20,7 +20,7 @@ in
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
     (sysImport ./../../common/containers.nix)
-    #(sysImport ./../../common/printing.nix)
+    (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/programs/fish.nix)
     (sysImport ./../../common/programs/brave.nix)

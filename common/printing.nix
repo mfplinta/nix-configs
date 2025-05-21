@@ -8,10 +8,6 @@
   sysModule =
     { pkgs, inputs, ... }:
     {
-      imports = [
-        "${inputs.nixpkgs}/nixos/modules/services/hardware/sane_extra_backends/brscan5.nix"
-      ];
-
       services.printing.enable = true;
       services.printing.drivers = [ (pkgs.callPackage ./../packages/cups-brother-hll3290cdw.nix { }) ];
       hardware.sane = {

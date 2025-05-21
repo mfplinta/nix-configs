@@ -580,6 +580,22 @@
         "type": "github"
       }
     },
+    "nixmaster": {
+      "locked": {
+        "lastModified": 1747783983,
+        "narHash": "sha256-vTiJLIyk1xWp2CXs2QUqwJkRuJez5bNHa38W1aEQ3PE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f6814de3ee4e0fbad3eba905837f47bca36ec525",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1747327360,
@@ -675,6 +691,7 @@
         "hyprland": "hyprland",
         "hyprpanel": "hyprpanel",
         "nix-index-database": "nix-index-database",
+        "nixmaster": "nixmaster",
         "nixpkgs": "nixpkgs_4",
         "wrapper-manager": "wrapper-manager"
       }

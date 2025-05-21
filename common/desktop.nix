@@ -9,6 +9,7 @@
     }:
     let
       mod = "SUPER";
+      mod-shift = "SUPER_SHIFT";
     in
     {
       imports = [
@@ -51,12 +52,17 @@
               wofi-power-menu = getExe pkgs.wofi-power-menu;
               galaxy-buds-client = getExe pkgs.galaxy-buds-client;
               flameshot = getExe (pkgs.flameshot.override { enableWlrSupport = true; });
+              wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
+              wl-paste = "${pkgs.wl-clipboard}/bin/wl-paste";
+              wtype = getExe pkgs.wtype;
+              cliphist = getExe pkgs.cliphist;
             in
             lib.mkMerge [
               {
-
                 exec-once = [
-                  "${galaxy-buds-client} /StartMinimized"
+                  "uwsm app -- ${galaxy-buds-client} /StartMinimized"
+                  "uwsm app -- ${wl-paste} --type text --watch ${cliphist} store"
+                  "uwsm app -- ${wl-paste} --type image --watch ${cliphist} store"
                 ];
                 windowrule =
                   let
@@ -101,7 +107,9 @@
                     "${mod}, Return, exec, uwsm app -- kitty"
                     "${mod}, F1, exec, ${wofi-drun}"
                     "${mod}, XF86AudioMute, exec, ${wofi-drun}"
-                    ",Print, exec, uwsm app -- ${flameshot} gui"
+                    ",Print, exec, uwsm app -- ${flameshot} gui --raw | ${wl-copy}"
+                    "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
+                    "${mod-shift}, C, exec, notify-send 'Clipboard was cleared' && ${cliphist} wipe"
                     # Scroll through workspaces
                     "${mod}, mouse_down, workspace, e+1"
                     "${mod}, mouse_up, workspace, e-1"
@@ -129,9 +137,9 @@
                   ", XF86AudioPrev, exec, ${playerctl} previous"
                 ];
                 input = {
-                  "kb_layout" = "us,us";
-                  "kb_variant" = ",intl";
-                  "kb_options" = "grp:win_space_toggle";
+                  kb_layout = "us,us";
+                  kb_variant = ",intl";
+                  kb_options = "grp:win_space_toggle";
                 };
                 general = {
                   gaps_in = lib.mkDefault 5;
@@ -140,9 +148,6 @@
                   "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
                   "col.inactive_border" = "rgba(595959aa)";
                 };
-                cursor."no_hardware_cursors" = 1;
-                experimental."xx_color_management_v4" = true;
-                render."cm_fs_passthrough" = 2;
                 misc."force_default_wallpaper" = 1;
                 misc."disable_hyprland_logo" = true;
                 misc."enable_anr_dialog" = false;
@@ -155,7 +160,12 @@
           systemd.variables = [ "--all" ];
         };
 
-        programs.wofi.enable = true;
+        programs.wofi = {
+          enable = true;
+          settings = {
+            allow_images = true;
+          };
+        };
 
         programs.hyprpanel = {
           enable = true;
@@ -185,10 +195,10 @@
                   "󰃟"
                   "󰃠"
                 ];
-                "label" = "{percentage}%";
-                "tooltip" = "{tooltip}";
-                "truncationSize" = -1;
-                "execute" = "${pkgs.lib.getExe (
+                label = "{percentage}%";
+                tooltip = "{tooltip}";
+                truncationSize = -1;
+                execute = "${pkgs.lib.getExe (
                   pkgs.writeShellApplication {
                     name = "brillo-current-brightness";
                     runtimeInputs = [ pkgs.brillo ];
@@ -202,16 +212,16 @@
                     '';
                   }
                 )}";
-                "executeOnAction" = "";
-                "interval" = 1000;
-                "hideOnEmpty" = true;
-                "scrollThreshold" = 1;
-                "actions" = {
-                  "onLeftClick" = "";
-                  "onRightClick" = "";
-                  "onMiddleClick" = "";
-                  "onScrollUp" = "brillo -e -S $(($(printf '%.0f\n' $(brillo))+5))";
-                  "onScrollDown" = "brillo -e -S $(($(printf '%.0f\n' $(brillo))-5))";
+                executeOnAction = "";
+                interval = 1000;
+                hideOnEmpty = true;
+                scrollThreshold = 1;
+                actions = {
+                  onLeftClick = "";
+                  onRightClick = "";
+                  onMiddleClick = "";
+                  onScrollUp = "brillo -e -S $(($(printf '%.0f\n' $(brillo))+5))";
+                  onScrollDown = "brillo -e -S $(($(printf '%.0f\n' $(brillo))-5))";
                 };
               };
             };
@@ -414,7 +424,6 @@
           nerd-fonts.fira-code
         ];
 
-        services.xserver.enable = true;
         services.displayManager = {
           enable = true;
           sddm = {

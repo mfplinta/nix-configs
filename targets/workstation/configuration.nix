@@ -170,6 +170,9 @@ in
           bind = [
             ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
           ];
+          cursor."no_hardware_cursors" = 1;
+          experimental."xx_color_management_v4" = true;
+          render."cm_fs_passthrough" = 2;
         };
 
         hyprpanel.layout = {
@@ -255,6 +258,9 @@ in
           # Office
           simple-scan
           onlyoffice-desktopeditors
+
+          # Development
+          jetbrains.pycharm-professional
         ];
 
       home.stateVersion = "24.11";

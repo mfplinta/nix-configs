@@ -1,6 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixmaster.url = "github:NixOS/nixpkgs/master";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
@@ -17,6 +18,7 @@
     inputs@{
       self,
       nixpkgs,
+      nixmaster,
       disko,
       wrapper-manager,
       chaotic,
@@ -43,16 +45,32 @@
           nixpkgs.overlays = [ inputs.hyprpanel.overlay ];
         }
       ];
-    in {
-      nixosConfigurations = builtins.mapAttrs (name: value: nixpkgs.lib.nixosSystem {
+      nixmaster = import inputs.nixmaster {
+        config.allowUnfree = true;
         system = arch;
-        specialArgs = { inherit inputs wrapper-manager; };
-        modules = commonModules ++ [
-          {
-            networking.hostName = name;
-            nixpkgs.hostPlatform = arch;
-          }
-        ] ++ value.modules;
-      }) systems;
+      };
+    in
+    {
+      nixosConfigurations = builtins.mapAttrs (
+        name: value:
+        nixpkgs.lib.nixosSystem {
+          system = arch;
+          specialArgs = { inherit inputs wrapper-manager; };
+          modules =
+            commonModules
+            ++ [
+              {
+                networking.hostName = name;
+                nixpkgs.hostPlatform = arch;
+                nixpkgs.overlays = [
+                  (final: prev: {
+                    brscan5 = nixmaster.brscan5;
+                  })
+                ];
+              }
+            ]
+            ++ value.modules;
+        }
+      ) systems;
     };
 }
