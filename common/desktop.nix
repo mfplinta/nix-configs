@@ -56,6 +56,10 @@
               wl-paste = "${pkgs.wl-clipboard}/bin/wl-paste";
               wtype = getExe pkgs.wtype;
               cliphist = getExe pkgs.cliphist;
+              toggle-scale = getExe (pkgs.writeShellScriptBin "toggle-scale" ''
+                exec ${getExe pkgs.python3} ${./../scripts/toggle-scale} "$@"
+              '');
+
             in
             lib.mkMerge [
               {
@@ -107,9 +111,11 @@
                     "${mod}, Return, exec, uwsm app -- kitty"
                     "${mod}, F1, exec, ${wofi-drun}"
                     "${mod}, XF86AudioMute, exec, ${wofi-drun}"
+                    "${mod}, XF86Back, exec, ${wofi-drun}"
                     ",Print, exec, uwsm app -- ${flameshot} gui --raw | ${wl-copy}"
                     "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
-                    "${mod-shift}, C, exec, notify-send 'Clipboard was cleared' && ${cliphist} wipe"
+                    "${mod}, S, exec, ${toggle-scale}"
+                    "${mod-shift}, C, exec, ${cliphist} wipe && ${wl-copy} --clear && notify-send 'Clipboard was cleared'"
                     # Scroll through workspaces
                     "${mod}, mouse_down, workspace, e+1"
                     "${mod}, mouse_up, workspace, e-1"

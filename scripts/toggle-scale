@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+SCALE_DEFAULT = 1.0
+NEW_SCALE = 1.5
+
+import subprocess
+import re
+
+def get_monitor_info():
+    output = subprocess.check_output(["hyprctl", "monitors"]).decode()
+    blocks = output.strip().split("\n\n")
+    monitors = []
+
+    for block in blocks:
+        name = re.search(r"Monitor (\S+)", block)
+        res_line = re.search(r"\s+(\d+)x(\d+)@([\d.]+) at (-?\d+)x(-?\d+)", block)
+        scale = re.search(r"scale: ([\d.]+)", block)
+        transform = re.search(r"transform: (\d+)", block)
+
+        if name and res_line and scale and transform:
+            pos_x = int(res_line.group(4))
+            pos_y = int(res_line.group(5))
+            scale = float(scale.group(1))
+
+            monitors.append({
+                "name": name.group(1),
+                "width": int(res_line.group(1)),
+                "height": int(res_line.group(2)),
+                "refresh": res_line.group(3),
+                "pos_x": pos_x,
+                "pos_y": pos_y,
+                "scale": scale,
+                "new_scale": NEW_SCALE if scale == SCALE_DEFAULT else SCALE_DEFAULT,
+                "transform": int(transform.group(1)),
+                "anchor": (pos_x == 0 and pos_y == 0)
+            })
+
+    return monitors
+
+def compute_positions(monitors):
+    anchor = next((m for m in monitors if m['anchor']), None)
+    if not anchor:
+        raise Exception("No anchor monitor found at position 0x0")
+
+    for mon in monitors:
+        if mon['anchor']:
+            mon['new_pos_x'] = 0
+            mon['new_pos_y'] = 0
+        else:
+            if anchor['new_scale'] != SCALE_DEFAULT:
+                # Scale positions based on anchor's scale
+                mon['new_pos_x'] = int(mon['pos_x'] / anchor['new_scale'])
+                mon['new_pos_y'] = int(mon['pos_y'] / anchor['new_scale'])
+            else:
+                # Restore original positions
+                mon['new_pos_x'] = int(mon['pos_x'] * anchor['scale'])
+                mon['new_pos_y'] = int(mon['pos_y'] * anchor['scale'])
+
+def apply_monitor_config(monitors):
+    for mon in monitors:
+        cmd = [
+            "hyprctl", "keyword", "monitor",
+            f"{mon['name']},{mon['width']}x{mon['height']}@{mon['refresh']},{mon['new_pos_x']}x{mon['new_pos_y']},{mon['new_scale']},transform,{mon['transform']}"
+        ]
+        print("Applying:", " ".join(cmd))
+        subprocess.run(cmd)
+
+if __name__ == "__main__":
+    monitors = get_monitor_info()
+    if not monitors:
+        print("No monitor info found.")
+        exit(1)
+
+    compute_positions(monitors)
+    apply_monitor_config(monitors)
