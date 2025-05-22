@@ -48,6 +48,8 @@ in
   boot.initrd.kernelModules = [ "nvidia" "e1000e" ];
   boot.kernelModules = [ "ddcci-backlight" ];
   boot.extraModulePackages = with config.boot.kernelPackages; [ nvidia_x11 ddcci-driver ];
+  services.scx.enable = true;
+  services.scx.scheduler = "scx_bpfland";
 
   services.hardware.openrgb.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
@@ -250,10 +252,11 @@ in
           # Internet
           qbittorrent
           localsend
+          anydesk
+          moonlight-qt
 
           # Media
-          moonlight-qt
-          anydesk
+          stremio
 
           # Office
           simple-scan

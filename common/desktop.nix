@@ -114,8 +114,8 @@
                     "${mod}, XF86Back, exec, ${wofi-drun}"
                     ",Print, exec, uwsm app -- ${flameshot} gui --raw | ${wl-copy}"
                     "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
-                    "${mod}, S, exec, ${toggle-scale}"
-                    "${mod-shift}, C, exec, ${cliphist} wipe && ${wl-copy} --clear && notify-send 'Clipboard was cleared'"
+                    "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
+                    "${mod-shift}, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
                     # Scroll through workspaces
                     "${mod}, mouse_down, workspace, e+1"
                     "${mod}, mouse_up, workspace, e-1"

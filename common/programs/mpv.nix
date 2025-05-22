@@ -32,6 +32,7 @@
           mpris
           uosc
           thumbfast
+          autosubsync-mpv
         ];
 
         config = {
