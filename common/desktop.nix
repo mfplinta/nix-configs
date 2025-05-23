@@ -196,7 +196,7 @@
           (pkgs.formats.json { }).generate "hyprpanel-modules"
             {
               "custom/brightness" = {
-                "icon" = [
+                icon = [
                   "󰃞"
                   "󰃟"
                   "󰃠"
@@ -228,6 +228,32 @@
                   onMiddleClick = "";
                   onScrollUp = "brillo -e -S $(($(printf '%.0f\n' $(brillo))+5))";
                   onScrollDown = "brillo -e -S $(($(printf '%.0f\n' $(brillo))-5))";
+                };
+              };
+              "custom/battery" = {
+                icon = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
+                label = "{percentage}%";
+                tooltip = "Battery level: {percentage}%\nTime remaining: {remaining}";
+                truncationSize = -1;
+                execute = "${pkgs.lib.getExe (
+                  pkgs.writeShellApplication {
+                    name = "battery-level";
+                    runtimeInputs = [ pkgs.acpi ];
+                    text = ''
+                      acpi -b | awk -F', ' '{gsub("%", "", $2); gsub(/ remaining/, "", $3); print "{\"percentage\": " $2 ", \"remaining\": \"" $3 "\"}"}'
+                    '';
+                  }
+                )}";
+                executeOnAction = "";
+                interval = 5000;
+                hideOnEmpty = true;
+                scrollThreshold = 1;
+                actions = {
+                  onLeftClick = "";
+                  onRightClick = "";
+                  onMiddleClick = "";
+                  onScrollUp = "";
+                  onScrollDown = "";
                 };
               };
             };

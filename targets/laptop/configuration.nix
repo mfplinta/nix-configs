@@ -113,6 +113,7 @@ in
           "bar.layouts" = {
             "0" = {
               left = [
+                "custom/battery"
                 "cpu"
                 "ram"
                 "storage"
