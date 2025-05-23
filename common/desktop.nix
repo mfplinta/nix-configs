@@ -405,6 +405,12 @@
             name = "Flat-Remix-GTK-Red-Darkest";
           };
 
+          cursorTheme = {
+            package = pkgs.callPackage ./../packages/bibata-modern-ice.nix { };
+            size = 32;
+            name = "Bibata-Modern-Ice";
+          };
+
           iconTheme = {
             package = pkgs.flat-remix-icon-theme;
             name = "Flat-Remix-Red-Dark";
@@ -417,6 +423,9 @@
         xdg.dataFile."aurorae/themes".source = "${
           (pkgs.callPackage ./../packages/flat-remix-kde.nix { })
         }/share/aurorae/themes";
+        xdg.dataFile."icons/Bibata-Modern-Ice".source = "${
+          (pkgs.callPackage ./../packages/bibata-modern-ice.nix { })
+        }/share/icons/Bibata-Modern-Ice";
 
         qt = {
           enable = true;
@@ -493,10 +502,14 @@
             inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
         };
 
-        environment.sessionVariables = {
+        environment.sessionVariables = rec {
           ELECTRON_OZONE_PLATFORM_HINT = "auto";
           NIXOS_OZONE_WL = 1;
           EDITOR = "vim";
+          XCURSOR_THEME = "Bibata-Modern-Ice";
+          XCURSOR_SIZE = 32;
+          HYPRCURSOR_THEME = XCURSOR_THEME;
+          HYPRCURSOR_SIZE = XCURSOR_SIZE;
         };
 
         security.pam.services.hyprlock = { };

@@ -36,7 +36,10 @@
         ];
 
         config = {
-          hwdec = "auto";
+          vo = "gpu-next";
+          hwdec = "vulkan";
+          gpu-context = "auto";
+          gpu-api = "vulkan";
           force-window = "yes";
           loop-file = "inf";
 

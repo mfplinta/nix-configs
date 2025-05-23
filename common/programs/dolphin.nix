@@ -4,7 +4,7 @@
     {
       myCfg.kdeglobals = {
         PreviewSettings."EnableRemoteFolderThumbnail" = true;
-        PreviewSettings."MaximumRemoteSize" = 5242880;
+        PreviewSettings."MaximumRemoteSize" = 52428800;
         PreviewSettings."Plugins" =
           "appimagethumbnail,audiothumbnail,comicbookthumbnail,cursorthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,directorythumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,opendocumentthumbnail,gsthumbnail,svgthumbnail,ffmpegthumbs";
       };

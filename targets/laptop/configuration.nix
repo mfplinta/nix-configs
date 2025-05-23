@@ -106,6 +106,7 @@ in
             gaps_out = 5;
             border_size = 2;
           };
+          misc.vfr = true; # Power-saving
         };
 
         hyprpanel.layout = {

@@ -168,6 +168,7 @@ in
           windowrule = [
             "monitor ${leftMonitor},class:(flameshot)" # Flameshot 0x0 on left monitor
             "monitor ${centerMonitor},initialTitle:^(.*)(- Moonlight)"
+            "fullscreen,initialTitle:^(.*)(- Moonlight)"
           ];
           bind = [
             ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
@@ -257,6 +258,7 @@ in
 
           # Media
           stremio
+          handbrake
 
           # Office
           simple-scan
@@ -264,6 +266,7 @@ in
 
           # Development
           jetbrains.pycharm-professional
+          inkscape
         ];
 
       home.stateVersion = "24.11";
