@@ -23,7 +23,7 @@
     { pkgs, ... }:
     let
       smbMountOptions = [
-        "x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
+        "uid=1000,x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
       ];
     in
     {

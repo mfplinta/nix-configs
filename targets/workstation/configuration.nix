@@ -165,10 +165,16 @@ in
               elemAt [ "${centerMonitor}" "${leftMonitor}" "${rightMonitor}" ] ((i - 1) / 3)
             },persistent:true${if i == 1 then ",default:true" else ""}"
           ) (range 1 9);
-          windowrule = [
+          windowrule =
+          let
+            moonlight = "initialTitle:^(.*)(- Moonlight)";
+          in
+          [
             "monitor ${leftMonitor},class:(flameshot)" # Flameshot 0x0 on left monitor
-            "monitor ${centerMonitor},initialTitle:^(.*)(- Moonlight)"
-            "fullscreen,initialTitle:^(.*)(- Moonlight)"
+
+            "monitor ${centerMonitor},${moonlight}"
+            "fullscreen,${moonlight}"
+            "idleinhibit focus,${moonlight}"
           ];
           bind = [
             ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
@@ -255,6 +261,7 @@ in
           localsend
           anydesk
           moonlight-qt
+          filezilla
 
           # Media
           stremio
