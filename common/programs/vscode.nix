@@ -1,0 +1,95 @@
+{
+  hmModule =
+    {
+      pkgs,
+      config,
+      hostName,
+      ...
+    }:
+    {
+
+      xdg.mimeApps.enable = true;
+      xdg.mimeApps.defaultApplications =
+        let
+          codeEditor = "code.desktop";
+          mkEntries =
+            types:
+            builtins.listToAttrs (
+              map (type: {
+                name = type;
+                value = [ codeEditor ];
+              }) types
+            );
+        in
+        mkEntries [
+          "application/octet-stream"
+          "text/plain"
+        ];
+
+      programs.vscode = with pkgs; {
+        enable = true;
+        package = vscode.override { commandLineArgs = "--password-store=kwallet6"; };
+        userSettings = {
+          # General
+          "update.mode" = "none";
+          "extensions.ignoreRecommendations" = true;
+          "extensions.autoCheckUpdates" = false;
+          "extensions.autoUpdate" = false;
+          "security.workspace.trust.untrustedFiles" = "open";
+          "telemetry.telemetryLevel" = "off";
+          "dev.containers.dockerPath" = lib.getExe podman;
+          # Visual
+          "workbench.colorTheme" = "Catppuccin Macchiato";
+          "workbench.iconTheme" = "material-icon-theme";
+          # Nix
+          "nix.enableLanguageServer" = true;
+          "nix.serverPath" = lib.getExe nixd;
+          "nix.serverSettings"."nixd" = {
+            "formatting.command" = [ (lib.getExe nixfmt-rfc-style) ];
+            "options" = {
+              "nixos.expr" =
+                "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${hostName}.options";
+              "home-manager.expr" =
+                "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${hostName}.options.home-manager.users.type.getSubOptions []";
+            };
+          };
+          # C/C++
+          "cmake.cmakePath" = lib.getExe cmake;
+          "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
+        };
+
+        extensions =
+          let
+            ext = (forVSCodeVersion config.programs.vscode.package.version);
+          in
+          with ext.vscode-marketplace;
+          [
+            # General
+            github.copilot
+            (forVSCodeVersion "1.102.0").vscode-marketplace-release.github.copilot-chat # TEMP FIX
+            ms-vscode.remote-explorer
+            ms-vscode-remote.remote-ssh
+            ms-vscode-remote.remote-containers
+            # Visual
+            catppuccin.catppuccin-vsc
+            pkief.material-icon-theme
+            # Nix
+            jnoortheen.nix-ide
+            # C/C++
+            ms-vscode.cpptools
+            ms-vscode.cmake-tools
+            ms-vscode.cpptools-themes
+            # Python
+            ms-python.python
+            ms-python.vscode-pylance
+            ms-python.debugpy
+          ];
+      };
+    };
+
+  sysModule =
+    { ... }:
+    {
+      # Nothing
+    };
+}

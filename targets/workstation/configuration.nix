@@ -45,9 +45,15 @@ in
   boot.kernelParams = [
     "video=${centerMonitor}:3840x2160@60"
   ];
-  boot.initrd.kernelModules = [ "nvidia" "e1000e" ];
+  boot.initrd.kernelModules = [
+    "nvidia"
+    "e1000e"
+  ];
   boot.kernelModules = [ "ddcci-backlight" ];
-  boot.extraModulePackages = with config.boot.kernelPackages; [ nvidia_x11 ddcci-driver ];
+  boot.extraModulePackages = with config.boot.kernelPackages; [
+    nvidia_x11
+    ddcci-driver
+  ];
   services.scx.enable = true;
   services.scx.scheduler = "scx_bpfland";
 
@@ -103,6 +109,7 @@ in
   networking.firewall = rec {
     allowedTCPPorts = [
       53317 # LocalSend
+      8000 # Dev
     ];
     allowedUDPPorts = allowedTCPPorts;
   };
@@ -122,6 +129,7 @@ in
       pkgs,
       lib,
       config,
+      hostName,
       ...
     }:
     let
@@ -134,6 +142,7 @@ in
             wrapper-manager
             lib
             config
+            hostName
             ;
         };
     in
@@ -148,6 +157,7 @@ in
         (hmImport ./../../common/programs/brave.nix)
         (hmImport ./../../common/programs/mpv.nix)
         (hmImport ./../../common/programs/nomacs.nix)
+        (hmImport ./../../common/programs/vscode.nix)
       ];
 
       myCfg = {
@@ -166,16 +176,16 @@ in
             },persistent:true${if i == 1 then ",default:true" else ""}"
           ) (range 1 9);
           windowrule =
-          let
-            moonlight = "initialTitle:^(.*)(- Moonlight)";
-          in
-          [
-            "monitor ${leftMonitor},class:(flameshot)" # Flameshot 0x0 on left monitor
+            let
+              moonlight = "initialTitle:^(.*)(- Moonlight)";
+            in
+            [
+              "monitor ${leftMonitor},class:(flameshot)" # Flameshot 0x0 on left monitor
 
-            "monitor ${centerMonitor},${moonlight}"
-            "fullscreen,${moonlight}"
-            "idleinhibit focus,${moonlight}"
-          ];
+              "monitor ${centerMonitor},${moonlight}"
+              "fullscreen,${moonlight}"
+              "idleinhibit focus,${moonlight}"
+            ];
           bind = [
             ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
           ];
@@ -250,11 +260,15 @@ in
         with pkgs.kdePackages;
         [
           kate
+
           okular
           ark
           veracrypt
           imhex
           qalculate-gtk
+
+          # Utilities
+          gparted
 
           # Internet
           qbittorrent

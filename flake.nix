@@ -5,7 +5,6 @@
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
-    wrapper-manager.inputs.nixpkgs.follows = "nixpkgs";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     home-manager.url = "github:nix-community/home-manager/release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -13,6 +12,8 @@
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     hyprland.url = "github:hyprwm/Hyprland";
     hyprpanel.url = "github:Jas-SinghFSU/HyprPanel";
+    nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+    nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
     inputs@{
@@ -23,6 +24,8 @@
       wrapper-manager,
       chaotic,
       home-manager,
+      hyprpanel,
+      nix-vscode-extensions,
       ...
     }:
     let
@@ -40,15 +43,12 @@
         chaotic.nixosModules.nyx-cache
         chaotic.nixosModules.nyx-overlay
         chaotic.nixosModules.nyx-registry
-        home-manager.nixosModules.home-manager
-        {
-          nixpkgs.overlays = [ inputs.hyprpanel.overlay ];
-        }
+        
       ];
-      nixmaster = import inputs.nixmaster {
-        config.allowUnfree = true;
-        system = arch;
-      };
+#       nixmaster = import inputs.nixmaster {
+#         config.allowUnfree = true;
+#         system = arch;
+#       };
     in
     {
       nixosConfigurations = builtins.mapAttrs (
@@ -59,10 +59,17 @@
           modules =
             commonModules
             ++ [
+              home-manager.nixosModules.default {
+                home-manager.extraSpecialArgs = {
+                  hostName = name;
+                };
+              }
               {
                 networking.hostName = name;
                 nixpkgs.hostPlatform = arch;
                 nixpkgs.overlays = [
+                  nix-vscode-extensions.overlays.default
+                  hyprpanel.overlay
                   (final: prev: {
                     # Ex: brscan5 = nixmaster.brscan5;
                   })

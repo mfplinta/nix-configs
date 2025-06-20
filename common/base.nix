@@ -97,6 +97,25 @@
         brillo.enable = true;
       };
 
+      # Reduce RAM cache for ejectable devices
+      services.udev.extraRules = ''
+        SUBSYSTEM=="block", ACTION=="add",\
+          KERNEL=="sd[a-z]",\
+          TAG+="systemd",\
+          ENV{ID_USB_TYPE}=="disk",\
+          ENV{SYSTEMD_WANTS}+="usb-dirty-pages-fix@$kernel.service"
+      '';
+      systemd.services."usb-dirty-pages-fix@" = {
+        scriptArgs = "%i";
+        script = ''
+          if [ -z "$(df --output=source '/' | grep $1)" ]; then
+              echo 1 > /sys/block/$1/bdi/strict_limit
+              echo 16777216 > /sys/block/$1/bdi/max_bytes
+          fi
+        '';
+        serviceConfig.Type = "oneshot";
+      };
+
       environment.systemPackages = with pkgs; [
         vim
         wget
@@ -113,6 +132,9 @@
         # Nix LSP
         nil
         nixfmt-rfc-style
+
+        # FS
+        exfatprogs
       ];
     };
 }

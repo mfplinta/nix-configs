@@ -33,36 +33,34 @@
         with pkgs;
         with pkgs.kdePackages;
         [
-          (wrapper-manager.lib.build {
-            inherit pkgs;
-            modules = [
-              {
-                wrappers.dolphin = {
-                  basePackage = kdePackages.dolphin;
-                  pathAdd = [
-                    dolphin-plugins
-                    qtsvg
-                    kio-fuse
-                    kio-extras
-                    kio-admin
-                    ffmpegthumbs
-                    kdegraphics-thumbnailers
-                    qtimageformats
-                    phonon-vlc
-                  ];
-                  extraWrapperFlags = ''
-                    --set XDG_CONFIG_DIRS "${libsForQt5.kservice}/etc/xdg:$XDG_CONFIG_DIRS" \
-                    --run '${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${libsForQt5.kservice}/etc/xdg/menus/applications.menu'
-                  '';
-                };
-              }
+          (wrapper-manager.lib.wrapWith pkgs {
+            basePackage = kdePackages.dolphin;
+            pathAdd = [
+              dolphin-plugins
+              qtsvg
+              kio-fuse
+              kio-extras
+              kio-admin
+              ffmpegthumbs
+              kdegraphics-thumbnailers
+              qtimageformats
+              phonon-vlc
+            ];
+            wrapperType = "shell";
+            wrapFlags = [
+              "--prefix"
+              "XDG_CONFIG_DIRS"
+              ":"
+              "${libsForQt5.kservice}/etc/xdg"
+              "--run"
+              "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${libsForQt5.kservice}/etc/xdg/menus/applications.menu"
             ];
           })
         ];
     };
 
   sysModule =
-    { pkgs, ... }:
+    { ... }:
     {
       # Nothing
     };

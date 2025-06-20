@@ -1,6 +1,6 @@
 {
   hmModule =
-    { pkgs, wrapper-manager, ... }:
+    { pkgs, ... }:
     {
       xdg.mimeApps.enable = true;
       xdg.mimeApps.defaultApplications =
@@ -78,7 +78,7 @@
     };
 
   sysModule =
-    { pkgs, ... }:
+    { ... }:
     {
       # Nothing
     };

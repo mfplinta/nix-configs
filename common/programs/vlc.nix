@@ -50,7 +50,7 @@
     };
 
   sysModule =
-    { pkgs, ... }:
+    { ... }:
     {
       networking.firewall.allowedTCPPorts = [ 8010 ]; # Chromecast support
     };
