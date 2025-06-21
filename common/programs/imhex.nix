@@ -2,7 +2,6 @@
   hmModule =
     { pkgs, ... }:
     {
-      xdg.mimeApps.enable = true;
       xdg.mimeApps.defaultApplications =
         let
           mkEntries =
@@ -10,28 +9,16 @@
             builtins.listToAttrs (
               map (type: {
                 name = type;
-                value = [ "org.nomacs.ImageLounge.desktop" ];
+                value = [ "imhex.desktop" ];
               }) types
             );
         in
         mkEntries [
-          "image/bmp"
-          "image/gif"
-          "image/jpeg"
-          "image/png"
-          "image/vnd.adobe.photoshop"
-          "image/tiff"
-          "image/webp"
+          "application/octet-stream"
         ];
 
       home.packages = [
-        pkgs.nomacs
+        pkgs.imhex
       ];
-    };
-
-  sysModule =
-    { ... }:
-    {
-      # Nothing
     };
 }

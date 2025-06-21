@@ -44,7 +44,6 @@
       };
 
       xdg = {
-        mimeApps.enable = true;
         mimeApps.defaultApplications."inode/directory" = [ "org.kde.dolphin.desktop" ];
         configFile."kservicemenurc".source = (pkgs.formats.ini { }).generate "kservicemenurc" {
           Show = {
@@ -66,12 +65,7 @@
 
       home.packages = [
         dolphin
+        pkgs.kdePackages.ark
       ];
-    };
-
-  sysModule =
-    { ... }:
-    {
-      # Nothing
     };
 }

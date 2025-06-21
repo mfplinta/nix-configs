@@ -1,9 +1,12 @@
 {
   hmModule =
-    { pkgs, hmModule-nix-index, lib, config, ... }:
+    { pkgs, hmModule-nix-index, lib, config, hmImport, ... }:
     {
       imports = [
         hmModule-nix-index
+
+        (hmImport ./programs/fish.nix)
+        (hmImport ./programs/gparted.nix)
       ];
 
       options.myCfg.kdeglobals = lib.mkOption {
@@ -13,21 +16,27 @@
       };
 
       config = {
-        xdg.configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.myCfg.kdeglobals;
-
-        xdg.userDirs = {
-          enable = true;
-          createDirectories = true;
+        xdg = {
+          configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.myCfg.kdeglobals;
+          userDirs.enable = true;
+          userDirs.createDirectories = true;
+          mimeApps.enable = true;
         };
 
         programs.nix-index.enable = true;
         programs.nix-index.symlinkToCacheHome = true;
+
+        home.stateVersion = "24.11";
       };
     };
 
   sysModule =
-    { pkgs, config, ... }:
+    { pkgs, config, sysImport, ... }:
     {
+      imports = [
+        (sysImport ./programs/fish.nix)
+      ];
+
       boot.loader.systemd-boot.enable = true;
       boot.loader.timeout = 0;
       boot.loader.efi.canTouchEfiVariables = true;
@@ -114,10 +123,6 @@
         bind
         jq
         git
-
-        # Nix LSP
-        nil
-        nixfmt-rfc-style
 
         # FS
         exfatprogs

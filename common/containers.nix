@@ -1,10 +1,4 @@
 {
-  hmModule =
-    { pkgs, ... }:
-    {
-      # Nothing
-    };
-
   sysModule =
     { pkgs, ... }:
     {

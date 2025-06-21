@@ -18,8 +18,7 @@ in
     (sysImport ./../../common/containers.nix)
     (sysImport ./../../common/printing.nix)
 
-    (sysImport ./../../common/programs/fish.nix)
-    (sysImport ./../../common/programs/brave.nix)
+    (sysImport ./../../common/bundles/internet.nix)
   ];
 
   myCfg.westonOutput = ''
@@ -69,11 +68,13 @@ in
         (hmImport ./../../common/desktop.nix)
         (hmImport ./../../common/shares.nix)
 
-        (hmImport ./../../common/programs/fish.nix)
+        (hmImport ./../../common/bundles/development.nix)
+        (hmImport ./../../common/bundles/multimedia.nix)
+        (hmImport ./../../common/bundles/internet.nix)
+        (hmImport ./../../common/bundles/utilities.nix)
+        (hmImport ./../../common/bundles/office.nix)
+
         (hmImport ./../../common/programs/dolphin.nix)
-        (hmImport ./../../common/programs/brave.nix)
-        (hmImport ./../../common/programs/mpv.nix)
-        (hmImport ./../../common/programs/nomacs.nix)
       ];
 
       myCfg = {
@@ -122,51 +123,5 @@ in
           "theme.font.size" = "1rem";
         };
       };
-
-      xdg = {
-        mimeApps.enable = true;
-        mimeApps.defaultApplications =
-          let
-            textEditor = "org.kde.kate.desktop";
-            torrentClient = "org.qbittorrent.qBittorrent.desktop";
-          in
-          {
-            "application/x-bittorrent" = [ torrentClient ];
-            "application/pdf" = [ "okularApplication_pdf.desktop" ];
-            "application/octet-stream" = [
-              "veracrypt.desktop"
-              "imhex.desktop"
-              textEditor
-            ];
-            "text/plain" = [ textEditor ];
-            "x-scheme-handler/magnet" = [ torrentClient ];
-          };
-      };
-
-      home.packages =
-        with pkgs;
-        with pkgs.kdePackages;
-        [
-          kate
-          okular
-          ark
-          veracrypt
-          imhex
-          qalculate-gtk
-
-          # Internet
-          qbittorrent
-          localsend
-
-          # Media
-          moonlight-qt
-          anydesk
-
-          # Office
-          simple-scan
-          onlyoffice-desktopeditors
-        ];
-
-      home.stateVersion = "24.11";
     };
 }

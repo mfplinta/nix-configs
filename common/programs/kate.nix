@@ -2,7 +2,6 @@
   hmModule =
     { pkgs, ... }:
     {
-      xdg.mimeApps.enable = true;
       xdg.mimeApps.defaultApplications =
         let
           mkEntries =
@@ -10,28 +9,17 @@
             builtins.listToAttrs (
               map (type: {
                 name = type;
-                value = [ "org.nomacs.ImageLounge.desktop" ];
+                value = [ "org.kde.kate.desktop" ];
               }) types
             );
         in
         mkEntries [
-          "image/bmp"
-          "image/gif"
-          "image/jpeg"
-          "image/png"
-          "image/vnd.adobe.photoshop"
-          "image/tiff"
-          "image/webp"
+          "application/octet-stream"
+          "text/plain"
         ];
 
       home.packages = [
-        pkgs.nomacs
+        pkgs.kdePackages.kate
       ];
-    };
-
-  sysModule =
-    { ... }:
-    {
-      # Nothing
     };
 }
