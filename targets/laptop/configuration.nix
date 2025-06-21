@@ -59,13 +59,6 @@ in
     serviceConfig.Type = "oneshot";
   };
 
-  networking.firewall = rec {
-    allowedTCPPorts = [
-      53317 # LocalSend
-    ];
-    allowedUDPPorts = allowedTCPPorts;
-  };
-
   users.users.matheus = {
     isNormalUser = true;
     extraGroups = [

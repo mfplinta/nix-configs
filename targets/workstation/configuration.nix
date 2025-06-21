@@ -101,13 +101,9 @@ in
     WLR_NO_HARDWARE_CURSORS = "1";
   };
 
-  networking.firewall = rec {
-    allowedTCPPorts = [
-      53317 # LocalSend
-      8000 # Dev
-    ];
-    allowedUDPPorts = allowedTCPPorts;
-  };
+  networking.firewall.allowedTCPPorts = [
+    8000 # Dev
+  ];
 
   users.users.matheus = {
     isNormalUser = true;
