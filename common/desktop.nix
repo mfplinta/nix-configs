@@ -59,7 +59,15 @@
               toggle-scale = getExe (pkgs.writeShellScriptBin "toggle-scale" ''
                 exec ${getExe pkgs.python3} ${./../scripts/toggle-scale} "$@"
               '');
-
+              cmdHelp = ''
+                \U2756 + E -- Show emoji picker
+                \U2756 + X -- Show power menu
+                \U2756 + F1 -- Show application launcher
+                \U2756 + C -- Paste clipboard history
+                \U2756 + \U21E7 + C -- Clear clipboard history
+                \U2756 + S -- Toggle scale
+                \U2756 + L -- Lock session
+              '';
             in
             lib.mkMerge [
               {
@@ -116,7 +124,8 @@
                     "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
                     "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
                     "${mod-shift}, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
-                    # Scroll through workspaces
+                    "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(echo -e \"${replaceStrings ["\n"] ["\\n"] cmdHelp}\")\""
+                    # Scroll through workspacesfiberna
                     "${mod}, mouse_down, workspace, e+1"
                     "${mod}, mouse_up, workspace, e-1"
                   ]

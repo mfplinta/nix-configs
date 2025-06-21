@@ -38,6 +38,7 @@
             "extensions.autoUpdate" = false;
             "security.workspace.trust.untrustedFiles" = "open";
             "telemetry.telemetryLevel" = "off";
+            "editor.selectionClipboard" = false;
             # Containers
             "containers.containerClient" = "com.microsoft.visualstudio.containers.podman";
             "dev.containers.dockerPath" = lib.getExe podman;

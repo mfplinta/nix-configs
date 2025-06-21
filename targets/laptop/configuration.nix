@@ -110,6 +110,7 @@ in
             border_size = 2;
           };
           misc.vfr = true; # Power-saving
+          misc.middle_click_paste = false;
         };
 
         hyprpanel.layout = {
@@ -140,6 +141,12 @@ in
           };
           "menus.clock.time.hideSeconds" = true;
           "theme.font.size" = "1rem";
+        };
+      };
+
+      dconf.settings = {
+        "org/gnome/desktop/interface" = {
+          "gtk-enable-primary-paste" = false;
         };
       };
     };
