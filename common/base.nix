@@ -1,9 +1,9 @@
 {
   hmModule =
-    { pkgs, inputs, lib, config, ... }:
+    { pkgs, hmModule-nix-index, lib, config, ... }:
     {
       imports = [
-        inputs.nix-index-database.hmModules.nix-index
+        hmModule-nix-index
       ];
 
       options.myCfg.kdeglobals = lib.mkOption {
@@ -28,20 +28,6 @@
   sysModule =
     { pkgs, config, ... }:
     {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.backupFileExtension = "old-hm";
-
-      nix.settings = {
-        substituters = [ "https://hyprland.cachix.org" ];
-        trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
-        experimental-features = [
-          "nix-command"
-          "flakes"
-        ];
-      };
-      nixpkgs.config.allowUnfree = true;
-
       boot.loader.systemd-boot.enable = true;
       boot.loader.timeout = 0;
       boot.loader.efi.canTouchEfiVariables = true;

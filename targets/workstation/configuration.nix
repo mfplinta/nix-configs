@@ -5,14 +5,10 @@ let
 in
 {
   pkgs,
-  inputs,
-  wrapper-manager,
+  sysImport,
   config,
   ...
 }:
-let
-  sysImport = module: (import module).sysModule;
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -126,26 +122,9 @@ in
 
   home-manager.users.matheus =
     {
-      pkgs,
-      lib,
-      config,
-      hostName,
+      hmImport,
       ...
     }:
-    let
-      hmImport =
-        module:
-        (import module).hmModule {
-          inherit
-            inputs
-            pkgs
-            wrapper-manager
-            lib
-            config
-            hostName
-            ;
-        };
-    in
     {
       imports = [
         (hmImport ./../../common/base.nix)
@@ -163,7 +142,7 @@ in
       myCfg = {
         mainMonitor = centerMonitor;
 
-        hyprland = with lib; {
+        hyprland = with pkgs.lib; {
           monitor = [
             "${centerMonitor},3840x2160@60,0x0,1"
             "${leftMonitor},1920x1080@74.97,auto-left,1,transform,3"
@@ -292,6 +271,4 @@ in
 
       home.stateVersion = "24.11";
     };
-
-  system.stateVersion = "24.11";
 }

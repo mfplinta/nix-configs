@@ -2,15 +2,11 @@ let
   screenName = "eDP-1";
 in
 {
-  inputs,
-  wrapper-manager,
   pkgs,
+  sysImport,
   config,
   ...
 }:
-let
-  sysImport = module: (import module).sysModule;
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -39,7 +35,11 @@ in
   ];
   boot.initrd.kernelModules = [ "i915" ];
 
-  hardware.graphics.extraPackages = with pkgs; [ vaapiIntel intel-media-driver vpl-gpu-rt ];
+  hardware.graphics.extraPackages = with pkgs; [
+    vaapiIntel
+    intel-media-driver
+    vpl-gpu-rt
+  ];
 
   networking.firewall = rec {
     allowedTCPPorts = [
@@ -60,24 +60,9 @@ in
 
   home-manager.users.matheus =
     {
-      pkgs,
-      lib,
-      config,
+      hmImport,
       ...
     }:
-    let
-      hmImport =
-        module:
-        (import module).hmModule {
-          inherit
-            inputs
-            pkgs
-            wrapper-manager
-            lib
-            config
-            ;
-        };
-    in
     {
       imports = [
         (hmImport ./../../common/base.nix)
@@ -94,13 +79,11 @@ in
       myCfg = {
         mainMonitor = screenName;
 
-        hyprland = with lib; {
+        hyprland = with pkgs.lib; {
           monitor = [
             "${screenName},1920x1080@60,0x0,1"
           ];
-          workspace = map (
-            i: "1,monitor:${screenName},persistent:true"
-          ) (range 1 9);
+          workspace = map (i: "1,monitor:${screenName},persistent:true") (range 1 9);
           general = {
             gaps_in = 5;
             gaps_out = 5;

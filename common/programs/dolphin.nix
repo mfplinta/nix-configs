@@ -1,6 +1,39 @@
 {
   hmModule =
-    { pkgs, wrapper-manager, ... }:
+    {
+      pkgs,
+      lib,
+      wrapper-manager,
+      ...
+    }:
+    let
+      dolphin =
+        with pkgs;
+        with pkgs.kdePackages;
+        wrapper-manager.lib.wrapWith pkgs {
+          basePackage = kdePackages.dolphin;
+          pathAdd = [
+            dolphin-plugins
+            qtsvg
+            kio-fuse
+            kio-extras
+            kio-admin
+            ffmpegthumbs
+            kdegraphics-thumbnailers
+            qtimageformats
+            phonon-vlc
+          ];
+          wrapperType = "shell";
+          wrapFlags = [
+            "--prefix"
+            "XDG_CONFIG_DIRS"
+            ":"
+            "${libsForQt5.kservice}/etc/xdg"
+            "--run"
+            "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${libsForQt5.kservice}/etc/xdg/menus/applications.menu"
+          ];
+        };
+    in
     {
       myCfg.kdeglobals = {
         PreviewSettings."EnableRemoteFolderThumbnail" = true;
@@ -29,34 +62,11 @@
         };
       };
 
-      home.packages =
-        with pkgs;
-        with pkgs.kdePackages;
-        [
-          (wrapper-manager.lib.wrapWith pkgs {
-            basePackage = kdePackages.dolphin;
-            pathAdd = [
-              dolphin-plugins
-              qtsvg
-              kio-fuse
-              kio-extras
-              kio-admin
-              ffmpegthumbs
-              kdegraphics-thumbnailers
-              qtimageformats
-              phonon-vlc
-            ];
-            wrapperType = "shell";
-            wrapFlags = [
-              "--prefix"
-              "XDG_CONFIG_DIRS"
-              ":"
-              "${libsForQt5.kservice}/etc/xdg"
-              "--run"
-              "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${libsForQt5.kservice}/etc/xdg/menus/applications.menu"
-            ];
-          })
-        ];
+      services.udiskie.settings.program_options.file_manager = "${lib.getExe' dolphin "dolphin"}";
+
+      home.packages = [
+        dolphin
+      ];
     };
 
   sysModule =

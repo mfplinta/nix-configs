@@ -1,7 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixmaster.url = "github:NixOS/nixpkgs/master";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
@@ -11,7 +10,14 @@
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     hyprland.url = "github:hyprwm/Hyprland";
+    # --- HyprPanel ---
+    astal.url = "github:aylur/astal";
+    ags.url = "github:aylur/ags";
+    ags.inputs.astal.follows = "astal";
     hyprpanel.url = "github:Jas-SinghFSU/HyprPanel";
+    hyprpanel.inputs.astal.follows = "astal";
+    hyprpanel.inputs.ags.follows = "ags";
+    # -----------------
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -19,13 +25,13 @@
     inputs@{
       self,
       nixpkgs,
-      nixmaster,
       disko,
       wrapper-manager,
       chaotic,
       home-manager,
       hyprpanel,
       nix-vscode-extensions,
+      nix-index-database,
       ...
     }:
     let
@@ -38,45 +44,76 @@
         };
       };
       arch = "x86_64-linux";
-      commonModules = [
-        disko.nixosModules.disko
-        chaotic.nixosModules.nyx-cache
-        chaotic.nixosModules.nyx-overlay
-        chaotic.nixosModules.nyx-registry
-        
-      ];
-#       nixmaster = import inputs.nixmaster {
-#         config.allowUnfree = true;
-#         system = arch;
-#       };
     in
     {
       nixosConfigurations = builtins.mapAttrs (
         name: value:
         nixpkgs.lib.nixosSystem {
           system = arch;
-          specialArgs = { inherit inputs wrapper-manager; };
-          modules =
-            commonModules
-            ++ [
-              home-manager.nixosModules.default {
-                home-manager.extraSpecialArgs = {
-                  hostName = name;
-                };
-              }
+          specialArgs = {
+            inherit inputs wrapper-manager;
+            sysImport = module: (import module).sysModule;
+          };
+          modules = [
+            disko.nixosModules.disko
+            chaotic.nixosModules.nyx-cache
+            chaotic.nixosModules.nyx-overlay
+            chaotic.nixosModules.nyx-registry
+            home-manager.nixosModules.default
+            (
               {
-                networking.hostName = name;
+                config,
+                lib,
+                pkgs,
+                ...
+              }:
+              {
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.backupFileExtension = "old-hm";
+                home-manager.extraSpecialArgs = {
+                  sysConfig = config;
+                  hmImport =
+                    module:
+                    args@{
+                      sysConfig,
+                      ...
+                    }:
+                    (import module).hmModule (
+                      {
+                        inherit
+                          config
+                          lib
+                          pkgs
+                          inputs
+                          sysConfig
+                          wrapper-manager
+                          ;
+                        hmModule-nix-index = nix-index-database.hmModules.nix-index;
+                      }
+                      // args
+                    );
+                };
+                nix.settings = {
+                  substituters = [ "https://hyprland.cachix.org" ];
+                  trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
+                  experimental-features = [
+                    "nix-command"
+                    "flakes"
+                  ];
+                };
+                nixpkgs.config.allowUnfree = true;
                 nixpkgs.hostPlatform = arch;
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
                   hyprpanel.overlay
-                  (final: prev: {
-                    # Ex: brscan5 = nixmaster.brscan5;
-                  })
                 ];
+                networking.hostName = name;
+
+                system.stateVersion = "24.11";
               }
-            ]
-            ++ value.modules;
+            )
+          ] ++ value.modules;
         }
       ) systems;
     };
