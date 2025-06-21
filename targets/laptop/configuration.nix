@@ -31,6 +31,7 @@ in
   boot.extraModulePackages = [ config.boot.kernelPackages.msi-ec ];
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
+    "mem_sleep_default=deep"
   ];
   boot.initrd.kernelModules = [ "i915" ];
 

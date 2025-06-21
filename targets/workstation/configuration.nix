@@ -39,7 +39,6 @@ in
 
   boot.kernelParams = [
     "video=${centerMonitor}:3840x2160@60"
-    "mem_sleep_default=deep"
   ];
   boot.initrd.kernelModules = [
     "nvidia"
