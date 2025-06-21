@@ -26,6 +26,12 @@
         programs.nix-index.enable = true;
         programs.nix-index.symlinkToCacheHome = true;
 
+        programs.git = {
+          enable = true;
+          userName = "Matheus Plinta";
+          userEmail = "mfplinta@gmail.com";
+        };
+
         home.stateVersion = "24.11";
       };
     };
@@ -70,6 +76,7 @@
 
       security.sudo.extraConfig = ''
         Defaults pwfeedback,insults
+        Defaults timestamp_timeout=15
       '';
 
       programs.appimage = {
@@ -123,9 +130,6 @@
         bind
         jq
         git
-
-        # FS
-        exfatprogs
       ];
     };
 }
