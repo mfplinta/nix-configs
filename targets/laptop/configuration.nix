@@ -41,6 +41,24 @@ in
     vpl-gpu-rt
   ];
 
+  services.logind = {
+    lidSwitch = "suspend";
+    lidSwitchExternalPower = "lock";
+    powerKey = "suspend";
+  };
+
+  systemd.services.lock-before-suspend = {
+    enable = true;
+    description = "Lock sessions before suspend";
+    before = [ "sleep.target" ];
+    wantedBy = [ "sleep.target" ];
+    script = ''
+      loginctl lock-sessions
+      sleep 1
+    '';
+    serviceConfig.Type = "oneshot";
+  };
+
   networking.firewall = rec {
     allowedTCPPorts = [
       53317 # LocalSend
