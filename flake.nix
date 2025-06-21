@@ -90,6 +90,7 @@
                           wrapper-manager
                           ;
                         hmModule-nix-index = nix-index-database.hmModules.nix-index;
+                        setMimeTypes = desktopEntry: types: builtins.listToAttrs (map (type: { name = type; value = [ desktopEntry ]; }) types);
                       }
                       // args
                     );

@@ -1,30 +1,17 @@
 {
   hmModule =
-    { pkgs, ... }:
+    { pkgs, setMimeTypes, ... }:
     {
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.defaultApplications =
-        let
-          videoPlayer = "mpv.desktop";
-          mkEntries =
-            types:
-            builtins.listToAttrs (
-              map (type: {
-                name = type;
-                value = [ videoPlayer ];
-              }) types
-            );
-        in
-        mkEntries [
-          "video/mp4"
-          "video/mpeg"
-          "video/quicktime"
-          "video/x-m4v"
-          "video/x-matroska"
-          "video/x-ms-wmv"
-          "video/x-msvideo"
-          "video/webm"
-        ];
+      xdg.mimeApps.defaultApplications = setMimeTypes "mpv.desktop" [
+        "video/mp4"
+        "video/mpeg"
+        "video/quicktime"
+        "video/x-m4v"
+        "video/x-matroska"
+        "video/x-ms-wmv"
+        "video/x-msvideo"
+        "video/webm"
+      ];
 
       programs.mpv = {
         enable = true;
@@ -75,11 +62,5 @@
             "\\" = "no-osd set speed 1; script-binding uosc/flash-speed";
           };
       };
-    };
-
-  sysModule =
-    { ... }:
-    {
-      # Nothing
     };
 }

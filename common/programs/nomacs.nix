@@ -1,37 +1,19 @@
 {
   hmModule =
-    { pkgs, ... }:
+    { pkgs, setMimeTypes, ... }:
     {
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.defaultApplications =
-        let
-          mkEntries =
-            types:
-            builtins.listToAttrs (
-              map (type: {
-                name = type;
-                value = [ "org.nomacs.ImageLounge.desktop" ];
-              }) types
-            );
-        in
-        mkEntries [
-          "image/bmp"
-          "image/gif"
-          "image/jpeg"
-          "image/png"
-          "image/vnd.adobe.photoshop"
-          "image/tiff"
-          "image/webp"
-        ];
+      xdg.mimeApps.defaultApplications = setMimeTypes "org.nomacs.ImageLounge.desktop" [
+        "image/bmp"
+        "image/gif"
+        "image/jpeg"
+        "image/png"
+        "image/vnd.adobe.photoshop"
+        "image/tiff"
+        "image/webp"
+      ];
 
       home.packages = [
         pkgs.nomacs
       ];
-    };
-
-  sysModule =
-    { ... }:
-    {
-      # Nothing
     };
 }

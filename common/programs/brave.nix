@@ -1,32 +1,20 @@
 {
   hmModule =
-    { pkgs, ... }:
+    { pkgs, setMimeTypes, ... }:
     {
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.defaultApplications =
-        let
-          browser = "brave-browser.desktop";
-          mkEntries =
-            types:
-            builtins.listToAttrs (
-              map (type: {
-                name = type;
-                value = [ browser ];
-              }) types
-            );
-        in
-        mkEntries [
-          "x-scheme-handler/http"
-          "x-scheme-handler/https"
-          "x-scheme-handler/ftp"
-          "text/html"
-          "application/x-extension-htm"
-          "application/x-extension-html"
-          "application/x-extension-shtml"
-          "application/xhtml+xml"
-          "application/x-extension-xhtml"
-          "application/x-extension-xht"
-        ];
+      xdg.mimeApps.defaultApplications = setMimeTypes "brave-browser.desktop" [
+        "x-scheme-handler/http"
+        "x-scheme-handler/https"
+        "x-scheme-handler/ftp"
+        "text/html"
+        "application/x-extension-htm"
+        "application/x-extension-html"
+        "application/x-extension-shtml"
+        "application/xhtml+xml"
+        "application/x-extension-xhtml"
+        "application/x-extension-xht"
+      ];
+
       programs.chromium = {
         enable = true;
         package = pkgs.brave;

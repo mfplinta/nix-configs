@@ -1,22 +1,11 @@
 {
   hmModule =
-    { pkgs, ... }:
+    { pkgs, setMimeTypes, ... }:
     {
-      xdg.mimeApps.defaultApplications =
-        let
-          mkEntries =
-            types:
-            builtins.listToAttrs (
-              map (type: {
-                name = type;
-                value = [ "org.kde.kate.desktop" ];
-              }) types
-            );
-        in
-        mkEntries [
-          "application/octet-stream"
-          "text/plain"
-        ];
+      xdg.mimeApps.defaultApplications = setMimeTypes "org.kde.kate.desktop" [
+        "application/octet-stream"
+        "text/plain"
+      ];
 
       home.packages = [
         pkgs.kdePackages.kate

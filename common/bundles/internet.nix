@@ -5,10 +5,10 @@
       imports = [
         (hmImport ./../programs/brave.nix)
         (hmImport ./../programs/qbittorrent.nix)
+        (hmImport ./../programs/localsend.nix)
       ];
       home.packages = with pkgs; [
         # Internet
-        localsend
         anydesk
         filezilla
       ];
@@ -19,6 +19,7 @@
     {
       imports = [
         (sysImport ./../programs/brave.nix)
+        (sysImport ./../programs/localsend.nix)
       ];
     };
 }

@@ -1,21 +1,10 @@
 {
   hmModule =
-    { pkgs, ... }:
+    { pkgs, setMimeTypes, ... }:
     {
-      xdg.mimeApps.defaultApplications =
-        let
-          mkEntries =
-            types:
-            builtins.listToAttrs (
-              map (type: {
-                name = type;
-                value = [ "okularApplication_pdf.desktop" ];
-              }) types
-            );
-        in
-        mkEntries [
-          "application/pdf"
-        ];
+      xdg.mimeApps.defaultApplications = setMimeTypes "okularApplication_pdf.desktop" [
+        "application/pdf"
+      ];
 
       home.packages = [
         pkgs.kdePackages.okular

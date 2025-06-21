@@ -4,27 +4,14 @@
       pkgs,
       config,
       sysConfig,
+      setMimeTypes,
       ...
     }:
     {
-
-      xdg.mimeApps.enable = true;
-      xdg.mimeApps.defaultApplications =
-        let
-          codeEditor = "code.desktop";
-          mkEntries =
-            types:
-            builtins.listToAttrs (
-              map (type: {
-                name = type;
-                value = [ codeEditor ];
-              }) types
-            );
-        in
-        mkEntries [
-          "application/octet-stream"
-          "text/plain"
-        ];
+      xdg.mimeApps.defaultApplications = setMimeTypes "code.desktop" [
+        "application/octet-stream"
+        "text/plain"
+      ];
 
       programs.vscode = with pkgs; {
         enable = true;
