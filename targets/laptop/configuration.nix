@@ -27,8 +27,6 @@ in
     mode=1920x1080@60
   '';
 
-  boot.kernelModules = [ "msi-ec" ];
-  boot.extraModulePackages = [ config.boot.kernelPackages.msi-ec ];
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
     "mem_sleep_default=deep"

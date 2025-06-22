@@ -21,6 +21,7 @@ in
     (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
+    (sysImport ./../../common/programs/jdownloader2.nix)
   ];
 
   myCfg.westonOutput = ''
