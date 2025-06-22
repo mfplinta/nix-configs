@@ -113,6 +113,12 @@
                   hyprpanel.overlay
                   (final: prev: {
                     nixd = prev.callPackage "${nixd}" {};
+                    myScripts = let
+                      scripts = (import ./scripts/default.nix { pkgs = prev; });
+                    in {
+                      toggle-scale = scripts.toggle-scale;
+                      get-current-brightness = scripts.get-current-brightness;
+                    };
                   })
                 ];
                 networking.hostName = name;

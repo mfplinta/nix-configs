@@ -2,18 +2,19 @@
   hmModule =
     {
       pkgs,
-      inputs,
       lib,
+      inputs,
       config,
+      hmImport,
       ...
     }:
     let
       mod = "SUPER";
-      mod-shift = "SUPER_SHIFT";
     in
     {
       imports = [
         inputs.hyprpanel.homeManagerModules.hyprpanel
+        (hmImport ./programs/kitty.nix)
       ];
 
       options.myCfg = {
@@ -35,8 +36,6 @@
         myCfg.kdeglobals = {
           UiSettings."ColorScheme" = "Flat-Remix-Red-Darkest";
           Icons."Theme" = "Flat-Remix-Red-Dark";
-          General."TerminalApplication" = "kitty";
-          General."TerminalService" = "kitty.desktop";
         };
 
         wayland.windowManager.hyprland = {
@@ -56,9 +55,7 @@
               wl-paste = "${pkgs.wl-clipboard}/bin/wl-paste";
               wtype = getExe pkgs.wtype;
               cliphist = getExe pkgs.cliphist;
-              toggle-scale = getExe (pkgs.writeShellScriptBin "toggle-scale" ''
-                exec ${getExe pkgs.python3} ${./../scripts/toggle-scale} "$@"
-              '');
+              toggle-scale = getExe (pkgs.myScripts.toggle-scale);
               cmdHelp = ''
                 \U2756 + E -- Show emoji picker
                 \U2756 + X -- Show power menu
@@ -123,7 +120,7 @@
                     ",Print, exec, uwsm app -- ${flameshot} gui --raw | ${wl-copy}"
                     "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
                     "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
-                    "${mod-shift}, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
+                    "${mod}_SHIFT, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
                     "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(echo -e \"${replaceStrings ["\n"] ["\\n"] cmdHelp}\")\""
                     # Scroll through workspacesfiberna
                     "${mod}, mouse_down, workspace, e+1"
@@ -213,20 +210,7 @@
                 label = "{percentage}%";
                 tooltip = "{tooltip}";
                 truncationSize = -1;
-                execute = "${pkgs.lib.getExe (
-                  pkgs.writeShellApplication {
-                    name = "brillo-current-brightness";
-                    runtimeInputs = [ pkgs.brillo ];
-                    text = ''
-                      echo -n '{"tooltip": "'
-                      brillo -L | while read -r dev; do
-                        pct=$(brillo -s "$dev" -G)
-                        printf "%s: %.2f%%\\\n" "$dev" "$pct"
-                      done | sed '$s/\\n$//'
-                      echo -n '", "percentage": '"$(brillo)"'}'
-                    '';
-                  }
-                )}";
+                execute = "${lib.getExe pkgs.myScripts.get-current-brightness}";
                 executeOnAction = "";
                 interval = 1000;
                 hideOnEmpty = true;
@@ -282,16 +266,6 @@
                 valign = "center";
               }
             ];
-          };
-        };
-
-        programs.kitty = {
-          enable = true;
-          shellIntegration.enableFishIntegration = true;
-          settings = {
-            font_size = 15;
-            background_opacity = 0.8;
-            confirm_os_window_close = -1;
           };
         };
 
