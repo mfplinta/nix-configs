@@ -49,6 +49,20 @@ in
     nvidia_x11
     ddcci-driver
   ];
+  
+  # Encrypted root
+  boot.initrd.network.flushBeforeStage2 = true;
+  boot.initrd.systemd.network.enable = true;
+  boot.initrd.systemd.network.wait-online.anyInterface = true;
+  boot.initrd.systemd.network.wait-online.timeout = 10;
+  boot.initrd.systemd.network.networks."10-lan" = {
+    matchConfig.Type = "ether";
+    networkConfig.DHCP = "ipv4";
+  };
+  boot.initrd.clevis.enable = true;
+  boot.initrd.clevis.useTang = true;
+  boot.initrd.clevis.devices."crypted".secretFile = /root/tang.jwe;
+
   services.scx.enable = true;
   services.scx.scheduler = "scx_bpfland";
 

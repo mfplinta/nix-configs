@@ -62,17 +62,6 @@
       boot.plymouth.enable = true;
       boot.initrd.verbose = false;
       boot.initrd.systemd.enable = true;
-      boot.initrd.network.flushBeforeStage2 = true;
-      boot.initrd.systemd.network.enable = true;
-      boot.initrd.systemd.network.wait-online.anyInterface = true;
-      boot.initrd.systemd.network.wait-online.timeout = 10;
-      boot.initrd.systemd.network.networks."10-lan" = {
-        matchConfig.Type = "ether";
-        networkConfig.DHCP = "ipv4";
-      };
-      boot.initrd.clevis.enable = true;
-      boot.initrd.clevis.useTang = true;
-      boot.initrd.clevis.devices."crypted".secretFile = /root/tang.jwe;
 
       security.sudo.extraConfig = ''
         Defaults pwfeedback,insults
