@@ -41,22 +41,13 @@ in
     vpl-gpu-rt
   ];
 
+  services.upower.enable = true;
+  services.power-profiles-daemon.enable = true;
+
   services.logind = {
     lidSwitch = "suspend";
     lidSwitchExternalPower = "lock";
     powerKey = "suspend";
-  };
-
-  systemd.services.lock-before-suspend = {
-    enable = true;
-    description = "Lock sessions before suspend";
-    before = [ "sleep.target" ];
-    wantedBy = [ "sleep.target" ];
-    script = ''
-      loginctl lock-sessions
-      sleep 1
-    '';
-    serviceConfig.Type = "oneshot";
   };
 
   users.users.matheus = {
@@ -108,10 +99,11 @@ in
 
         hyprpanel.layout = {
           "bar.launcher.icon" = "";
+          "bar.clock.format" = "%a %b %d  %I:%M %p";
           "bar.layouts" = {
             "0" = {
               left = [
-                "custom/battery"
+                "battery"
                 "cpu"
                 "ram"
                 "storage"
@@ -132,7 +124,6 @@ in
               ];
             };
           };
-          "menus.clock.time.hideSeconds" = true;
           "theme.font.size" = "1rem";
         };
       };

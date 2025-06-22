@@ -32,6 +32,10 @@
           userEmail = "mfplinta@gmail.com";
         };
 
+        home.packages = with pkgs; [
+          galaxy-buds-client
+        ];
+
         home.stateVersion = "24.11";
       };
     };

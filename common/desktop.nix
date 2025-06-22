@@ -239,32 +239,6 @@
                   onScrollDown = "brillo -e -S $(($(printf '%.0f\n' $(brillo))-5))";
                 };
               };
-              "custom/battery" = {
-                icon = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
-                label = "{percentage}%";
-                tooltip = "Battery level: {percentage}%\nTime remaining: {remaining}";
-                truncationSize = -1;
-                execute = "${pkgs.lib.getExe (
-                  pkgs.writeShellApplication {
-                    name = "battery-level";
-                    runtimeInputs = [ pkgs.acpi ];
-                    text = ''
-                      acpi -b | awk -F', ' '{gsub("%", "", $2); gsub(/ remaining/, "", $3); print "{\"percentage\": " $2 ", \"remaining\": \"" $3 "\"}"}'
-                    '';
-                  }
-                )}";
-                executeOnAction = "";
-                interval = 5000;
-                hideOnEmpty = true;
-                scrollThreshold = 1;
-                actions = {
-                  onLeftClick = "";
-                  onRightClick = "";
-                  onMiddleClick = "";
-                  onScrollUp = "";
-                  onScrollDown = "";
-                };
-              };
             };
 
         programs.hyprlock = {
@@ -487,6 +461,18 @@
             theme = "catppuccin-mocha";
             package = pkgs.kdePackages.sddm;
           };
+        };
+
+        systemd.services.lock-before-suspend = {
+          enable = true;
+          description = "Lock sessions before suspend";
+          before = [ "sleep.target" ];
+          wantedBy = [ "sleep.target" ];
+          script = ''
+            loginctl lock-sessions
+            sleep 1
+          '';
+          serviceConfig.Type = "oneshot";
         };
 
         services.udisks2.enable = true;
