@@ -37,7 +37,7 @@
     };
 
   sysModule =
-    { pkgs, config, sysImport, ... }:
+    { pkgs, sysImport, ... }:
     {
       imports = [
         (sysImport ./programs/fish.nix)
@@ -79,11 +79,6 @@
         Defaults timestamp_timeout=15
       '';
 
-      programs.appimage = {
-        enable = true;
-        binfmt = true;
-      };
-
       networking.networkmanager.enable = true;
       time.timeZone = "America/Denver";
 
@@ -118,12 +113,24 @@
         serviceConfig.Type = "oneshot";
       };
 
+      programs.appimage = {
+        enable = true;
+        binfmt = true;
+      };
+
+      programs.htop = {
+        enable = true;
+        settings = {
+          show_cpu_frequency = true;
+          show_cpu_temperature = true;
+        };
+      };
+
       environment.systemPackages = with pkgs; [
         vim
         wget
         usbutils
         pciutils
-        htop
         p7zip
         unzip
         unrar

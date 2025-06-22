@@ -1,12 +1,6 @@
 {
-  hmModule =
-    { pkgs, ... }:
-    {
-      # Nothing
-    };
-
   sysModule =
-    { pkgs, inputs, ... }:
+    { pkgs, ... }:
     {
       services.printing.enable = true;
       services.printing.drivers = [ (pkgs.callPackage ./../packages/cups-brother-hll3290cdw.nix { }) ];
