@@ -9,8 +9,13 @@
     }:
     {
       xdg.mimeApps.defaultApplications = setMimeTypes "code.desktop" [
-        "application/octet-stream"
         "text/plain"
+        "text/x-c++src"
+        "text/x-c++hdr"
+        "text/x-chdr"
+        "text/x-cmake"
+        "text/x-csrc"
+        "text/x-python"
       ];
 
       programs.vscode = with pkgs; {
@@ -80,11 +85,5 @@
             ];
         };
       };
-    };
-
-  sysModule =
-    { ... }:
-    {
-      # Nothing
     };
 }

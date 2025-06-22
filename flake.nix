@@ -20,6 +20,8 @@
     # -----------------
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
+    nixd.url = "github:mfplinta/nixd/7aedde58da4f5d215ff445517708f6efcf5d615f";
+    nixd.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
     inputs@{
@@ -32,6 +34,7 @@
       hyprpanel,
       nix-vscode-extensions,
       nix-index-database,
+      nixd,
       ...
     }:
     let
@@ -108,6 +111,9 @@
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
                   hyprpanel.overlay
+                  (final: prev: {
+                    nixd = prev.callPackage "${nixd}" {};
+                  })
                 ];
                 networking.hostName = name;
 
