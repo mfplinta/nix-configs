@@ -8,6 +8,10 @@
       ...
     }:
     {
+      warnings = pkgs.lib.mkIf (!config.fonts.fontconfig.enable) [
+        "fonts.fontconfig.enable is not set. Nerd Font may not render correctly in VS Code."
+      ];
+      
       xdg.mimeApps.defaultApplications = setMimeTypes "code.desktop" [
         "text/plain"
         "text/x-c++src"
@@ -31,13 +35,14 @@
             "security.workspace.trust.untrustedFiles" = "open";
             "telemetry.telemetryLevel" = "off";
             "editor.selectionClipboard" = false;
+            "editor.fontFamily" = "'DroidSansM Nerd Font', monospace";
             # Containers
             "containers.containerClient" = "com.microsoft.visualstudio.containers.podman";
             "dev.containers.dockerPath" = lib.getExe podman;
             "containers.containerCommand" = lib.getExe podman;
             "containers.composeCommand" = lib.getExe podman-compose;
             # Visual
-            "workbench.colorTheme" = "Catppuccin Macchiato";
+            "workbench.colorTheme" = "Catppuccin Mocha";
             "workbench.iconTheme" = "material-icon-theme";
             # Nix
             "nix.enableLanguageServer" = true;
@@ -65,6 +70,7 @@
               # General
               github.copilot
               (forVSCodeVersion "1.102.0").vscode-marketplace-release.github.copilot-chat # TEMP FIX
+              github.vscode-pull-request-github
               ms-vscode.remote-explorer
               ms-vscode-remote.remote-ssh
               ms-vscode-remote.remote-containers
@@ -85,5 +91,9 @@
             ];
         };
       };
+
+      home.packages = with pkgs; [
+        nerd-fonts.droid-sans-mono
+      ];
     };
 }

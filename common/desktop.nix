@@ -61,7 +61,7 @@
                 \U2756 + X -- Show power menu
                 \U2756 + F1 -- Show application launcher
                 \U2756 + C -- Paste clipboard history
-                \U2756 + \U21E7 + C -- Clear clipboard history
+                \U2756\U21E7 + C -- Clear clipboard history
                 \U2756 + S -- Toggle scale
                 \U2756 + L -- Lock session
               '';
@@ -283,7 +283,7 @@
           enable = true;
           settings = {
             general = {
-              before_sleep_cmd = "login lock-session";
+              before_sleep_cmd = "loginctl lock-session";
               after_sleep_cmd = "hyprctl dispatch dpms on";
               ignore_dbus_inhibit = false;
               lock_cmd = "pidof hyprlock || hyprlock";
@@ -308,6 +308,7 @@
           };
         };
 
+        fonts.fontconfig.enable = true;
         services.network-manager-applet.enable = true;
         services.blueman-applet.enable = true;
         services.udiskie.enable = true;
@@ -363,7 +364,7 @@
           };
 
           cursorTheme = {
-            package = pkgs.callPackage ./../packages/bibata-modern-ice.nix { };
+            package = pkgs.bibata-modern-ice;
             size = 32;
             name = "Bibata-Modern-Ice";
           };
@@ -374,15 +375,11 @@
           };
         };
 
-        xdg.dataFile."color-schemes".source = "${
-          (pkgs.callPackage ./../packages/flat-remix-kde.nix { })
-        }/share/color-schemes";
-        xdg.dataFile."aurorae/themes".source = "${
-          (pkgs.callPackage ./../packages/flat-remix-kde.nix { })
-        }/share/aurorae/themes";
-        xdg.dataFile."icons/Bibata-Modern-Ice".source = "${
-          (pkgs.callPackage ./../packages/bibata-modern-ice.nix { })
-        }/share/icons/Bibata-Modern-Ice";
+        xdg.dataFile = {
+          "color-schemes".source = "${pkgs.flat-remix-kde}/share/color-schemes";
+          "aurorae/themes".source = "${pkgs.flat-remix-kde}/share/aurorae/themes";
+          "icons/Bibata-Modern-Ice".source = "${pkgs.bibata-modern-ice}/share/icons/Bibata-Modern-Ice";
+        };
 
         qt = {
           enable = true;
@@ -417,11 +414,6 @@
       };
 
       config = {
-        fonts.packages = with pkgs; [
-          nerd-fonts.ubuntu-sans
-          nerd-fonts.fira-code
-        ];
-
         services.displayManager = {
           enable = true;
           sddm = {

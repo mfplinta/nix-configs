@@ -119,6 +119,9 @@
                       toggle-scale = scripts.toggle-scale;
                       get-current-brightness = scripts.get-current-brightness;
                     };
+                    cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix {};
+                    flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix {};
+                    bibata-modern-ice = prev.callPackage ./packages/bibata-modern-ice.nix {};
                   })
                 ];
                 networking.hostName = name;

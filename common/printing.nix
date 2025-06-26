@@ -3,7 +3,7 @@
     { pkgs, ... }:
     {
       services.printing.enable = true;
-      services.printing.drivers = [ (pkgs.callPackage ./../packages/cups-brother-hll3290cdw.nix { }) ];
+      services.printing.drivers = [ pkgs.cups-brother-hll3290cdw ];
       hardware.sane = {
         enable = true;
         disabledDefaultBackends = [ "v4l" ];

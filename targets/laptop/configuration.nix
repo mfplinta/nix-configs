@@ -4,7 +4,6 @@ in
 {
   pkgs,
   sysImport,
-  config,
   ...
 }:
 {
