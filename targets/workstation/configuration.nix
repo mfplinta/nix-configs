@@ -41,16 +41,15 @@ in
   boot.kernelParams = [
     "video=${centerMonitor}:3840x2160@60"
   ];
+  boot.blacklistedKernelModules = [ "nouveau" ];
   boot.initrd.kernelModules = [
-    "nvidia"
     "e1000e"
   ];
   boot.kernelModules = [ "ddcci-backlight" ];
   boot.extraModulePackages = with config.boot.kernelPackages; [
-    nvidia_x11
     ddcci-driver
   ];
-  
+
   # Encrypted root
   boot.initrd.network.flushBeforeStage2 = true;
   boot.initrd.systemd.network.enable = true;
@@ -68,6 +67,7 @@ in
   services.scx.scheduler = "scx_bpfland";
 
   services.hardware.openrgb.enable = true;
+
   services.xserver.videoDrivers = [ "nvidia" ];
   services.udev.extraRules = ''
     SUBSYSTEM=="i2c-dev", ACTION=="add",\
@@ -99,14 +99,19 @@ in
   };
 
   hardware = {
-    nvidia = {
-      powerManagement.enable = true;
-      modesetting.enable = true;
-      open = true;
-      nvidiaSettings = true;
-    };
+    nvidia =
+      {
+        powerManagement.enable = true;
+        modesetting.enable = true;
+        nvidiaSettings = true;
+        open = true;
+      };
     i2c.enable = true;
   };
+
+  programs.virt-manager.enable = true;
+  virtualisation.libvirtd.enable = true;
+  virtualisation.spiceUSBRedirection.enable = true;
 
   environment.sessionVariables = {
     # Nvidia-specific
@@ -127,6 +132,7 @@ in
       "scanner"
       "lp"
       "video"
+      "libvirtd"
     ];
   };
 
@@ -159,12 +165,16 @@ in
             "${leftMonitor},1920x1080@74.97,auto-left,1,transform,3"
             "${rightMonitor},1920x1080@74.97,auto-right,1,transform,1"
           ];
-          workspace = map (
-            i:
-            "${toString i},monitor:${
-              elemAt [ "${centerMonitor}" "${leftMonitor}" "${rightMonitor}" ] ((i - 1) / 3)
-            },persistent:true${if i == 1 then ",default:true" else ""}"
-          ) (range 1 9);
+          workspace =
+            map (
+              i:
+              "${toString i},monitor:${
+                elemAt [ "${centerMonitor}" "${leftMonitor}" "${rightMonitor}" ] ((i - 1) / 3)
+              },persistent:true${if i == 1 then ",default:true" else ""}"
+            ) (range 1 9)
+            ++ [
+              "name:win,monitor:${centerMonitor},persistent:true"
+            ];
           windowrule =
             let
               moonlight = "initialTitle:^(.*)(- Moonlight)";
@@ -172,11 +182,12 @@ in
             [
               "monitor ${leftMonitor},class:(flameshot)" # Flameshot 0x0 on left monitor
 
-              "monitor ${centerMonitor},${moonlight}"
+              "workspace name:win,${moonlight}"
               "fullscreen,${moonlight}"
               "idleinhibit focus,${moonlight}"
             ];
           bind = [
+            "SUPER, W, workspace, name:win"
             ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
           ];
           cursor."no_hardware_cursors" = 1;
@@ -225,11 +236,19 @@ in
         };
       };
 
+      dconf.settings = {
+        "org/virt-manager/virt-manager/connections" = {
+          autoconnect = ["qemu:///system"];
+          uris = ["qemu:///system"];
+        };
+      };
+
       home.packages =
         with pkgs;
         with pkgs.kdePackages;
         [
           moonlight-qt
+          blender
         ];
     };
 }

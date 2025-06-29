@@ -38,15 +38,71 @@
       ...
     }:
     let
+      arch = "x86_64-linux";
+      homeManagerConfig = [
+        home-manager.nixosModules.default
+        (
+          {
+            config,
+            lib,
+            pkgs,
+            ...
+          }:
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "old-hm";
+            home-manager.extraSpecialArgs = {
+              sysConfig = config;
+              hmImport =
+                module:
+                args@{
+                  sysConfig,
+                  ...
+                }:
+                (import module).hmModule (
+                  {
+                    inherit
+                      config
+                      lib
+                      pkgs
+                      inputs
+                      sysConfig
+                      wrapper-manager
+                      ;
+                    hmModule-nix-index = nix-index-database.hmModules.nix-index;
+                    setMimeTypes =
+                      desktopEntry: types:
+                      builtins.listToAttrs (
+                        map (type: {
+                          name = type;
+                          value = [ desktopEntry ];
+                        }) types
+                      );
+                  }
+                  // args
+                );
+            };
+          }
+        )
+      ];
       systems = {
         "mfp-nix-workstation" = {
-          modules = [ ./targets/workstation/configuration.nix ];
+          modules = [
+            ./targets/workstation/configuration.nix
+          ] ++ homeManagerConfig;
         };
         "mfp-nix-laptop" = {
-          modules = [ ./targets/laptop/configuration.nix ];
+          modules = [
+            ./targets/laptop/configuration.nix
+          ] ++ homeManagerConfig;
+        };
+        "tiny-nix" = {
+          modules = [
+            ./targets/tiny/configuration.nix
+          ];
         };
       };
-      arch = "x86_64-linux";
     in
     {
       nixosConfigurations = builtins.mapAttrs (
@@ -54,7 +110,7 @@
         nixpkgs.lib.nixosSystem {
           system = arch;
           specialArgs = {
-            inherit inputs wrapper-manager;
+            inherit inputs;
             sysImport = module: (import module).sysModule;
           };
           modules = [
@@ -62,42 +118,9 @@
             chaotic.nixosModules.nyx-cache
             chaotic.nixosModules.nyx-overlay
             chaotic.nixosModules.nyx-registry
-            home-manager.nixosModules.default
             (
+              { ... }:
               {
-                config,
-                lib,
-                pkgs,
-                ...
-              }:
-              {
-                home-manager.useGlobalPkgs = true;
-                home-manager.useUserPackages = true;
-                home-manager.backupFileExtension = "old-hm";
-                home-manager.extraSpecialArgs = {
-                  sysConfig = config;
-                  hmImport =
-                    module:
-                    args@{
-                      sysConfig,
-                      ...
-                    }:
-                    (import module).hmModule (
-                      {
-                        inherit
-                          config
-                          lib
-                          pkgs
-                          inputs
-                          sysConfig
-                          wrapper-manager
-                          ;
-                        hmModule-nix-index = nix-index-database.hmModules.nix-index;
-                        setMimeTypes = desktopEntry: types: builtins.listToAttrs (map (type: { name = type; value = [ desktopEntry ]; }) types);
-                      }
-                      // args
-                    );
-                };
                 nix.settings = {
                   substituters = [ "https://hyprland.cachix.org" ];
                   trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
@@ -112,20 +135,21 @@
                   nix-vscode-extensions.overlays.default
                   hyprpanel.overlay
                   (final: prev: {
-                    nixd = prev.callPackage "${nixd}" {};
-                    myScripts = let
-                      scripts = (import ./scripts/default.nix { pkgs = prev; });
-                    in {
-                      toggle-scale = scripts.toggle-scale;
-                      get-current-brightness = scripts.get-current-brightness;
-                    };
-                    cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix {};
-                    flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix {};
-                    bibata-modern-ice = prev.callPackage ./packages/bibata-modern-ice.nix {};
+                    nixd = prev.callPackage "${nixd}" { };
+                    myScripts =
+                      let
+                        scripts = (import ./scripts/default.nix { pkgs = prev; });
+                      in
+                      {
+                        toggle-scale = scripts.toggle-scale;
+                        get-current-brightness = scripts.get-current-brightness;
+                      };
+                    cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix { };
+                    flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
+                    bibata-modern-ice = prev.callPackage ./packages/bibata-modern-ice.nix { };
                   })
                 ];
                 networking.hostName = name;
-
                 system.stateVersion = "24.11";
               }
             )

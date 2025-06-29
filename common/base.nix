@@ -50,7 +50,7 @@
       boot.loader.systemd-boot.enable = true;
       boot.loader.timeout = 0;
       boot.loader.efi.canTouchEfiVariables = true;
-      boot.kernelPackages = pkgs.linuxPackages_cachyos;
+      boot.kernelPackages = pkgs.lib.mkDefault pkgs.linuxPackages_cachyos;
       boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
       boot.kernelParams = [
         "quiet"

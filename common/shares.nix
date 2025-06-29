@@ -66,6 +66,10 @@
             security = "user";
             "acl allow execute always" = true;
             "hosts allow" = "10.0.1. 127.0.0.1 localhost";
+            # Symlink support
+            "unix extensions" = "no";
+            "follow symlinks" = "yes";
+            "wide links" = "yes";
           };
           shared = {
             browseable = "yes";

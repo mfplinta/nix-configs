@@ -58,7 +58,13 @@
             };
             # C/C++
             "cmake.cmakePath" = lib.getExe cmake;
+            "cmake.environment" = rec {
+              PATH = "${gcc}/bin:${cmake}/bin:${coreutils}/bin:${bash}/bin:${ninja}/bin";
+              LD_LIBRARY_PATH = PATH;
+            };
             "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
+            # Python
+            "python.analysis.typeCheckingMode" = "basic";
           };
 
           extensions =
@@ -88,6 +94,8 @@
               ms-python.python
               ms-python.vscode-pylance
               ms-python.debugpy
+              # Web
+              ritwickdey.liveserver
             ];
         };
       };
