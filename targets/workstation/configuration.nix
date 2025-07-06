@@ -1,7 +1,7 @@
 let
-  leftMonitor = "DP-1";
+  leftMonitor = "DP-2";
   centerMonitor = "DP-3";
-  rightMonitor = "HDMI-A-1";
+  rightMonitor = "DP-1";
 in
 {
   pkgs,
@@ -198,17 +198,12 @@ in
         hyprpanel.layout = {
           "bar.launcher.icon" = "";
           "bar.layouts" = {
-            "0" = {
+            "${leftMonitor}" = {
               left = [ ];
               middle = [ "workspaces" ];
               right = [ ];
             };
-            "1" = {
-              left = [ ];
-              middle = [ "workspaces" ];
-              right = [ ];
-            };
-            "2" = {
+            "${centerMonitor}" = {
               left = [
                 "workspaces"
                 "cpu"
@@ -231,6 +226,11 @@ in
                 "clock"
                 "notifications"
               ];
+            };
+            "${rightMonitor}" = {
+              left = [ ];
+              middle = [ "workspaces" ];
+              right = [ ];
             };
           };
         };
