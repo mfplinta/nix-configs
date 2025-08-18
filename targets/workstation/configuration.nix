@@ -1,6 +1,6 @@
 let
-  leftMonitor = "DP-2";
-  centerMonitor = "DP-3";
+  leftMonitor = "DP-3";
+  centerMonitor = "DP-2";
   rightMonitor = "DP-1";
 in
 {
@@ -68,6 +68,27 @@ in
 
   services.hardware.openrgb.enable = true;
 
+  # services.pipewire.wireplumber.extraConfig = {
+  #   "nvidia-output" = {
+  #     "monitor.alsa.rules" = [
+  #       {
+  #         matches = [
+  #           {
+  #             "device.name" = "alsa_card.pci-0000_01_00.1";
+  #           }
+  #         ];
+  #         actions = {
+  #           update-props = {
+  #             "device.profile" = "output:hdmi-stereo-extra1";
+  #             "api.alsa.use-ucm" = false;
+  #           };
+  #         };
+  #       }
+  #     ];
+  #   };
+  # }
+  # ;
+
   services.xserver.videoDrivers = [ "nvidia" ];
   services.udev.extraRules = ''
     SUBSYSTEM=="i2c-dev", ACTION=="add",\
@@ -123,6 +144,10 @@ in
 
   networking.firewall.allowedTCPPorts = [
     8000 # Dev
+  ];
+
+  networking.firewall.allowedUDPPorts = [
+    59010 59011 # Soundwire
   ];
 
   users.users.matheus = {
@@ -249,6 +274,7 @@ in
         [
           moonlight-qt
           blender
+          soundwireserver
         ];
     };
 }

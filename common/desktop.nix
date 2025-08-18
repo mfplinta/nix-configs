@@ -395,6 +395,8 @@
           hunspellDicts.en_US
           hunspellDicts.es_MX
           hunspellDicts.pt_BR
+
+          pavucontrol
         ];
       };
     };

@@ -53,6 +53,12 @@
         options = smbMountOptions;
       };
 
+      fileSystems."/mnt/smb/public" = {
+        device = "//samba.arpa/public";
+        fsType = "cifs";
+        options = smbMountOptions;
+      };
+
       systemd.tmpfiles.rules = [
         "d /home/matheus/Shared 0755 matheus users -"
       ];
