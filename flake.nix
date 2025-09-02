@@ -29,7 +29,6 @@
       ...
     }:
     let
-      arch = "x86_64-linux";
       homeManagerConfig = [
         home-manager.nixosModules.default
         (
@@ -93,13 +92,19 @@
             ./targets/tiny/configuration.nix
           ];
         };
+        "cloudy" = {
+          arch = "aarch64-linux";
+          modules = [
+            ./targets/cloudy/configuration.nix
+          ];
+        };
       };
     in
     {
       nixosConfigurations = builtins.mapAttrs (
         name: value:
         nixpkgs.lib.nixosSystem {
-          system = arch;
+          system = value.arch or "x86_64-linux";
           specialArgs = {
             inherit inputs;
             sysImport = module: (import module).sysModule;
@@ -121,7 +126,7 @@
                   ];
                 };
                 nixpkgs.config.allowUnfree = true;
-                nixpkgs.hostPlatform = arch;
+                nixpkgs.hostPlatform = value.arch or "x86_64-linux";
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
                   (final: prev: {
