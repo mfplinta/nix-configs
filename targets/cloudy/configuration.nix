@@ -7,6 +7,7 @@
       ./disko.nix
     ];
 
+  boot.loader.timeout = 1;
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelParams = [ "net.ifnames=0" "boot.shell_on_fail" "panic=30" "boot.panic_on_fail" ];
