@@ -12,8 +12,9 @@
   boot.kernelParams = [ "net.ifnames=0" "boot.shell_on_fail" "panic=30" "boot.panic_on_fail" ];
   
   networking = {
+    useDHCP = false;
     interfaces = {
-      eth0.ipv4.addresses = [{ ipAddress = "10.0.0.104"; prefixLength = 24; }];
+      eth0.ipv4.addresses = [{ address = "10.0.0.104"; prefixLength = 24; }];
     };
     defaultGateway = {
       address = "10.0.0.1";
