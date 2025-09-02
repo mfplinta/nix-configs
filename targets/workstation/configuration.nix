@@ -220,8 +220,7 @@ in
           render."cm_fs_passthrough" = 2;
         };
 
-        hyprpanel.layout = {
-          "bar.launcher.icon" = "";
+        hyprpanel = {
           "bar.layouts" = {
             "${leftMonitor}" = {
               left = [ ];

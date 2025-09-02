@@ -10,14 +10,6 @@
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     hyprland.url = "github:hyprwm/Hyprland";
-    # --- HyprPanel ---
-    astal.url = "github:aylur/astal";
-    ags.url = "github:aylur/ags";
-    ags.inputs.astal.follows = "astal";
-    hyprpanel.url = "github:Jas-SinghFSU/HyprPanel";
-    hyprpanel.inputs.astal.follows = "astal";
-    hyprpanel.inputs.ags.follows = "ags";
-    # -----------------
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
     nixd.url = "github:mfplinta/nixd/7aedde58da4f5d215ff445517708f6efcf5d615f";
@@ -31,7 +23,6 @@
       wrapper-manager,
       chaotic,
       home-manager,
-      hyprpanel,
       nix-vscode-extensions,
       nix-index-database,
       nixd,
@@ -70,7 +61,7 @@
                       sysConfig
                       wrapper-manager
                       ;
-                    hmModule-nix-index = nix-index-database.hmModules.nix-index;
+                    hmModule-nix-index = nix-index-database.homeModules.nix-index;
                     setMimeTypes =
                       desktopEntry: types:
                       builtins.listToAttrs (
@@ -133,7 +124,6 @@
                 nixpkgs.hostPlatform = arch;
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
-                  hyprpanel.overlay
                   (final: prev: {
                     nixd = prev.callPackage "${nixd}" { };
                     myScripts =
@@ -146,7 +136,6 @@
                       };
                     cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix { };
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
-                    bibata-modern-ice = prev.callPackage ./packages/bibata-modern-ice.nix { };
                   })
                 ];
                 networking.hostName = name;

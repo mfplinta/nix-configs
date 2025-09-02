@@ -13,7 +13,7 @@
     in
     {
       imports = [
-        inputs.hyprpanel.homeManagerModules.hyprpanel
+        #inputs.hyprpanel.homeManagerModules.hyprpanel
         (hmImport ./programs/kitty.nix)
       ];
 
@@ -181,18 +181,16 @@
 
         programs.hyprpanel = {
           enable = true;
-          overwrite.enable = true;
+          #overwrite.enable = true;
 
           settings = lib.mkMerge [
             {
-              layout = {
-                "theme.osd.location" = "bottom";
-                "theme.osd.orientation" = "horizontal";
-                "theme.osd.margins" = "7px 7px 150px 7px";
-                "menus.clock.weather.enabled" = false;
-                "menus.dashboard.directories.left.directory3.label" = "󰚝 BYU";
-                "menus.dashboard.directories.left.directory3.command" = ''bash -c "xdg-open $HOME/Syncthing/BYU/"'';
-              };
+              "theme.osd.location" = "bottom";
+              "theme.osd.orientation" = "horizontal";
+              "theme.osd.margins" = "7px 7px 150px 7px";
+              "menus.clock.weather.enabled" = false;
+              "menus.dashboard.directories.left.directory3.label" = "󰚝 BYU";
+              "menus.dashboard.directories.left.directory3.command" = ''bash -c "xdg-open $HOME/Syncthing/BYU/"'';
             }
             config.myCfg.hyprpanel
           ];
@@ -318,25 +316,6 @@
           indicator = true;
         };
 
-        systemd.user.services.hyprpanel = {
-          Unit = {
-            Description = "hypridle";
-            After = [ "graphical-session.target" ];
-            ConditionEnvironment = [ "WAYLAND_DISPLAY" ];
-            PartOf = [ "graphical-session.target" ];
-          };
-
-          Service = {
-            ExecStart = "${pkgs.hyprpanel}/bin/hyprpanel";
-            Restart = "always";
-            RestartSec = "5";
-          };
-
-          Install = {
-            WantedBy = [ "graphical-session.target" ];
-          };
-        };
-
         systemd.user.services.pam_kwallet_init = {
           Unit = {
             Description = "KWallet automatic unlock";
@@ -364,7 +343,7 @@
           };
 
           cursorTheme = {
-            package = pkgs.bibata-modern-ice;
+            package = pkgs.bibata-cursors;
             size = 32;
             name = "Bibata-Modern-Ice";
           };
@@ -378,8 +357,9 @@
         xdg.dataFile = {
           "color-schemes".source = "${pkgs.flat-remix-kde}/share/color-schemes";
           "aurorae/themes".source = "${pkgs.flat-remix-kde}/share/aurorae/themes";
-          "icons/Bibata-Modern-Ice".source = "${pkgs.bibata-modern-ice}/share/icons/Bibata-Modern-Ice";
         };
+
+        xdg.configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
 
         qt = {
           enable = true;
