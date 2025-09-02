@@ -12,13 +12,13 @@
   boot.kernelParams = [ "net.ifnames=0" "boot.shell_on_fail" "panic=30" "boot.panic_on_fail" ];
   
   networking = {
-    hostName = "cloudy";
-    defaultGateway = "10.0.0.1";
-    nameservers = [ "1.1.1.1" ];
-    interfaces.eth0 = {
-      ipAddress = "10.0.0.104";
-      prefixLength = 24;
+    interfaces = {
+      eth0.ipv4.addresses = [{ ipAddress = "10.0.0.104"; prefixLength = 24; }];
     };
+    defaultGateway = {
+      address = "10.0.0.1";
+    };
+    nameservers = [ "1.1.1.1" ];
   };
 
   time.timeZone = "America/Denver";
@@ -27,6 +27,7 @@
     vim
     wget
     git
+    htop
   ];
 
   services.openssh.enable = true;
