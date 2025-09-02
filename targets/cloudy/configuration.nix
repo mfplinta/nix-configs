@@ -4,6 +4,7 @@
   imports =
     [
       ./hardware-configuration.nix
+      ./disko.nix
     ];
 
   boot.loader.systemd-boot.enable = true;

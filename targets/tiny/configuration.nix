@@ -22,7 +22,7 @@ let
 in
 {
   imports = [
-    ./disko-config.nix
+    ./disko.nix
     ./hardware-configuration.nix
   ];
 
