@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  config,
   ...
 }:
 
@@ -29,6 +30,17 @@ in
   boot.loader.grub.enable = true;
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.efiInstallAsRemovable = true;
+
+  sops.defaultSopsFile = ./../secrets.yaml;
+  sops.age.keyFile = "/root/.config/sops/age/keys.txt";
+  sops.secrets.cf_api_key = {};
+  sops.secrets.cloudy-http_auth_plain = {};
+  sops.templates.env_caddy = {
+    mode = "0444";
+    content = ''
+      CF_API_KEY=${config.sops.placeholder.cf_api_key}
+    '';
+  };
 
   networking = {
     useDHCP = false;
@@ -87,7 +99,7 @@ in
       autoStart = true;
       image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
       environment = { inherit TZ; };
-      environmentFiles = [ paths.source.caddy-cloudflare-token ];
+      environmentFiles = [ config.sops.templates.env_caddy.path ];
       extraOptions = [ "--cap-add=NET_ADMIN" ];
       volumes = [
         (paths.source.caddy-data + ":/data")
@@ -188,4 +200,36 @@ in
   services.openssh.settings.Macs = lib.mkOptionDefault [
     "hmac-sha2-512"
   ];
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDO7lQ5/HFagyOrQKXT9IC1PqBm/Yvi3zThJ7Azawg3lb6FHKUms8FuR5vS5rkrRCaTrs8URHugirIMvXQYxmTMbU51jGsJcWPNfTPm/iWczYUVFHY5TY4BlviWMu0EzHA9pA5bcR8DGjEgJdloPwuQ6eOTda0x9HBNBT8Q0xbiXTjmcYwluqw3iI8Up54f5zR6nC0pMkKTHIjmSLzCnbCBFsZ+aIvtE339oLbQZ5B5Jlw0/lgV1m9/GTn/PUHbUPbgKW3MZ4/kCuqh62UvqdyMa2bjaqPZLfcrNkJSvT8xVxk4enKUfHj5VI1jwG6SJ6s6fc/FUHZJlt3wtGsw08XL ssh-key-2025-09-02"
+  ];
+
+  services.vmagent = {
+    enable = true;
+    remoteWrite = {
+      url = "https://victoriametrics.matheusplinta.com/api/v1/write";
+      basicAuthUsername = "mfplinta";
+      basicAuthPasswordFile = config.sops.secrets.cloudy-http_auth_plain.path;
+    };
+    prometheusConfig = {
+      scrape_configs = [
+        {
+          job_name = "tiny-nix.arpa@node-exporter";
+          scrape_interval = "60s";
+          static_configs = [
+            {
+              targets = [ "127.0.0.1:9100" ];
+              labels.type = "node";
+            }
+          ];
+        }
+      ];
+    };
+  };
+
+  services.prometheus.exporters.node = {
+    enable = true;
+    port = 9100;
+    enabledCollectors = [ "systemd" ];
+  };
 }

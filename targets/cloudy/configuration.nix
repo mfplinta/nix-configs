@@ -21,15 +21,15 @@
     "boot.panic_on_fail"
   ];
 
-  sops.defaultSopsFile = ./secrets.yaml;
+  sops.defaultSopsFile = ./../secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = {};
-  sops.secrets.cloudy_http_auth_pwd = {};
+  sops.secrets.cloudy_http_auth_pwd_bcrypt = {};
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
-      HTTP_AUTH_PWD=${config.sops.placeholder.cloudy_http_auth_pwd}
+      HTTP_AUTH_PWD=${config.sops.placeholder.cloudy_http_auth_pwd_bcrypt}
     '';
   };
 
