@@ -14,6 +14,8 @@
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
     nixd.url = "github:mfplinta/nixd/7aedde58da4f5d215ff445517708f6efcf5d615f";
     nixd.inputs.nixpkgs.follows = "nixpkgs";
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
     inputs@{
@@ -26,6 +28,7 @@
       nix-vscode-extensions,
       nix-index-database,
       nixd,
+      sops-nix,
       ...
     }:
     let
@@ -114,6 +117,7 @@
             chaotic.nixosModules.nyx-cache
             chaotic.nixosModules.nyx-overlay
             chaotic.nixosModules.nyx-registry
+            sops-nix.nixosModules.sops
             (
               { ... }:
               {

@@ -1,0 +1,7 @@
+keys:
+  - &cloudy age1uh0c8rd9pq24dt6z4h42smhnf73lcnu9nx2wawetschmhsp5lqtqw6m8ln
+creation_rules:
+  - path_regex: secrets.yaml$
+    key_groups:
+    - age:
+      - *cloudy
