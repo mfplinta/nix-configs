@@ -23,7 +23,7 @@
         tree = "${pkgs.lsd}/bin/lsd --tree";
       };
       programs.fish.interactiveShellInit = ''
-        set --erase fish_greeting
+        set fish_greeting
       '';
       programs.bash.interactiveShellInit = ''
         if [[ $(${pkgs.procps}/bin/ps --no-header --pid=$PPID --format=comm) != "fish" && -z ''${BASH_EXECUTION_STRING} ]]
