@@ -2,6 +2,7 @@
   lib,
   pkgs,
   config,
+  sysImport,
   ...
 }:
 
@@ -25,11 +26,10 @@ in
   imports = [
     ./disko.nix
     ./hardware-configuration.nix
-  ];
 
-  boot.loader.grub.enable = true;
-  boot.loader.grub.efiSupport = true;
-  boot.loader.grub.efiInstallAsRemovable = true;
+    (sysImport ../../common/base.nix)
+    (sysImport ../../common/server.nix)
+  ];
 
   sops.defaultSopsFile = ./../secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
@@ -59,8 +59,7 @@ in
     };
     nameservers = [ "10.0.1.2" ];
   };
-
-  time.timeZone = "America/Denver";
+  
   i18n.defaultLocale = "en_US.UTF-8";
 
   environment.systemPackages = with pkgs; [
@@ -195,41 +194,10 @@ in
     attrValues paths.source
   ); 
 
-  services.openssh.enable = true;
   services.openssh.settings.PermitRootLogin = "yes";
-  services.openssh.settings.Macs = lib.mkOptionDefault [
-    "hmac-sha2-512"
-  ];
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDO7lQ5/HFagyOrQKXT9IC1PqBm/Yvi3zThJ7Azawg3lb6FHKUms8FuR5vS5rkrRCaTrs8URHugirIMvXQYxmTMbU51jGsJcWPNfTPm/iWczYUVFHY5TY4BlviWMu0EzHA9pA5bcR8DGjEgJdloPwuQ6eOTda0x9HBNBT8Q0xbiXTjmcYwluqw3iI8Up54f5zR6nC0pMkKTHIjmSLzCnbCBFsZ+aIvtE339oLbQZ5B5Jlw0/lgV1m9/GTn/PUHbUPbgKW3MZ4/kCuqh62UvqdyMa2bjaqPZLfcrNkJSvT8xVxk4enKUfHj5VI1jwG6SJ6s6fc/FUHZJlt3wtGsw08XL ssh-key-2025-09-02"
-  ];
 
-  services.vmagent = {
-    enable = true;
-    remoteWrite = {
-      url = "https://victoriametrics.matheusplinta.com/api/v1/write";
-      basicAuthUsername = "mfplinta";
-      basicAuthPasswordFile = config.sops.secrets.cloudy-http_auth_plain.path;
-    };
-    prometheusConfig = {
-      scrape_configs = [
-        {
-          job_name = "tiny-nix.arpa@node-exporter";
-          scrape_interval = "60s";
-          static_configs = [
-            {
-              targets = [ "127.0.0.1:9100" ];
-              labels.type = "node";
-            }
-          ];
-        }
-      ];
-    };
-  };
-
-  services.prometheus.exporters.node = {
-    enable = true;
-    port = 9100;
-    enabledCollectors = [ "systemd" ];
-  };
+  myCfg.vmagentEnable = true;
+  myCfg.vmagentRemoteWriteUrl = "https://victoriametrics.matheusplinta.com/api/v1/write";
+  myCfg.vmagentUsername = "mfplinta";
+  myCfg.vmagentPasswordFile = config.sops.secrets.cloudy-http_auth_plain.path;
 }
