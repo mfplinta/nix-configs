@@ -13,7 +13,6 @@
     in
     {
       imports = [
-        #inputs.hyprpanel.homeManagerModules.hyprpanel
         (hmImport ./programs/kitty.nix)
       ];
 
@@ -191,6 +190,7 @@
               "menus.clock.weather.enabled" = false;
               "menus.dashboard.directories.left.directory3.label" = "󰚝 BYU";
               "menus.dashboard.directories.left.directory3.command" = ''bash -c "xdg-open $HOME/Syncthing/BYU/"'';
+              "bar.workspaces.show_numbered" = true;
             }
             config.myCfg.hyprpanel
           ];
@@ -377,6 +377,7 @@
           hunspellDicts.pt_BR
 
           pavucontrol
+          galaxy-buds-client
         ];
       };
     };
@@ -396,6 +397,60 @@
       };
 
       config = {
+        boot.kernelPackages = pkgs.lib.mkDefault pkgs.linuxPackages_cachyos;
+        boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
+        boot.kernelParams = [
+          "quiet"
+          "splash"
+          "loglevel=3"
+          "systemd.show_status=auto"
+          "nosgx"
+          "udev.log_priority=3"
+          "rd.systemd.show_status=auto"
+        ];
+
+        boot.plymouth.enable = true;
+        boot.initrd.verbose = false;
+        boot.initrd.systemd.enable = true;
+
+        networking.networkmanager.enable = true;
+        
+        hardware = {
+          graphics.enable = true;
+          bluetooth.enable = true;
+          bluetooth.powerOnBoot = true;
+          bluetooth.settings = {
+            General = {
+              ControllerMode = "bredr";
+            };
+          };
+          brillo.enable = true;
+        };
+
+        programs.appimage = {
+          enable = true;
+          binfmt = true;
+        };
+
+        # Reduce RAM cache for ejectable devices
+        services.udev.extraRules = ''
+          SUBSYSTEM=="block", ACTION=="add",\
+            KERNEL=="sd[a-z]",\
+            TAG+="systemd",\
+            ENV{ID_USB_TYPE}=="disk",\
+            ENV{SYSTEMD_WANTS}+="usb-dirty-pages-fix@$kernel.service"
+        '';
+        systemd.services."usb-dirty-pages-fix@" = {
+          scriptArgs = "%i";
+          script = ''
+            if [ -z "$(df --output=source '/' | grep $1)" ]; then
+                echo 1 > /sys/block/$1/bdi/strict_limit
+                echo 16777216 > /sys/block/$1/bdi/max_bytes
+            fi
+          '';
+          serviceConfig.Type = "oneshot";
+        };
+
         services.displayManager = {
           enable = true;
           sddm = {
