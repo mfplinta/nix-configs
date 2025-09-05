@@ -274,7 +274,7 @@ in
             };
 
             systemd.tmpfiles.rules = [
-              "d /app 0600 django django -"
+              "d /app 0700 django django -"
             ];
 
             systemd.services.django-gunicorn =
@@ -329,7 +329,7 @@ in
             };
 
             systemd.tmpfiles.rules = [
-              "d /app 0600 django django -"
+              "d /app 0700 django django -"
             ];
 
             systemd.services.django-gunicorn =
