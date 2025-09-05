@@ -29,6 +29,7 @@ in
 
     (sysImport ../../common/base.nix)
     (sysImport ../../common/server.nix)
+    (sysImport ../../common/containers.nix)
   ];
 
   sops.defaultSopsFile = ./../secrets.yaml;
@@ -59,24 +60,7 @@ in
     };
     nameservers = [ "10.0.1.2" ];
   };
-  
-  i18n.defaultLocale = "en_US.UTF-8";
 
-  environment.systemPackages = with pkgs; [
-    vim
-    wget
-    curl
-    git
-    pciutils
-    htop
-    smartmontools
-    netcat-gnu
-    unzip
-  ];
-  
-  virtualisation.podman.enable = true;
-
-  virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
   systemd.services.create-podman-network = {
     serviceConfig.Type = "oneshot";
     wantedBy = [ "podman-hass.service" "podman-esphome.service" ];
@@ -88,7 +72,6 @@ in
     '';
   };
 
-  virtualisation.oci-containers.backend = "podman";
   virtualisation.oci-containers.containers =  
   let
     TZ = "America/Denver";
