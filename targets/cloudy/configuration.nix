@@ -253,7 +253,7 @@ in
         localAddress = "192.168.102.11";
 
         bindMounts."${config.sops.templates.env_blog.path}".isReadOnly = true;
-        bindMounts."/app" = {
+        bindMounts."/app:idmap" = {
           hostPath = "/persist/containers/ws-blog";
           isReadOnly = false;
         };
@@ -304,7 +304,7 @@ in
         localAddress = "192.168.103.11";
 
         bindMounts."${config.sops.templates.env_ots.path}".isReadOnly = true;
-        bindMounts."/app" = {
+        bindMounts."/app:idmap" = {
           hostPath = "/persist/containers/ws-ots";
           isReadOnly = false;
         };
