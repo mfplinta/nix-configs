@@ -261,12 +261,12 @@ in
                 after = [ "network.target" ];
                 wantedBy = [ "multi-user.target" ];
                 environment.DJANGO_DEBUG = "False";
-                environmentFile = [ config.sops.templates.env_blog.path ];
                 serviceConfig = {
                   Type = "simple";
                   User = "django";
                   Group = "django";
                   WorkingDirectory = "/app";
+                  EnvironmentFile = [ config.sops.templates.env_blog.path ];
                   ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
                   Restart = "always";
                 };
@@ -312,12 +312,12 @@ in
                 after = [ "network.target" ];
                 wantedBy = [ "multi-user.target" ];
                 environment.DJANGO_DEBUG = "False";
-                environmentFile = [ config.sops.templates.env_ots.path ];
                 serviceConfig = {
                   Type = "simple";
                   User = "django";
                   Group = "django";
                   WorkingDirectory = "/app";
+                  EnvironmentFile = [ config.sops.templates.env_ots.path ];
                   ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
                   Restart = "always";
                 };
