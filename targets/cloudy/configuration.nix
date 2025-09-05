@@ -289,7 +289,7 @@ in
                   Group = "django";
                   WorkingDirectory = "/app";
                   EnvironmentFile = [ config.sops.templates.env_blog.path ];
-                  ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
+                  ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 matheusplintacom.wsgi:application";
                   Restart = "always";
                 };
               };
