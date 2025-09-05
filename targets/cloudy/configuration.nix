@@ -264,7 +264,7 @@ in
             system.stateVersion = config.system.stateVersion;
             networking.firewall.enable = false;
 
-            environment.systemPackages = with pkgs; [
+            environment.systemPackages = [
               update-website-script
             ];
 
@@ -272,6 +272,10 @@ in
               enable = true;
               configFile = pkgs.writeText "Caddyfile" caddy-webserver-cfg;
             };
+
+            systemd.tmpfiles.rules = [
+              "d /app 0600 django django -"
+            ];
 
             systemd.services.django-gunicorn =
               {
@@ -315,7 +319,7 @@ in
             system.stateVersion = config.system.stateVersion;
             networking.firewall.enable = false;
 
-            environment.systemPackages = with pkgs; [
+            environment.systemPackages = [
               update-website-script
             ];
 
@@ -323,6 +327,10 @@ in
               enable = true;
               configFile = pkgs.writeText "Caddyfile" caddy-webserver-cfg;
             };
+
+            systemd.tmpfiles.rules = [
+              "d /app 0600 django django -"
+            ];
 
             systemd.services.django-gunicorn =
               {
