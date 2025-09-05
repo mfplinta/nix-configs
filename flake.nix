@@ -135,7 +135,7 @@
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
-                  (final: prev: {
+                  (final: prev: rec {
                     nixd = prev.callPackage "${nixd}" { };
                     myScripts =
                       let
@@ -144,16 +144,15 @@
                       {
                         toggle-scale = scripts.toggle-scale;
                         get-current-brightness = scripts.get-current-brightness;
+                        update-website-script = scripts.update-website-script;
                       };
                     cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix { };
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
-                    django-imagekit = prev.callPackage ./packages/django-imagekit.nix { };
-                    django-turnstile = prev.callPackage ./packages/django-turnstile.nix { };
-                    caddy-django-env =
-                      with prev.python3Packages;
+                    django-imagekit = ps: ps.callPackage ./packages/django-imagekit.nix { };
+                    django-turnstile = ps: ps.callPackage ./packages/django-turnstile.nix { };
+                    caddy-django-env = with prev.python3Packages;
                       with prev;
-                      python3.withPackages (
-                        ps: with ps; [
+                      python3.withPackages (ps: with ps; [
                           django
                           gunicorn
                           pillow
@@ -161,8 +160,7 @@
                           whitenoise
                           (django-imagekit ps)
                           (django-turnstile ps)
-                        ]
-                      );
+                        ]);
                   })
                 ];
                 networking.hostName = name;
