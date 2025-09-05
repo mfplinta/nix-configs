@@ -7,6 +7,24 @@
 }:
 
 let
+
+  update-website-script = with pkgs; writeShellApplication {
+    name = "update-website";
+    runtimeInputs = [ git ];
+    text = ''
+      set -e
+      set -x
+
+      if [ -f manage.py ] && [ -d .git ]; then
+          git config --global --add safe.directory '*'
+          git pull
+          ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
+          systemctl restart django-gunicorn.service
+      else
+          echo "manage.py or .git not found in current dir"
+      fi
+    '';
+  };
   caddy-webserver-cfg = ''
     :8000 {
       encode gzip
