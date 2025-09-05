@@ -180,7 +180,6 @@
 
         programs.hyprpanel = {
           enable = true;
-          #overwrite.enable = true;
 
           settings = lib.mkMerge [
             {

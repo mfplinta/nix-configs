@@ -68,27 +68,6 @@ in
 
   services.hardware.openrgb.enable = true;
 
-  # services.pipewire.wireplumber.extraConfig = {
-  #   "nvidia-output" = {
-  #     "monitor.alsa.rules" = [
-  #       {
-  #         matches = [
-  #           {
-  #             "device.name" = "alsa_card.pci-0000_01_00.1";
-  #           }
-  #         ];
-  #         actions = {
-  #           update-props = {
-  #             "device.profile" = "output:hdmi-stereo-extra1";
-  #             "api.alsa.use-ucm" = false;
-  #           };
-  #         };
-  #       }
-  #     ];
-  #   };
-  # }
-  # ;
-
   services.xserver.videoDrivers = [ "nvidia" ];
   services.udev.extraRules = ''
     SUBSYSTEM=="i2c-dev", ACTION=="add",\
