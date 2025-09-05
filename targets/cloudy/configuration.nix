@@ -199,7 +199,29 @@ in
                 http_addr = "0.0.0.0";
                 http_port = 3000;
               };
+              provision = {
+                enable = true;
+                dashboards.settings.providers = [{
+                  name = "my dashboards";
+                  disableDeletion = true;
+                  options = {
+                    path = "/etc/grafana-dashboards";
+                    foldersFromFilesStructure = true;
+                  };
+                }];
+                datasources.settings.datasources = [
+                  {
+                    name = "VictoriaMetrics";
+                    type = "victoriametrics-metrics-datasource";
+                    url = "http://127.0.0.1:8428";
+                    isDefault = true;
+                    editable = false;
+                  }
+                ];
+              };
             };
+
+            environment.etc."grafana-dashboards/my_devices.json".source = ./my_devices.json;
 
             services.victoriametrics = {
               enable = true;
