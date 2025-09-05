@@ -83,12 +83,14 @@
         "mfp-nix-workstation" = {
           modules = [
             ./targets/workstation/configuration.nix
-          ] ++ homeManagerConfig;
+          ]
+          ++ homeManagerConfig;
         };
         "mfp-nix-laptop" = {
           modules = [
             ./targets/laptop/configuration.nix
-          ] ++ homeManagerConfig;
+          ]
+          ++ homeManagerConfig;
         };
         "tiny-nix" = {
           modules = [
@@ -145,13 +147,30 @@
                       };
                     cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix { };
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
+                    django-imagekit = prev.callPackage ./packages/django-imagekit.nix { };
+                    django-turnstile = prev.callPackage ./packages/django-turnstile.nix { };
+                    caddy-django-env =
+                      with prev.python3Packages;
+                      with prev;
+                      python3.withPackages (
+                        ps: with ps; [
+                          django
+                          gunicorn
+                          pillow
+                          django-markdownx
+                          whitenoise
+                          (django-imagekit ps)
+                          (django-turnstile ps)
+                        ]
+                      );
                   })
                 ];
                 networking.hostName = name;
                 system.stateVersion = "24.11";
               }
             )
-          ] ++ value.modules;
+          ]
+          ++ value.modules;
         }
       ) systems;
     };

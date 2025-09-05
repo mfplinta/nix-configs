@@ -6,6 +6,22 @@
   ...
 }:
 
+let
+  caddy-webserver-cfg = ''
+    :8000 {
+      encode gzip
+
+      handle_path /media/* {
+        root * /app/media
+        file_server
+      }
+
+      handle {
+        reverse_proxy 127.0.0.1:9000
+      }
+    }
+  '';
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -24,13 +40,31 @@
 
   sops.defaultSopsFile = ./../secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
-  sops.secrets.cf_api_key = {};
-  sops.secrets.cloudy-http_auth_bcrypt = {};
+  sops.secrets.cf_api_key = { };
+  sops.secrets.cloudy-http_auth_bcrypt = { };
+  sops.secrets.cloudy-blog_secretkey = { };
+  sops.secrets.cloudy-ots_secretkey = { };
+  sops.secrets.cloudy-ots_turnstile_sitekey = { };
+  sops.secrets.cloudy-ots_turnstile_secret = { };
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
       HTTP_AUTH_PWD=${config.sops.placeholder.cloudy-http_auth_bcrypt}
+    '';
+  };
+  sops.templates.env_blog = {
+    mode = "0444";
+    content = ''
+      SECRET_KEY=${config.sops.placeholder.cloudy-blog_secretkey}
+    '';
+  };
+  sops.templates.env_ots = {
+    mode = "0444";
+    content = ''
+      SECRET_KEY=${config.sops.placeholder.cloudy-ots_secretkey}
+      TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-ots_turnstile_sitekey}
+      TURNSTILE_SECRET=${config.sops.placeholder.cloudy-ots_turnstile_secret}
     '';
   };
 
@@ -73,7 +107,9 @@
     };
 
   systemd.tmpfiles.rules = [
-    "d /persist/containers/caddy 0600 root root -"
+    "d /persist/containers/reverseProxy/caddy 0600 root root -"
+    "d /persist/containers/ws-blog 0600 root root -"
+    "d /persist/containers/ws-ots 0600 root root -"
   ];
 
   containers =
@@ -87,16 +123,15 @@
       };
     in
     {
-      caddy = common // {
+      reverseProxy = common // {
         hostAddress = "192.168.100.10";
         localAddress = "192.168.100.11";
 
+        bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
         bindMounts."/var/lib/caddy:idmap" = {
-          hostPath = "/persist/containers/caddy";
+          hostPath = "/persist/containers/reverseProxy/caddy";
           isReadOnly = false;
         };
-
-        bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
 
         config =
           { ... }:
@@ -170,6 +205,108 @@
               enable = true;
               listenAddress = ":8428";
             };
+          };
+      };
+
+      ws-blog = common // {
+        hostAddress = "192.168.102.10";
+        localAddress = "192.168.102.11";
+
+        bindMounts."${config.sops.templates.env_blog.path}".isReadOnly = true;
+        bindMounts."/app" = {
+          hostPath = "/persist/containers/ws-blog";
+          isReadOnly = false;
+        };
+
+        config =
+          { ... }:
+          {
+            system.stateVersion = config.system.stateVersion;
+            networking.firewall.enable = false;
+
+            environment.systemPackages = with pkgs; [
+              update-website-script
+            ];
+
+            services.caddy = {
+              enable = true;
+              configFile = pkgs.writeText "Caddyfile" caddy-webserver-cfg;
+            };
+
+            systemd.services.django-gunicorn =
+              {
+                description = "Gunicorn service for Django app";
+                after = [ "network.target" ];
+                wantedBy = [ "multi-user.target" ];
+                environment.DJANGO_DEBUG = "False";
+                environmentFile = [ config.sops.templates.env_blog.path ];
+                serviceConfig = {
+                  Type = "simple";
+                  User = "django";
+                  Group = "django";
+                  WorkingDirectory = "/app";
+                  ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
+                  Restart = "always";
+                };
+              };
+
+            users.users.django = {
+              isSystemUser = true;
+              group = "django";
+            };
+
+            users.groups.django = {};
+          };
+      };
+
+      ws-ots = common // {
+        hostAddress = "192.168.103.10";
+        localAddress = "192.168.103.11";
+
+        bindMounts."${config.sops.templates.env_ots.path}".isReadOnly = true;
+        bindMounts."/app" = {
+          hostPath = "/persist/containers/ws-ots";
+          isReadOnly = false;
+        };
+
+        config =
+          { ... }:
+          {
+            system.stateVersion = config.system.stateVersion;
+            networking.firewall.enable = false;
+
+            environment.systemPackages = with pkgs; [
+              update-website-script
+            ];
+
+            services.caddy = {
+              enable = true;
+              configFile = pkgs.writeText "Caddyfile" caddy-webserver-cfg;
+            };
+
+            systemd.services.django-gunicorn =
+              {
+                description = "Gunicorn service for Django app";
+                after = [ "network.target" ];
+                wantedBy = [ "multi-user.target" ];
+                environment.DJANGO_DEBUG = "False";
+                environmentFile = [ config.sops.templates.env_ots.path ];
+                serviceConfig = {
+                  Type = "simple";
+                  User = "django";
+                  Group = "django";
+                  WorkingDirectory = "/app";
+                  ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
+                  Restart = "always";
+                };
+              };
+
+            users.users.django = {
+              isSystemUser = true;
+              group = "django";
+            };
+
+            users.groups.django = {};
           };
       };
     };
