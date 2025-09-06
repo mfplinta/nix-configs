@@ -60,10 +60,12 @@ in
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
   sops.secrets.cloudy-http_auth_bcrypt = { };
+  sops.secrets.cloudy-grafana_pwd = { mode = "0444"; };
   sops.secrets.cloudy-blog_secretkey = { };
   sops.secrets.cloudy-ots_secretkey = { };
   sops.secrets.cloudy-ots_turnstile_sitekey = { };
   sops.secrets.cloudy-ots_turnstile_secret = { };
+  sops.secrets.cloudy-private_wg = { mode = "0444"; };
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
@@ -122,6 +124,20 @@ in
           }
         ];
       };
+
+      wireguard.enable = true;
+      wireguard.interfaces.wg0 = {
+        ips = [ "10.69.69.1/24" ];
+        listenPort = 51820;
+        privateKeyFile = "${config.sops.secrets.cloudy-private_wg.path}";
+        peers = [
+          {
+            publicKey = "urDeyjQQPARSSxK/J/WKH3m46Xg0zQjhCHwiWP2LEnM=";
+            allowedIPs = [ "10.69.69.2/32" "10.0.3.0/24" ];
+            persistentKeepalive = 20;
+          }
+        ];
+      };
     };
 
   systemd.tmpfiles.rules = [
@@ -171,9 +187,24 @@ in
                   admin off
                 }
 
+                matheusplinta.com {
+                  tls {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+
+                  reverse_proxy 192.168.102.11:8000
+                }
+
                 *.matheusplinta.com {
                   tls {
                     dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+
+                  @blog host www.matheusplinta.com
+                  handle @blog {
+                    reverse_proxy 192.168.102.11:8000
                   }
 
                   @grafana host grafana.matheusplinta.com
@@ -193,6 +224,31 @@ in
                     abort
                   }
                 }
+
+                optimaltech.us {
+                  tls {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+
+                  reverse_proxy 192.168.103.11:8000
+                }
+
+                *.optimaltech.us {
+                  tls {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+
+                  @ots host www.optimaltech.us
+                  handle @ots {
+                    reverse_proxy 192.168.103.11:8000
+                  }
+
+                  handle {
+                    abort
+                  }
+                }
               '';
             };
           };
@@ -202,6 +258,8 @@ in
         hostAddress = "192.168.101.10";
         localAddress = "192.168.101.11";
 
+        bindMounts."${config.sops.secrets.cloudy-grafana_pwd.path}".isReadOnly = true;
+
         config =
           { ... }:
           {
@@ -210,12 +268,25 @@ in
 
             services.grafana = {
               enable = true;
-              declarativePlugins = [
-                pkgs.grafanaPlugins.victoriametrics-metrics-datasource
-              ];
-              settings.server = {
-                http_addr = "0.0.0.0";
-                http_port = 3000;
+              declarativePlugins = [ ];
+              settings = {
+                server = {
+                  root_url = "https://grafana.matheusplinta.com/";
+                  http_addr = "0.0.0.0";
+                  http_port = 3000;
+                };
+                security = {
+                  admin_password = "$__file{${config.sops.secrets.cloudy-grafana_pwd.path}}";
+                };
+                users.allow_sign_up = false;
+                analytics.enabled = false;
+                analytics.reporting_enabled = false;
+                analytics.feedback_links_enabled = false;
+                alerting.enabled = false;
+                explore.enabled = false;
+                profile.enabled = false;
+                news.enabled = false;
+                snapshots.enabled = false;
               };
               provision = {
                 enable = true;
@@ -230,7 +301,7 @@ in
                 datasources.settings.datasources = [
                   {
                     name = "VictoriaMetrics";
-                    type = "victoriametrics-metrics-datasource";
+                    type = "prometheus";
                     url = "http://127.0.0.1:8428";
                     isDefault = true;
                     editable = false;
@@ -358,6 +429,14 @@ in
           };
       };
     };
+
+  services.endlessh = {
+    enable = true;
+    port = 22;
+    openFirewall = true;
+  };
+
+  services.openssh.ports = [ 22000 ];
 
   myCfg.vmagentEnable = true;
   myCfg.vmagentRemoteWriteUrl = "http://192.168.101.11:8428/api/v1/write";
