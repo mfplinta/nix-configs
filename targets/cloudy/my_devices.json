@@ -36,7 +36,7 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-metrics-datasource",
+        "type": "prometheus",
         "uid": "P4169E866C3094E38"
       },
       "fieldConfig": {
@@ -131,7 +131,7 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-metrics-datasource",
+        "type": "prometheus",
         "uid": "P4169E866C3094E38"
       },
       "fieldConfig": {
@@ -214,7 +214,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-metrics-datasource",
+            "type": "prometheus",
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
@@ -226,7 +226,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-metrics-datasource",
+            "type": "prometheus",
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
@@ -252,7 +252,7 @@
             "configRefId": "B",
             "mappings": [
               {
-                "fieldName": "node_memory_MemTotal_bytes{instance=\"cloudy\", job=\"node-exporter\"}",
+                "fieldName": "{__name__=\"node_memory_MemTotal_bytes\", instance=\"cloudy\", job=\"node-exporter\"}",
                 "handlerKey": "max"
               }
             ]
@@ -276,7 +276,7 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-metrics-datasource",
+        "type": "prometheus",
         "uid": "P4169E866C3094E38"
       },
       "fieldConfig": {
@@ -371,7 +371,7 @@
     },
     {
       "datasource": {
-        "type": "victoriametrics-metrics-datasource",
+        "type": "prometheus",
         "uid": "P4169E866C3094E38"
       },
       "fieldConfig": {
@@ -454,7 +454,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "victoriametrics-metrics-datasource",
+            "type": "prometheus",
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
@@ -466,7 +466,7 @@
         },
         {
           "datasource": {
-            "type": "victoriametrics-metrics-datasource",
+            "type": "prometheus",
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
@@ -492,7 +492,7 @@
             "configRefId": "B",
             "mappings": [
               {
-                "fieldName": "node_memory_MemTotal_bytes{instance=\"tiny-nix\", job=\"node-exporter\"}",
+                "fieldName": "{__name__=\"node_memory_MemTotal_bytes\", instance=\"tiny-nix\", job=\"node-exporter\"}",
                 "handlerKey": "max"
               }
             ]
@@ -514,7 +514,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "View de",
+  "title": "View devices",
   "uid": "38e62c12-9ed3-4738-8a65-fa2ce3fe6139",
-  "version": 3
+  "version": 1
 }
