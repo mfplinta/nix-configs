@@ -179,10 +179,6 @@ in
               };
               environmentFile = config.sops.templates.env_caddy.path;
               configFile = pkgs.writeText "Caddyfile" ''
-                {
-                  admin off
-                }
-
                 matheusplinta.com {
                   tls {
                     dns cloudflare {env.CF_API_KEY}
@@ -196,6 +192,16 @@ in
                   tls {
                     dns cloudflare {env.CF_API_KEY}
                     resolvers 1.1.1.1
+                  }
+
+                  @debug host debug.matheusplinta.com
+                  handle @debug {
+                    basic_auth {
+                      mfplinta {env.HTTP_AUTH_PWD}
+                    }
+                    reverse_proxy localhost:2019 {
+                      header_up Host {upstream_hostport}
+                    }
                   }
 
                   @blog host www.matheusplinta.com
@@ -219,6 +225,11 @@ in
                   @ha host ha.matheusplinta.com
                   handle @ha {
                     reverse_proxy https://ha.matheusplinta.com
+                  }
+
+                  @gitea host gitea.matheusplinta.com
+                  handle @gitea {
+                    reverse_proxy https://gitea.matheusplinta.com
                   }
 
                   handle {
