@@ -111,32 +111,6 @@ in
         enable = true;
         internalInterfaces = [ "ve-+" ];
         externalInterface = hostNic;
-        forwardPorts = [
-          {
-            destination = "192.168.100.11:80";
-            proto = "tcp";
-            sourcePort = 80;
-          }
-          {
-            destination = "192.168.100.11:443";
-            proto = "tcp";
-            sourcePort = 443;
-          }
-        ];
-      };
-
-      wireguard.enable = true;
-      wireguard.interfaces.wg0 = {
-        ips = [ "10.69.69.1/24" ];
-        listenPort = 51820;
-        privateKeyFile = "${config.sops.secrets.cloudy-private_wg.path}";
-        peers = [
-          {
-            publicKey = "urDeyjQQPARSSxK/J/WKH3m46Xg0zQjhCHwiWP2LEnM=";
-            allowedIPs = [ "10.69.69.2/32" "10.0.3.0/24" ];
-            persistentKeepalive = 20;
-          }
-        ];
       };
     };
 
@@ -160,7 +134,13 @@ in
       reverseProxy = common // {
         hostAddress = "192.168.100.10";
         localAddress = "192.168.100.11";
+        forwardPorts = [
+          { containerPort = 80; hostPort = 80; protocol = "tcp"; }
+          { containerPort = 443; hostPort = 443; protocol = "tcp"; }
+          { containerPort = 51820; hostPort = 51820; protocol = "udp"; }
+        ];
 
+        bindMounts."${config.sops.secrets.cloudy-private_wg.path}".isReadOnly = true;
         bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
         bindMounts."/var/lib/caddy:idmap" = {
           hostPath = "/persist/containers/reverseProxy/caddy";
@@ -171,8 +151,24 @@ in
           { ... }:
           {
             system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
-
+            networking = {
+              wireguard.enable = true;
+              wireguard.interfaces.wg0 = {
+                ips = [ "10.69.69.1/24" ];
+                listenPort = 51820;
+                privateKeyFile = "${config.sops.secrets.cloudy-private_wg.path}";
+                peers = [
+                  {
+                    publicKey = "urDeyjQQPARSSxK/J/WKH3m46Xg0zQjhCHwiWP2LEnM=";
+                    allowedIPs = [ "10.69.69.2/32" "10.0.3.0/24" ];
+                    persistentKeepalive = 20;
+                  }
+                ];
+              };
+              firewall.enable = false;
+              nameservers = [ "10.0.3.2" ];
+            };
+                        
             services.caddy = {
               enable = true;
               package = pkgs.caddy.withPlugins {
@@ -218,6 +214,11 @@ in
                       mfplinta {env.HTTP_AUTH_PWD}
                     }
                     reverse_proxy 192.168.101.11:8428
+                  }
+
+                  @ha host ha.matheusplinta.com
+                  handle @ha {
+                    reverse_proxy https://ha.matheusplinta.com
                   }
 
                   handle {
