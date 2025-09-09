@@ -19,6 +19,8 @@ let
           git config --global --add safe.directory '*'
           git pull
           ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
+          chown -R django:django media staticfiles
+          chmod -R 755 media staticfiles
           systemctl restart django-gunicorn.service
       else
           echo "manage.py or .git not found in current dir"
@@ -243,14 +245,14 @@ in
                     reverse_proxy 192.168.101.11:8428
                   }
 
+                  @gitea host gitea.matheusplinta.com
+                  handle @gitea {
+                    reverse_proxy 192.168.104.11:3000
+                  }
+
                   @ha host ha.matheusplinta.com
                   handle @ha {
                     reverse_proxy https://ha.matheusplinta.com
-                  }
-
-                  @gitea host gitea.matheusplinta.com
-                  handle @gitea {
-                    reverse_proxy https://gitea.matheusplinta.com
                   }
 
                   @vaultwarden host vaultwarden.matheusplinta.com
@@ -261,11 +263,6 @@ in
                   @nextcloud host nextcloud.matheusplinta.com
                   handle @nextcloud {
                     reverse_proxy https://nextcloud.matheusplinta.com
-                  }
-
-                  @gitea host gitea.matheusplinta.com
-                  handle @gitea {
-                    reverse_proxy 192.168.104.11:3000
                   }
 
                   handle {
