@@ -252,6 +252,11 @@ in
                     reverse_proxy https://nextcloud.matheusplinta.com
                   }
 
+                  @gitea hpst gitea.matheusplinta.com
+                  handle @gitea {
+                    reverse_proxy 192.168.104.11:3000
+                  }
+
                   handle {
                     abort
                   }
