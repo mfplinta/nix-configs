@@ -20,7 +20,6 @@ let
           git pull
           ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
           chown -R django:django media staticfiles
-          chmod -R 755 media staticfiles
           systemctl restart django-gunicorn.service
       else
           echo "manage.py or .git not found in current dir"
@@ -30,6 +29,7 @@ let
   caddy-webserver-cfg = ''
     :8000 {
       encode gzip
+      log
 
       handle_path /media/* {
         root * /app/media
@@ -390,7 +390,7 @@ in
             };
 
             systemd.tmpfiles.rules = [
-              "d /app 0700 django django -"
+              "d /app 0644 django django -"
             ];
 
             systemd.services.django-gunicorn =
@@ -445,7 +445,7 @@ in
             };
 
             systemd.tmpfiles.rules = [
-              "d /app 0700 django django -"
+              "d /app 0644 django django -"
             ];
 
             systemd.services.django-gunicorn =
