@@ -496,6 +496,7 @@ in
               };
             };
           };
+      };
     };
 
   services.endlessh = {
