@@ -105,6 +105,7 @@
             jq
             smartmontools
             netcat-gnu
+            sops
           ];
         }
         (lib.mkIf config.myCfg.vmagentEnable {
