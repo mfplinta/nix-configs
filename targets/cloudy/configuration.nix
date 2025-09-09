@@ -39,6 +39,17 @@ let
       }
     }
   '';
+  caddy-django-env = with pkgs.python3Packages;
+    with pkgs;
+    python3.withPackages (ps: with ps; [
+        django
+        gunicorn
+        pillow
+        django-markdownx
+        whitenoise
+        (django-imagekit ps)
+        (django-turnstile ps)
+      ]);
 in
 {
   imports = [
@@ -397,7 +408,7 @@ in
                   Group = "django";
                   WorkingDirectory = "/app";
                   EnvironmentFile = [ config.sops.templates.env_blog.path ];
-                  ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 matheusplintacom.wsgi:application";
+                  ExecStart = "${caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 matheusplintacom.wsgi:application";
                   Restart = "always";
                 };
               };
@@ -452,7 +463,7 @@ in
                   Group = "django";
                   WorkingDirectory = "/app";
                   EnvironmentFile = [ config.sops.templates.env_ots.path ];
-                  ExecStart = "${pkgs.caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
+                  ExecStart = "${caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
                   Restart = "always";
                 };
               };
