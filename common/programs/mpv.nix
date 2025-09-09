@@ -29,6 +29,8 @@
           gpu-api = "vulkan";
           force-window = "yes";
           loop-file = "inf";
+          save-position-on-quit = "yes";
+          keep-open = "yes";
 
           # uosc
           osd-bar = "no";
