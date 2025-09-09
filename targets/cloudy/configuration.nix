@@ -29,7 +29,6 @@ let
   caddy-webserver-cfg = ''
     :8000 {
       encode gzip
-      log
 
       handle_path /media/* {
         root * /app/media

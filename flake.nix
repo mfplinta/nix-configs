@@ -151,17 +151,6 @@
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
                     django-imagekit = ps: ps.callPackage ./packages/django-imagekit.nix { };
                     django-turnstile = ps: ps.callPackage ./packages/django-turnstile.nix { };
-                    caddy-django-env = with prev.python3Packages;
-                      with prev;
-                      python3.withPackages (ps: with ps; [
-                          django
-                          gunicorn
-                          pillow
-                          django-markdownx
-                          whitenoise
-                          (django-imagekit ps)
-                          (django-turnstile ps)
-                        ]);
                   })
                 ];
                 networking.hostName = name;
