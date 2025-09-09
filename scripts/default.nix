@@ -20,4 +20,12 @@ with pkgs;
       echo -n '", "percentage": '"$(brillo)"'}'
     '';
   };
+  get-current-io-util = writeShellApplication {
+    name = "get-current-io-util";
+    runtimeInputs = [ sysstat ];
+    text = ''
+      util=$(iostat -dx 1 2 | awk '/^nvme0n1/ {val=$NF} END{print val}')
+      printf '{"percentage":%s,"tooltip":"nvme0n1 IO: %s%%"}\n' "$util" "$util"
+    '';
+  };
 }

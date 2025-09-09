@@ -112,12 +112,22 @@ in
         internalInterfaces = [ "ve-+" ];
         externalInterface = hostNic;
       };
+      firewall = {
+        enable = true;
+        allowedTCPPorts = [
+          5201 # Probe point 
+        ];
+        allowedUDPPorts = [
+          5201 # Probe point
+        ];
+      };
     };
 
   systemd.tmpfiles.rules = [
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
     "d /persist/containers/ws-blog 0600 root root -"
     "d /persist/containers/ws-ots 0600 root root -"
+    "d /persist/containers/gitea 0600 root root -"
   ];
 
   containers =
@@ -230,6 +240,16 @@ in
                   @gitea host gitea.matheusplinta.com
                   handle @gitea {
                     reverse_proxy https://gitea.matheusplinta.com
+                  }
+
+                  @vaultwarden host vaultwarden.matheusplinta.com
+                  handle @vaultwarden {
+                    reverse_proxy https://vaultwarden.matheusplinta.com
+                  }
+
+                  @nextcloud host nextcloud.matheusplinta.com
+                  handle @nextcloud {
+                    reverse_proxy https://nextcloud.matheusplinta.com
                   }
 
                   handle {
@@ -440,6 +460,37 @@ in
             users.groups.django = {};
           };
       };
+
+      gitea = common // {
+        hostAddress = "192.168.104.10";
+        localAddress = "192.168.104.11";
+
+        bindMounts."/var/lib/gitea:idmap" = {
+          hostPath = "/persist/containers/gitea";
+          isReadOnly = false;
+        };
+
+        config =
+          { ... }:
+          {
+            system.stateVersion = config.system.stateVersion;
+            networking.firewall.enable = false;
+
+            services.gitea = {
+              enable = true;
+              stateDir = "/var/lib/gitea";
+              settings = {
+                actions.ENABLED = true;
+                other.SHOW_FOOTER_VERSION = false;
+                session.COOKIE_SECURE = true;
+                server.ROOT_URL = "https://gitea.matheusplinta.com/";
+                "service.explore".DISABLE_USERS_PAGE = true;
+                "service.explore".DISABLE_ORGANIZATIONS_PAGE = true;
+                service.DISABLE_REGISTRATION = true;
+                repository.DISABLE_STARS = true;
+              };
+            };
+          };
     };
 
   services.endlessh = {

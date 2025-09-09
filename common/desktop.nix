@@ -121,7 +121,7 @@
                     "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
                     "${mod}_SHIFT, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
                     "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(echo -e \"${replaceStrings ["\n"] ["\\n"] cmdHelp}\")\""
-                    # Scroll through workspacesfiberna
+                    # Scroll through workspaces
                     "${mod}, mouse_down, workspace, e+1"
                     "${mod}, mouse_up, workspace, e-1"
                   ]
@@ -219,6 +219,17 @@
                   onScrollUp = "brillo -e -S $(($(printf '%.0f\n' $(brillo))+5))";
                   onScrollDown = "brillo -e -S $(($(printf '%.0f\n' $(brillo))-5))";
                 };
+              };
+              "custom/ioperc" = {
+                icon = [ "󰒋" ];
+                label = "{percentage}%";
+                tooltip = "{tooltip}";
+                truncationSize = -1;
+                execute = "${lib.getExe pkgs.myScripts.get-current-io-util}";
+                executeOnAction = "";
+                interval = 1000;
+                hideOnEmpty = true;
+                scrollThreshold = 1;
               };
             };
 

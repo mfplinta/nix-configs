@@ -212,6 +212,7 @@ in
                 "cpu"
                 "ram"
                 "storage"
+                "custom/ioperc"
                 "kbinput"
               ];
               middle = [
