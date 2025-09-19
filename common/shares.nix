@@ -71,7 +71,7 @@
             workgroup = "WORKGROUP";
             security = "user";
             "acl allow execute always" = true;
-            "hosts allow" = "10.0.1. 127.0.0.1 localhost";
+            "hosts allow" = "10.0.1. 127.0.0.1 localhost 192.168.122.";
             # Symlink support
             "unix extensions" = "no";
             "follow symlinks" = "yes";
