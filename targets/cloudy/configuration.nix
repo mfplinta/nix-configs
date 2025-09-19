@@ -293,6 +293,27 @@ in
                     abort
                   }
                 }
+
+                mastermovement.us {
+                  tls {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+
+                  respond "Site is down for maintenance, please check back later."
+                }
+
+                *.mastermovement.us {
+                  tls {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+
+                  @www host www.mastermovement.us
+                  handle @www {
+                    respond "Site is down for maintenance, please check back later."
+                  }
+                }
               '';
             };
           };
