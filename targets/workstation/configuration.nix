@@ -40,15 +40,21 @@ in
 
   boot.kernelParams = [
     "video=${centerMonitor}:3840x2160@60"
+    "intel_iommu=on"
+    "vfio-pci.ids=10de:1cb6,10de:0fb9"
   ];
   boot.blacklistedKernelModules = [ "nouveau" ];
   boot.initrd.kernelModules = [
     "e1000e"
   ];
-  boot.kernelModules = [ "ddcci-backlight" ];
+  boot.kernelModules = [ "ddcci-backlight" "kvmfr" ];
   boot.extraModulePackages = with config.boot.kernelPackages; [
     ddcci-driver
+    kvmfr
   ];
+  boot.extraModprobeConfig = ''
+    options kvmfr static_size_mb=128
+  '';
 
   # Encrypted root
   boot.initrd.network.flushBeforeStage2 = true;
@@ -75,6 +81,7 @@ in
       TAG+="ddcci",\
       TAG+="systemd",\
       ENV{SYSTEMD_WANTS}+="ddcci@$kernel.service"
+    SUBSYSTEM=="kvmfr", OWNER="matheus", GROUP="kvm", MODE="0660"
   '';
   systemd.services."ddcci@" = {
     scriptArgs = "%i";
@@ -110,8 +117,22 @@ in
   };
 
   programs.virt-manager.enable = true;
-  virtualisation.libvirtd.enable = true;
-  virtualisation.spiceUSBRedirection.enable = true;
+  virtualisation = {
+    libvirtd.enable = true;
+    libvirtd.qemu = {
+      swtpm.enable = true;
+      verbatimConfig = ''
+        cgroup_device_acl = [
+          "/dev/null", "/dev/full", "/dev/zero",
+          "/dev/random", "/dev/urandom",
+          "/dev/ptmx", "/dev/kvm",
+          "/dev/userfaultfd",
+          "/dev/kvmfr0"
+        ]
+      '';
+    };
+    spiceUSBRedirection.enable = true;
+  };
 
   environment.sessionVariables = {
     # Nvidia-specific
@@ -246,6 +267,8 @@ in
           uris = ["qemu:///system"];
         };
       };
+
+      programs.looking-glass-client.enable = true;
 
       home.packages =
         with pkgs;
