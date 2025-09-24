@@ -7,50 +7,124 @@
 }:
 
 let
-
-  update-website-script = with pkgs; writeShellApplication {
-    name = "update-website";
-    runtimeInputs = [ git ];
-    text = ''
-      set -e
-      set -x
-
-      if [ -f manage.py ] && [ -d .git ]; then
-          git config --global --add safe.directory '*'
-          git pull
-          ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
-          chown -R django:django media staticfiles
-          systemctl restart django-gunicorn.service
-      else
-          echo "manage.py or .git not found in current dir"
-      fi
-    '';
+  addresses = {
+    reverseProxy = {
+      host = "192.168.100.10";
+      local = "192.168.100.11";
+    };
+    monitoring = {
+      host = "192.168.101.10";
+      local = "192.168.101.11";
+    };
+    gitea = {
+      host = "192.168.104.10";
+      local = "192.168.104.11";
+    };
+    ws-blog = {
+      host = "192.168.102.10";
+      local = "192.168.102.11";
+    };
+    ws-ots = {
+      host = "192.168.103.10";
+      local = "192.168.103.11";
+    };
+    ws-mastermovement = {
+      host = "192.168.105.10";
+      local = "192.168.105.11";
+    };
   };
-  caddy-webserver-cfg = ''
-    :8000 {
-      encode gzip
+  websiteConfig =
+    {appName, envFile, extra ? {}}:
+    { ... }:
+    let
+      caddy-django-env =
+        with pkgs.python3Packages;
+        with pkgs;
+        python3.withPackages (
+          ps: with ps; [
+            django
+            gunicorn
+            pillow
+            django-markdownx
+            whitenoise
+            (django-imagekit ps)
+            (django-turnstile ps)
+          ]
+        );
+    in
+    lib.mkMerge [
+      {
+        system.stateVersion = config.system.stateVersion;
+        networking.firewall.enable = false;
 
-      handle_path /media/* {
-        root * /app/media
-        file_server
-      }
+        environment.systemPackages = with pkgs; [
+          (writeShellApplication {
+            name = "update-website";
+            runtimeInputs = [ git ];
+            text = ''
+              set -e
+              set -x
 
-      handle {
-        reverse_proxy 127.0.0.1:9000
+              if [ -f manage.py ] && [ -d .git ]; then
+                  git config --global --add safe.directory '*'
+                  git pull
+                  ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
+                  chown -R django:django media staticfiles
+                  systemctl restart django-gunicorn.service
+              else
+                  echo "manage.py or .git not found in current dir"
+              fi
+            '';
+          })
+        ];
+
+        services.caddy = {
+          enable = true;
+          configFile = pkgs.writeText "Caddyfile" ''
+            :8000 {
+              encode gzip
+
+              handle_path /media/* {
+                root * /app/media
+                file_server
+              }
+
+              handle {
+                reverse_proxy 127.0.0.1:9000
+              }
+            }
+          '';
+        };
+
+        systemd.tmpfiles.rules = [
+          "d /app 0755 django django -"
+        ];
+
+        systemd.services.django-gunicorn = {
+          description = "Gunicorn service for Django app";
+          after = [ "network.target" "systemd-tmpfiles-setup.service" ];
+          wantedBy = [ "multi-user.target" ];
+          environment.DJANGO_DEBUG = "False";
+          serviceConfig = {
+            Type = "simple";
+            User = "django";
+            Group = "django";
+            WorkingDirectory = "/app";
+            EnvironmentFile = [ envFile ];
+            ExecStart = "${caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 ${appName}.wsgi:application";
+            Restart = "always";
+          };
+        };
+
+        users.users.django = {
+          isSystemUser = true;
+          group = "django";
+        };
+
+        users.groups.django = { };
       }
-    }
-  '';
-  caddy-django-env = with pkgs.python3Packages;
-    with pkgs;
-    python3.withPackages (ps: with ps; [
-        django
-        gunicorn
-        pillow
-        django-markdownx
-        whitenoise
-        (django-imagekit ps)
-        (django-turnstile ps)
-      ]);
+      extra
+    ];
 in
 {
   imports = [
@@ -72,12 +146,19 @@ in
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
   sops.secrets.cloudy-http_auth_bcrypt = { };
-  sops.secrets.cloudy-grafana_pwd = { mode = "0444"; };
+  sops.secrets.cloudy-grafana_pwd = {
+    mode = "0444";
+  };
   sops.secrets.cloudy-blog_secretkey = { };
   sops.secrets.cloudy-ots_secretkey = { };
   sops.secrets.cloudy-ots_turnstile_sitekey = { };
   sops.secrets.cloudy-ots_turnstile_secret = { };
-  sops.secrets.cloudy-private_wg = { mode = "0444"; };
+  sops.secrets.cloudy-mm_secretkey = { };
+  sops.secrets.cloudy-mm_turnstile_sitekey = { };
+  sops.secrets.cloudy-mm_turnstile_secret = { };
+  sops.secrets.cloudy-private_wg = {
+    mode = "0444";
+  };
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
@@ -97,6 +178,14 @@ in
       SECRET_KEY=${config.sops.placeholder.cloudy-ots_secretkey}
       TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-ots_turnstile_sitekey}
       TURNSTILE_SECRET=${config.sops.placeholder.cloudy-ots_turnstile_secret}
+    '';
+  };
+  sops.templates.env_mastermovement = {
+    mode = "0444";
+    content = ''
+      SECRET_KEY=${config.sops.placeholder.cloudy-mm_secretkey}
+      TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-mm_turnstile_sitekey}
+      TURNSTILE_SECRET=${config.sops.placeholder.cloudy-mm_turnstile_secret}
     '';
   };
 
@@ -127,7 +216,7 @@ in
       firewall = {
         enable = true;
         allowedTCPPorts = [
-          5201 # Probe point 
+          5201 # Probe point
         ];
         allowedUDPPorts = [
           5201 # Probe point
@@ -138,7 +227,9 @@ in
   systemd.tmpfiles.rules = [
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
     "d /persist/containers/ws-blog 0600 root root -"
+    "d /persist/containers/ws-blog/obsidian 0600 root root -"
     "d /persist/containers/ws-ots 0600 root root -"
+    "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
   ];
 
@@ -154,12 +245,24 @@ in
     in
     {
       reverseProxy = common // {
-        hostAddress = "192.168.100.10";
-        localAddress = "192.168.100.11";
+        hostAddress = addresses.reverseProxy.host;
+        localAddress = addresses.reverseProxy.local;
         forwardPorts = [
-          { containerPort = 80; hostPort = 80; protocol = "tcp"; }
-          { containerPort = 443; hostPort = 443; protocol = "tcp"; }
-          { containerPort = 51820; hostPort = 51820; protocol = "udp"; }
+          {
+            containerPort = 80;
+            hostPort = 80;
+            protocol = "tcp";
+          }
+          {
+            containerPort = 443;
+            hostPort = 443;
+            protocol = "tcp";
+          }
+          {
+            containerPort = 51820;
+            hostPort = 51820;
+            protocol = "udp";
+          }
         ];
 
         bindMounts."${config.sops.secrets.cloudy-private_wg.path}".isReadOnly = true;
@@ -182,7 +285,10 @@ in
                 peers = [
                   {
                     publicKey = "urDeyjQQPARSSxK/J/WKH3m46Xg0zQjhCHwiWP2LEnM=";
-                    allowedIPs = [ "10.69.69.2/32" "10.0.3.0/24" ];
+                    allowedIPs = [
+                      "10.69.69.2/32"
+                      "10.0.3.0/24"
+                    ];
                     persistentKeepalive = 20;
                   }
                 ];
@@ -190,7 +296,7 @@ in
               firewall.enable = false;
               nameservers = [ "10.0.3.2" ];
             };
-                        
+
             services.caddy = {
               enable = true;
               package = pkgs.caddy.withPlugins {
@@ -213,7 +319,7 @@ in
                 matheusplinta.com {
                   ${cf}
 
-                  reverse_proxy 192.168.102.11:8000
+                  reverse_proxy ${addresses.ws-blog.local}:8000
                 }
 
                 *.matheusplinta.com {
@@ -229,14 +335,14 @@ in
                     }
                   }
 
-                  @blog host www.matheusplinta.com
-                  handle @blog {
-                    reverse_proxy 192.168.102.11:8000
+                  @www host www.matheusplinta.com
+                  handle @www {
+                    reverse_proxy ${addresses.ws-blog.local}:8000
                   }
 
                   @grafana host grafana.matheusplinta.com
                   handle @grafana {
-                    reverse_proxy 192.168.101.11:3000
+                    reverse_proxy ${addresses.monitoring.local}:3000
                   }
 
                   @victoriametrics host victoriametrics.matheusplinta.com
@@ -244,12 +350,12 @@ in
                     basic_auth {
                       mfplinta {env.HTTP_AUTH_PWD}
                     }
-                    reverse_proxy 192.168.101.11:8428
+                    reverse_proxy ${addresses.monitoring.local}:8428
                   }
 
                   @gitea host gitea.matheusplinta.com
                   handle @gitea {
-                    reverse_proxy 192.168.104.11:3000
+                    reverse_proxy ${addresses.gitea.local}:3000
                   }
 
                   @ha host ha.matheusplinta.com
@@ -275,15 +381,15 @@ in
                 optimaltech.us {
                   ${cf}
 
-                  reverse_proxy 192.168.103.11:8000
+                  reverse_proxy ${addresses.ws-ots.local}:8000
                 }
 
                 *.optimaltech.us {
                   ${cf}
 
-                  @ots host www.optimaltech.us
-                  handle @ots {
-                    reverse_proxy 192.168.103.11:8000
+                  @www host www.optimaltech.us
+                  handle @www {
+                    reverse_proxy ${addresses.ws-ots.local}:8000
                   }
 
                   handle {
@@ -294,7 +400,7 @@ in
                 mastermovement.us {
                   ${cf}
 
-                  respond "Site is down for maintenance, please check back later."
+                  reverse_proxy ${addresses.ws-mastermovement.local}:8000
                 }
 
                 *.mastermovement.us {
@@ -302,7 +408,11 @@ in
 
                   @www host www.mastermovement.us
                   handle @www {
-                    respond "Site is down for maintenance, please check back later."
+                    reverse_proxy ${addresses.ws-mastermovement.local}:8000
+                  }
+
+                  handle {
+                    abort
                   }
                 }
               '';
@@ -311,8 +421,8 @@ in
       };
 
       monitoring = common // {
-        hostAddress = "192.168.101.10";
-        localAddress = "192.168.101.11";
+        hostAddress = addresses.monitoring.host;
+        localAddress = addresses.monitoring.local;
 
         bindMounts."${config.sops.secrets.cloudy-grafana_pwd.path}".isReadOnly = true;
 
@@ -346,14 +456,16 @@ in
               };
               provision = {
                 enable = true;
-                dashboards.settings.providers = [{
-                  name = "my dashboards";
-                  disableDeletion = true;
-                  options = {
-                    path = "/etc/grafana-dashboards";
-                    foldersFromFilesStructure = true;
-                  };
-                }];
+                dashboards.settings.providers = [
+                  {
+                    name = "my dashboards";
+                    disableDeletion = true;
+                    options = {
+                      path = "/etc/grafana-dashboards";
+                      foldersFromFilesStructure = true;
+                    };
+                  }
+                ];
                 datasources.settings.datasources = [
                   {
                     name = "VictoriaMetrics";
@@ -376,8 +488,8 @@ in
       };
 
       ws-blog = common // {
-        hostAddress = "192.168.102.10";
-        localAddress = "192.168.102.11";
+        hostAddress = addresses.ws-blog.host;
+        localAddress = addresses.ws-blog.local;
 
         bindMounts."${config.sops.templates.env_blog.path}".isReadOnly = true;
         bindMounts."/app:idmap" = {
@@ -385,54 +497,15 @@ in
           isReadOnly = false;
         };
 
-        config =
-          { ... }:
-          {
-            system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
-
-            environment.systemPackages = [
-              update-website-script
-            ];
-
-            services.caddy = {
-              enable = true;
-              configFile = pkgs.writeText "Caddyfile" caddy-webserver-cfg;
-            };
-
-            systemd.tmpfiles.rules = [
-              "d /app 0755 django django -"
-            ];
-
-            systemd.services.django-gunicorn =
-              {
-                description = "Gunicorn service for Django app";
-                after = [ "network.target" ];
-                wantedBy = [ "multi-user.target" ];
-                environment.DJANGO_DEBUG = "False";
-                serviceConfig = {
-                  Type = "simple";
-                  User = "django";
-                  Group = "django";
-                  WorkingDirectory = "/app";
-                  EnvironmentFile = [ config.sops.templates.env_blog.path ];
-                  ExecStart = "${caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 matheusplintacom.wsgi:application";
-                  Restart = "always";
-                };
-              };
-
-            users.users.django = {
-              isSystemUser = true;
-              group = "django";
-            };
-
-            users.groups.django = {};
-          };
+        config = websiteConfig {
+          appName = "matheusplintacom";
+          envFile = config.sops.templates.env_blog.path;
+        };
       };
 
       ws-ots = common // {
-        hostAddress = "192.168.103.10";
-        localAddress = "192.168.103.11";
+        hostAddress = addresses.ws-ots.host;
+        localAddress = addresses.ws-ots.local;
 
         bindMounts."${config.sops.templates.env_ots.path}".isReadOnly = true;
         bindMounts."/app:idmap" = {
@@ -440,54 +513,25 @@ in
           isReadOnly = false;
         };
 
-        config =
-          { ... }:
-          {
-            system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
+        config = websiteConfig { appName = "otswebsite"; envFile = config.sops.templates.env_ots.path; };
+      };
 
-            environment.systemPackages = [
-              update-website-script
-            ];
+      ws-mastermovement = common // {
+        hostAddress = addresses.ws-mastermovement.host;
+        localAddress = addresses.ws-mastermovement.local;
 
-            services.caddy = {
-              enable = true;
-              configFile = pkgs.writeText "Caddyfile" caddy-webserver-cfg;
-            };
+        bindMounts."${config.sops.templates.env_mastermovement.path}".isReadOnly = true;
+        bindMounts."/app:idmap" = {
+          hostPath = "/persist/containers/ws-mastermovement";
+          isReadOnly = false;
+        };
 
-            systemd.tmpfiles.rules = [
-              "d /app 0755 django django -"
-            ];
-
-            systemd.services.django-gunicorn =
-              {
-                description = "Gunicorn service for Django app";
-                after = [ "network.target" ];
-                wantedBy = [ "multi-user.target" ];
-                environment.DJANGO_DEBUG = "False";
-                serviceConfig = {
-                  Type = "simple";
-                  User = "django";
-                  Group = "django";
-                  WorkingDirectory = "/app";
-                  EnvironmentFile = [ config.sops.templates.env_ots.path ];
-                  ExecStart = "${caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 otswebsite.wsgi:application";
-                  Restart = "always";
-                };
-              };
-
-            users.users.django = {
-              isSystemUser = true;
-              group = "django";
-            };
-
-            users.groups.django = {};
-          };
+        config = websiteConfig { appName = "mastermovement"; envFile = config.sops.templates.env_mastermovement.path; };
       };
 
       gitea = common // {
-        hostAddress = "192.168.104.10";
-        localAddress = "192.168.104.11";
+        hostAddress = addresses.gitea.host;
+        localAddress = addresses.gitea.local;
 
         bindMounts."/var/lib/gitea:idmap" = {
           hostPath = "/persist/containers/gitea";
@@ -499,6 +543,10 @@ in
           {
             system.stateVersion = config.system.stateVersion;
             networking.firewall.enable = false;
+
+            systemd.tmpfiles.rules = [
+              "d /var/lib/gitea 0755 gitea gitea -"
+            ];
 
             services.gitea = {
               enable = true;
@@ -518,6 +566,19 @@ in
       };
     };
 
+  virtualisation.docker.enable = true;
+  virtualisation.oci-containers.backend = "docker";
+  virtualisation.oci-containers.containers.quartz = {
+    autoStart = true;
+    image = "docker.io/ilkersigirci/dockerized-quartz:latest";
+    environment = {
+      GIT_BRANCH = "jackyzha0/fix-docker";
+      AUTO_REBUILD = "true";
+    };
+    volumes = [ "/persist/containers/ws-blog/obsidian:/vault:ro" ];
+    ports = [ "127.0.0.1:8080:80" ];
+  };
+
   services.endlessh = {
     enable = true;
     port = 22;
@@ -527,5 +588,5 @@ in
   services.openssh.ports = [ 22000 ];
 
   myCfg.vmagentEnable = true;
-  myCfg.vmagentRemoteWriteUrl = "http://192.168.101.11:8428/api/v1/write";
+  myCfg.vmagentRemoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
 }
