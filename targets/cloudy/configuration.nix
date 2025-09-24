@@ -200,21 +200,24 @@ in
                 hash = "sha256-S1JN7brvH2KIu7DaDOH1zij3j8hWLLc0HdnUc+L89uU=";
               };
               environmentFile = config.sops.templates.env_caddy.path;
-              configFile = pkgs.writeText "Caddyfile" ''
+              configFile = 
+                let
+                  cf = ''
+                    tls {
+                      dns cloudflare {env.CF_API_KEY}
+                      resolvers 1.1.1.1
+                    }
+                  '';
+                in
+                pkgs.writeText "Caddyfile" ''
                 matheusplinta.com {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
+                  ${cf}
 
                   reverse_proxy 192.168.102.11:8000
                 }
 
                 *.matheusplinta.com {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
+                  ${cf}
 
                   @debug host debug.matheusplinta.com
                   handle @debug {
@@ -270,19 +273,13 @@ in
                 }
 
                 optimaltech.us {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
+                  ${cf}
 
                   reverse_proxy 192.168.103.11:8000
                 }
 
                 *.optimaltech.us {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
+                  ${cf}
 
                   @ots host www.optimaltech.us
                   handle @ots {
@@ -295,19 +292,13 @@ in
                 }
 
                 mastermovement.us {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
+                  ${cf}
 
                   respond "Site is down for maintenance, please check back later."
                 }
 
                 *.mastermovement.us {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
+                  ${cf}
 
                   @www host www.mastermovement.us
                   handle @www {
