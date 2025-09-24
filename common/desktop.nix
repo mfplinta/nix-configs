@@ -388,6 +388,8 @@
 
           pavucontrol
           galaxy-buds-client
+          obsidian
+          android-tools
         ];
       };
     };
