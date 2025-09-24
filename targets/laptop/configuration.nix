@@ -29,6 +29,8 @@ in
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
     "mem_sleep_default=deep"
+    "i915.force_probe=!9a49"
+    "xe.force_probe=9a49"
   ];
   boot.initrd.kernelModules = [ "i915" ];
 
@@ -36,6 +38,7 @@ in
     vaapiIntel
     intel-media-driver
     vpl-gpu-rt
+    intel-compute-runtime-legacy1
   ];
 
   services.upower.enable = true;
@@ -94,7 +97,7 @@ in
           misc.middle_click_paste = false;
         };
 
-        hyprpanel.layout = {
+        hyprpanel = {
           "bar.launcher.icon" = "";
           "bar.clock.format" = "%a %b %d  %I:%M %p";
           "bar.layouts" = {
@@ -104,6 +107,7 @@ in
                 "cpu"
                 "ram"
                 "storage"
+                "custom/ioperc"
                 "kbinput"
                 "media"
               ];
