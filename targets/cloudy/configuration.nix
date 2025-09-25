@@ -60,19 +60,25 @@ let
         environment.systemPackages = with pkgs; [
           (writeShellApplication {
             name = "update-website";
-            runtimeInputs = [ git ];
+            runtimeInputs = [ git caddy-django-env ];
             text = ''
               set -e
               set -x
+              cd /app/
 
-              if [ -f manage.py ] && [ -d .git ]; then
-                  git config --global --add safe.directory '*'
-                  git pull
-                  ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
-                  chown -R django:django media staticfiles
-                  systemctl restart django-gunicorn.service
+              if [ "$USER" = "django" ]
+              then
+                git pull
+                python manage.py collectstatic --noinput
+              elif [ "$USER" = "root" ]
+              then
+                git config --global --add safe.directory '*'
+                chown -R django:django .
+                sudo -u django "$0" "$@"
+                systemctl restart django-gunicorn.service
               else
-                  echo "manage.py or .git not found in current dir"
+                echo "Please run as sudo or django"
+                exit 1
               fi
             '';
           })
