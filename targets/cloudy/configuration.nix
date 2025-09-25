@@ -226,8 +226,9 @@ in
 
   systemd.tmpfiles.rules = [
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
-    "d /persist/containers/ws-blog 0600 root root -"
-    "d /persist/containers/ws-blog/obsidian 0600 root root -"
+    "d /persist/containers/ws-blog/app 0600 root root -"
+    "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
+    "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
     "d /persist/containers/ws-ots 0600 root root -"
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
@@ -337,7 +338,16 @@ in
 
                   @www host www.matheusplinta.com
                   handle @www {
+                    redir /blog /blog/
+                    handle_path /blog/* {
+                      reverse_proxy ${addresses.reverseProxy.host}:8080
+                    }
                     reverse_proxy ${addresses.ws-blog.local}:8000
+                  }
+
+                  @blog host blog.matheusplinta.com
+                  handle @blog {
+                    reverse_proxy ${addresses.reverseProxy.host}:8080
                   }
 
                   @grafana host grafana.matheusplinta.com
@@ -493,7 +503,7 @@ in
 
         bindMounts."${config.sops.templates.env_blog.path}".isReadOnly = true;
         bindMounts."/app:idmap" = {
-          hostPath = "/persist/containers/ws-blog";
+          hostPath = "/persist/containers/ws-blog/app";
           isReadOnly = false;
         };
 
@@ -575,9 +585,14 @@ in
       GIT_BRANCH = "jackyzha0/fix-docker";
       AUTO_REBUILD = "true";
     };
-    volumes = [ "/persist/containers/ws-blog/obsidian:/vault:ro" ];
-    ports = [ "127.0.0.1:8080:80" ];
+    volumes = [
+      "/persist/containers/ws-blog/quartz-vault:/vault:ro"
+      "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz"
+    ];
+    ports = [ "8080:80" ];
   };
+
+  services.fail2ban.enable = true;
 
   services.endlessh = {
     enable = true;
