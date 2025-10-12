@@ -60,19 +60,25 @@ let
         environment.systemPackages = with pkgs; [
           (writeShellApplication {
             name = "update-website";
-            runtimeInputs = [ git ];
+            runtimeInputs = [ git caddy-django-env ];
             text = ''
               set -e
               set -x
+              cd /app/
 
-              if [ -f manage.py ] && [ -d .git ]; then
-                  git config --global --add safe.directory '*'
-                  git pull
-                  ${lib.getExe caddy-django-env} manage.py collectstatic --noinput
-                  chown -R django:django media staticfiles
-                  systemctl restart django-gunicorn.service
+              if [ "$USER" = "django" ]
+              then
+                git pull
+                python manage.py collectstatic --noinput
+              elif [ "$USER" = "root" ]
+              then
+                git config --global --add safe.directory '*'
+                chown -R django:django .
+                sudo -u django "$0" "$@"
+                systemctl restart django-gunicorn.service
               else
-                  echo "manage.py or .git not found in current dir"
+                echo "Please run as sudo or django"
+                exit 1
               fi
             '';
           })
@@ -315,6 +321,20 @@ in
                       resolvers 1.1.1.1
                     }
                   '';
+                  block-bots = ''
+                    @botForbidden header_regexp User-Agent "(?i)AdsBot-Google|Amazonbot|anthropic-ai|Applebot|Applebot-Extended|AwarioRssBot|AwarioSmartBot|Bytespider|CCBot|ChatGPT|ChatGPT-User|Claude-Web|ClaudeBot|cohere-ai|DataForSeoBot|Diffbot|FacebookBot|Google-Extended|GPTBot|ImagesiftBot|magpie-crawler|omgili|Omgilibot|peer39_crawler|PerplexityBot|YouBot"
+
+                    handle @botForbidden {
+                      respond /* "Access denied" 403 {
+                          close
+                      }
+                    }
+
+                    respond /robots.txt 200 {
+                                body "User-agent: *
+                    Disallow: /"
+                    }
+                  '';
                 in
                 pkgs.writeText "Caddyfile" ''
                 matheusplinta.com {
@@ -328,6 +348,7 @@ in
 
                   @debug host debug.matheusplinta.com
                   handle @debug {
+                    ${block-bots}
                     basic_auth {
                       mfplinta {env.HTTP_AUTH_PWD}
                     }
@@ -345,18 +366,15 @@ in
                     reverse_proxy ${addresses.ws-blog.local}:8000
                   }
 
-                  @blog host blog.matheusplinta.com
-                  handle @blog {
-                    reverse_proxy ${addresses.reverseProxy.host}:8080
-                  }
-
                   @grafana host grafana.matheusplinta.com
                   handle @grafana {
+                    ${block-bots}
                     reverse_proxy ${addresses.monitoring.local}:3000
                   }
 
                   @victoriametrics host victoriametrics.matheusplinta.com
                   handle @victoriametrics {
+                    ${block-bots}
                     basic_auth {
                       mfplinta {env.HTTP_AUTH_PWD}
                     }
@@ -365,21 +383,25 @@ in
 
                   @gitea host gitea.matheusplinta.com
                   handle @gitea {
+                    ${block-bots}
                     reverse_proxy ${addresses.gitea.local}:3000
                   }
 
                   @ha host ha.matheusplinta.com
                   handle @ha {
+                    ${block-bots}
                     reverse_proxy https://ha.matheusplinta.com
                   }
 
                   @vaultwarden host vaultwarden.matheusplinta.com
                   handle @vaultwarden {
+                    ${block-bots}
                     reverse_proxy https://vaultwarden.matheusplinta.com
                   }
 
                   @nextcloud host nextcloud.matheusplinta.com
                   handle @nextcloud {
+                    ${block-bots}
                     reverse_proxy https://nextcloud.matheusplinta.com
                   }
 
