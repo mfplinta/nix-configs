@@ -622,7 +622,7 @@ in
   virtualisation.oci-containers.containers = {
     quartz = {
       autoStart = true;
-      image = "docker.io/mfplinta/dockerized-quartz:latest";
+      image = "docker.io/mfplinta016/dockerized-quartz:latest";
       environment = {
         GIT_BRANCH = "jackyzha0/v4";
         AUTO_REBUILD = "true";
