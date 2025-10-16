@@ -165,6 +165,19 @@ in
   sops.secrets.cloudy-private_wg = {
     mode = "0444";
   };
+  sops.secrets.cloudy-tmdb_api = { };
+  sops.secrets.cloudy-fanart_api = { };
+  sops.secrets.cloudy-tmdb_mongodb_uri = { };
+  sops.templates.env_tmdb = {
+    mode = "0444";
+    content = ''
+      TMDB_API=${config.sops.placeholder.cloudy-tmdb_api}
+      FANART_API=${config.sops.placeholder.cloudy-fanart_api}
+      MONGODB_URI=${config.sops.placeholder.cloudy-tmdb_mongodb_uri}
+      HOST_NAME=https://tmdb-addon-stremio.matheusplinta.com
+      PORT=1337
+    '';
+  };
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
@@ -337,10 +350,10 @@ in
                   '';
                 in
                 pkgs.writeText "Caddyfile" ''
-                matheusplinta.com {
+                http://matheusplinta.com, https://matheusplinta.com {
                   ${cf}
 
-                  reverse_proxy ${addresses.ws-blog.local}:8000
+                  redir https://www.matheusplinta.com{uri} permanent
                 }
 
                 *.matheusplinta.com {
@@ -405,15 +418,21 @@ in
                     reverse_proxy https://nextcloud.matheusplinta.com
                   }
 
+                  @tmdb host tmdb-addon-stremio.matheusplinta.com
+                  handle @tmdb {
+                    ${block-bots}
+                    reverse_proxy ${addresses.reverseProxy.host}:1337
+                  }
+
                   handle {
                     abort
                   }
                 }
 
-                optimaltech.us {
+                http://optimaltech.us, https://optimaltech.us {
                   ${cf}
 
-                  reverse_proxy ${addresses.ws-ots.local}:8000
+                  redir https://www.optimaltech.us{uri} permanent 
                 }
 
                 *.optimaltech.us {
@@ -429,10 +448,10 @@ in
                   }
                 }
 
-                mastermovement.us {
+                http://mastermovement.us, https://mastermovement.us {
                   ${cf}
 
-                  reverse_proxy ${addresses.ws-mastermovement.local}:8000
+                  redir https://www.mastermovement.us{uri} permanent 
                 }
 
                 *.mastermovement.us {
@@ -600,18 +619,28 @@ in
 
   virtualisation.docker.enable = true;
   virtualisation.oci-containers.backend = "docker";
-  virtualisation.oci-containers.containers.quartz = {
-    autoStart = true;
-    image = "docker.io/mfplinta/dockerized-quartz:latest";
-    environment = {
-      GIT_BRANCH = "jackyzha0/v4";
-      AUTO_REBUILD = "true";
+  virtualisation.oci-containers.containers = {
+    quartz = {
+      autoStart = true;
+      image = "docker.io/mfplinta/dockerized-quartz:latest";
+      environment = {
+        GIT_BRANCH = "jackyzha0/v4";
+        AUTO_REBUILD = "true";
+      };
+      volumes = [
+        "/persist/containers/ws-blog/quartz-vault:/vault:ro"
+        "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz"
+      ];
+      ports = [ "8080:80" ];
     };
-    volumes = [
-      "/persist/containers/ws-blog/quartz-vault:/vault:ro"
-      "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz"
-    ];
-    ports = [ "8080:80" ];
+    tmdb-addon = {
+      autoStart = true;
+      image = "docker.io/viren070/tmdb-addon:latest";
+      environmentFiles = [
+        config.sops.templates.env_tmdb.path
+      ];
+      ports = [ "1337:1337" ];
+    };
   };
 
   services.fail2ban.enable = true;
