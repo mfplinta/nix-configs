@@ -81,6 +81,7 @@
               ms-vscode-remote.remote-ssh
               ms-vscode-remote.remote-containers
               ms-azuretools.vscode-containers
+              hashicorp.terraform
               # Visual
               catppuccin.catppuccin-vsc
               pkief.material-icon-theme
