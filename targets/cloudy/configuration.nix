@@ -602,9 +602,9 @@ in
   virtualisation.oci-containers.backend = "docker";
   virtualisation.oci-containers.containers.quartz = {
     autoStart = true;
-    image = "docker.io/ilkersigirci/dockerized-quartz:latest";
+    image = "docker.io/mfplinta/dockerized-quartz:latest";
     environment = {
-      GIT_BRANCH = "jackyzha0/fix-docker";
+      GIT_BRANCH = "jackyzha0/v4";
       AUTO_REBUILD = "true";
     };
     volumes = [
