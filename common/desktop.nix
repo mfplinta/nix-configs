@@ -445,6 +445,7 @@
         };
 
         # Reduce RAM cache for ejectable devices
+        services.udev.packages = [ pkgs.android-udev-rules ];
         services.udev.extraRules = ''
           SUBSYSTEM=="block", ACTION=="add",\
             KERNEL=="sd[a-z]",\
