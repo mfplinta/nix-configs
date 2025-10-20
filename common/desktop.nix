@@ -491,6 +491,15 @@
           serviceConfig.Type = "oneshot";
         };
 
+        systemd.services.clear-ram = {
+          enable = true;
+          wantedBy = [ "halt.target" "reboot.target" "poweroff.target" ];
+          before = [ "umount.target" "shutdown.target" ];
+          script = ''
+            ${lib.getExe pkgs.myScripts.clear-ram}
+          '';
+        };
+
         services.udisks2.enable = true;
         services.blueman.enable = true;
         services.pipewire = {
