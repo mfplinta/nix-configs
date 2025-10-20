@@ -30,20 +30,20 @@ with pkgs;
   };
   clear-ram = pkgs.writeShellApplication {
     name = "clear-ram";
-    runtimeInputs = [ utillinux gawk openssl xxd ];
+    runtimeInputs = [ coreutils-full utillinux gawk openssl xxd ];
     text = ''
       set -euo pipefail
-
       mount -o remount,size=100% /dev/shm
+      tmp=/dev/shm/memwipe
 
-      mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-      wipe_mb=$(( ((mem_kb + 1023) / 1024) - 128 ))
+      while (( $(awk '/MemAvailable/ {print $2}' /proc/meminfo) / 1024 > 2048 )); do
+          head -c 256M /dev/zero \
+              | openssl enc -aes-256-ctr \
+                -K "$(head -c32 /dev/urandom | xxd -p -c32)" \
+                -iv "$(head -c16 /dev/urandom | xxd -p -c16)" >> "$tmp" || true
+      done
 
-      openssl enc -aes-256-ctr -K "$(head -c32 /dev/urandom | xxd -p -c32)" \
-        -iv "$(head -c16 /dev/urandom | xxd -p -c16)" -in /dev/zero \
-        | dd of=/dev/shm/memwipe bs=1M count=$wipe_mb status=none iflag=fullblock || true
-
-      rm -f /dev/shm/memwipe
+      rm -f "$tmp"
     '';
   };
 }
