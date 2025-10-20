@@ -28,4 +28,22 @@ with pkgs;
       printf '{"percentage":%s,"tooltip":"nvme0n1 IO: %s%%"}\n' "$util" "$util"
     '';
   };
+  clear-ram = pkgs.writeShellApplication {
+    name = "clear-ram";
+    runtimeInputs = [ utillinux gawk openssl xxd ];
+    text = ''
+      set -euo pipefail
+
+      mount -o remount,size=100% /dev/shm
+
+      mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+      wipe_mb=$(( ((mem_kb + 1023) / 1024) - 128 ))
+
+      openssl enc -aes-256-ctr -K "$(head -c32 /dev/urandom | xxd -p -c32)" \
+        -iv "$(head -c16 /dev/urandom | xxd -p -c16)" -in /dev/zero \
+        | dd of=/dev/shm/memwipe bs=1M count=$wipe_mb status=none iflag=fullblock || true
+
+      rm -f /dev/shm/memwipe
+    '';
+  };
 }

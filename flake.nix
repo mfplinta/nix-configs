@@ -146,6 +146,7 @@
                         get-current-brightness = scripts.get-current-brightness;
                         update-website-script = scripts.update-website-script;
                         get-current-io-util = scripts.get-current-io-util;
+                        clear-ram = scripts.clear-ram;
                       };
                     cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix { };
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
