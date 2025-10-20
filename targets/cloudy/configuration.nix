@@ -251,6 +251,7 @@ in
     "d /persist/containers/ws-ots 0600 root root -"
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
+    "d /persist/containers/stirling-pdf 0600 root root -"
   ];
 
   containers =
@@ -640,6 +641,22 @@ in
         config.sops.templates.env_tmdb.path
       ];
       ports = [ "1337:1337" ];
+    };
+    stirling-pdf = {
+      autoStart = true;
+      image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
+      ports = [ "8088:8080" ];
+      volumes = [
+        "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata"
+        "/persist/containers/stirling-pdf/extraConfigs:/configs"
+        "/persist/containers/stirling-pdf/customFiles:/customFiles"
+        "/persist/containers/stirling-pdf/logs:/logs"
+        "/persist/containers/stirling-pdf/pipeline:/pipeline"
+      ];
+      environment = {
+        DISABLE_ADDITIONAL_FEATURES = "false";
+        LANGS = "en_US";
+      };
     };
   };
 
