@@ -425,6 +425,12 @@ in
                     reverse_proxy ${addresses.reverseProxy.host}:1337
                   }
 
+                  @pdf host pdf.matheusplinta.com
+                  handle @pdf {
+                    ${block-bots}
+                    reverse_proxy ${addresses.reverseProxy.host}:8088
+                  }
+
                   handle {
                     abort
                   }
