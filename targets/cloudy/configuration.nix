@@ -234,6 +234,10 @@ in
       };
       firewall = {
         enable = true;
+        interfaces.ve-reverseProxy.allowedTCPPorts = [
+          8080 # Quartz
+          8088 # Stirling PDF
+        ];
         allowedTCPPorts = [
           5201 # Probe point
         ];
@@ -246,12 +250,12 @@ in
   systemd.tmpfiles.rules = [
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
     "d /persist/containers/ws-blog/app 0600 root root -"
-    "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
-    "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
+    "d /persist/containers/ws-blog/quartz-vault 0600 podman podman -"
+    "d /persist/containers/ws-blog/quartz-repo 0600 podman podman -"
     "d /persist/containers/ws-ots 0600 root root -"
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
-    "d /persist/containers/stirling-pdf 0600 root root -"
+    "d /persist/containers/stirling-pdf 0600 podman podman -"
   ];
 
   containers =
@@ -323,8 +327,9 @@ in
               package = pkgs.caddy.withPlugins {
                 plugins = [
                   "github.com/caddy-dns/cloudflare@v0.2.1"
+                  "github.com/caddyserver/replace-response@v0.0.0-20250618171559-80962887e4c6"
                 ];
-                hash = "sha256-S1JN7brvH2KIu7DaDOH1zij3j8hWLLc0HdnUc+L89uU=";
+                hash = "sha256-UJ5IwoCBGs9koDGglHyNAD8UpgifKnDCJI7UvAw6ZD4=";
               };
               environmentFile = config.sops.templates.env_caddy.path;
               configFile = 
@@ -429,6 +434,16 @@ in
                   handle @pdf {
                     ${block-bots}
                     reverse_proxy ${addresses.reverseProxy.host}:8088
+
+                    # Remove "Upgrade to PRO"
+                    replace stream {
+                      match {
+                          header Content-Type text/html*
+                      }
+                      "</body>" "<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>"
+                      "</head>" "<meta name=\"darkreader-lock\"></head>"
+                      "pixel.stirlingpdf.com" "{host}"
+                    }
                   }
 
                   handle {
@@ -624,8 +639,21 @@ in
       };
     };
 
-  virtualisation.docker.enable = true;
-  virtualisation.oci-containers.backend = "docker";
+  virtualisation.podman.enable = true;
+  virtualisation.oci-containers.backend = "podman";
+  users.groups.podman = {};
+  users.users.podman = {
+    home = "/persist/podman";
+    isNormalUser = true;
+    group = "podman";
+
+    subUidRanges = [ { startUid = 100000; count = 65536; } ];
+    subGidRanges = [ { startGid = 100000; count = 65536; } ];
+
+    extraGroups = [
+      "podman"
+    ];
+  };
   virtualisation.oci-containers.containers = {
     quartz = {
       autoStart = true;
@@ -639,6 +667,7 @@ in
         "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz"
       ];
       ports = [ "8080:80" ];
+      podman.user = "podman";
     };
     tmdb-addon = {
       autoStart = true;
@@ -647,6 +676,7 @@ in
         config.sops.templates.env_tmdb.path
       ];
       ports = [ "1337:1337" ];
+      podman.user = "podman";
     };
     stirling-pdf = {
       autoStart = true;
@@ -663,6 +693,7 @@ in
         DISABLE_ADDITIONAL_FEATURES = "false";
         LANGS = "en_US";
       };
+      podman.user = "podman";
     };
   };
 
