@@ -430,12 +430,8 @@
         hardware = {
           graphics.enable = true;
           bluetooth.enable = true;
-          bluetooth.powerOnBoot = true;
-          bluetooth.settings = {
-            General = {
-              ControllerMode = "bredr";
-            };
-          };
+          bluetooth.powerOnBoot = false;
+          bluetooth.settings.General.ControllerMode = "bredr";
           brillo.enable = true;
         };
 
@@ -491,14 +487,8 @@
           serviceConfig.Type = "oneshot";
         };
 
-        systemd.services.clear-ram = {
-          enable = true;
-          wantedBy = [ "halt.target" "reboot.target" "poweroff.target" ];
-          before = [ "umount.target" "shutdown.target" ];
-          script = ''
-            ${lib.getExe pkgs.myScripts.clear-ram}
-          '';
-        };
+        # Clear RAM on shutdown/reboot
+        systemd.shutdown.clearRam = lib.getExe pkgs.myScripts.clear-ram;
 
         services.udisks2.enable = true;
         services.blueman.enable = true;
