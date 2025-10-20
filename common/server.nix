@@ -1,6 +1,6 @@
 {
   sysModule =
-    { config, lib, ... }:
+    { lib, ... }:
     {
       config = lib.mkMerge [
         {

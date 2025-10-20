@@ -10,6 +10,7 @@
       home.packages = with pkgs; [
         # Utilities
         qalculate-gtk
+        font-manager
       ];
     };
 }

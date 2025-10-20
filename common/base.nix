@@ -62,6 +62,8 @@
           boot.loader.efi.canTouchEfiVariables = true;
           boot.tmp.useTmpfs = true;
 
+          system.modulesTree = [ (lib.getOutput "modules" config.boot.kernelPackages.kernel) ];
+
           security.sudo.extraConfig = ''
             Defaults pwfeedback,insults
             Defaults timestamp_timeout=15

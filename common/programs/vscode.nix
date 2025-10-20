@@ -76,12 +76,12 @@
               # General
               github.copilot
               #(forVSCodeVersion "1.102.0").vscode-marketplace-release.github.copilot-chat # TEMP FIX
-              ext.vscode-marketplace-release.github.vscode-pull-request-github
+              #ext.vscode-marketplace-release.github.vscode-pull-request-github
               ms-vscode.remote-explorer
               ms-vscode-remote.remote-ssh
               ms-vscode-remote.remote-containers
               ms-azuretools.vscode-containers
-              hashicorp.terraform
+              #hashicorp.terraform
               # Visual
               catppuccin.catppuccin-vsc
               pkief.material-icon-theme
