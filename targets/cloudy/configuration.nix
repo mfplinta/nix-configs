@@ -237,6 +237,7 @@ in
         interfaces.ve-reverseProxy.allowedTCPPorts = [
           8080 # Quartz
           8088 # Stirling PDF
+          1337 # TMDB Addon
         ];
         allowedTCPPorts = [
           5201 # Probe point
