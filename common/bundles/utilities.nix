@@ -11,6 +11,7 @@
         # Utilities
         qalculate-gtk
         font-manager
+        qtscrcpy
       ];
     };
 }
