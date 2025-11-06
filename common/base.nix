@@ -20,6 +20,9 @@
           configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.myCfg.kdeglobals;
           userDirs.enable = true;
           userDirs.createDirectories = true;
+          userDirs.extraConfig = {
+            XDG_PROJECTS_DIR = "Projects";
+          };
           mimeApps.enable = true;
         };
 
@@ -61,6 +64,15 @@
           boot.loader.timeout = 0;
           boot.loader.efi.canTouchEfiVariables = true;
           boot.tmp.useTmpfs = true;
+          boot.tmp.tmpfsSize = "125%";
+
+          # Zram swap
+          zramSwap.enable = true;
+          zramSwap.memoryPercent = 100;
+          boot.kernel.sysctl."vm.swappiness" = 180;
+          boot.kernel.sysctl."vm.watermark_boost_factor" = 0;
+          boot.kernel.sysctl."vm.watermark_scale_factor" = 125;
+          boot.kernel.sysctl."vm.page-cluster" = 0;
 
           system.modulesTree = [ (lib.getOutput "modules" config.boot.kernelPackages.kernel) ];
 

@@ -1,6 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
@@ -131,7 +132,10 @@
                     "flakes"
                   ];
                 };
-                nixpkgs.config.allowUnfree = true;
+                nixpkgs.config = {
+                  allowUnfree = true;
+                  android_sdk.accept_license = true; 
+                };
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
@@ -146,12 +150,15 @@
                         get-current-brightness = scripts.get-current-brightness;
                         update-website-script = scripts.update-website-script;
                         get-current-io-util = scripts.get-current-io-util;
-                        clear-ram = scripts.clear-ram;
                       };
                     cups-brother-hll3290cdw = prev.callPackage ./packages/cups-brother-hll3290cdw.nix { };
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
                     django-imagekit = ps: ps.callPackage ./packages/django-imagekit.nix { };
                     django-turnstile = ps: ps.callPackage ./packages/django-turnstile.nix { };
+                    unstable = import inputs.nixpkgs-unstable {
+                      inherit (final.stdenv.hostPlatform) system;
+                      inherit (final) config;
+                    };
                   })
                 ];
                 networking.hostName = name;

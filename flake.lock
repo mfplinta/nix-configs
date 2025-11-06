@@ -600,6 +600,22 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/5487e69da40cbd611ab2cadee0b4637225f7cfae.tar.gz"
       }
     },
+    "nixpkgs-unstable": {
+      "locked": {
+        "lastModified": 1762391647,
+        "narHash": "sha256-5U5fLQmQ5KYecD1iljPyhzo4AZk47tyBqbETr9Ei8xY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "08a47234e66af2a6a87f8bc1e775189fb7b38ea7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1759381078,
@@ -665,6 +681,7 @@
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixd": "nixd",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "sops-nix": "sops-nix",
         "wrapper-manager": "wrapper-manager"
       }

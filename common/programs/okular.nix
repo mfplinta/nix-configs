@@ -7,7 +7,7 @@
       ];
 
       home.packages = [
-        pkgs.kdePackages.okular
+        pkgs.unstable.kdePackages.okular
       ];
     };
 }

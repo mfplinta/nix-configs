@@ -277,6 +277,7 @@ in
           moonlight-qt
           blender
           soundwireserver
+          androidStudioPackages.dev
         ];
     };
 }
