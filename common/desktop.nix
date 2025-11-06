@@ -131,7 +131,7 @@
                   # Move window $mod + LMB; Resize $mod/ALT + RMB
                   "${mod}, mouse:272, movewindow"
                   "${mod}, mouse:273, resizewindow"
-                  "ALT_SHIFT, mouse:272, resizewindow"
+                  "ALT, mouse:272, resizewindow"
                 ];
                 bindel = [
                   ", XF86AudioRaiseVolume, exec, wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ && pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/audio-volume-change.oga"
@@ -316,7 +316,6 @@
           };
         };
 
-        fonts.fontconfig.enable = true;
         services.network-manager-applet.enable = true;
         services.blueman-applet.enable = true;
         services.udiskie.enable = true;
@@ -377,6 +376,8 @@
           style.name = "gtk2";
         };
 
+        fonts.fontconfig.enable = true;
+
         home.packages = with pkgs; [
           inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland # hyprctl in PATH
 
@@ -390,6 +391,9 @@
           galaxy-buds-client
           obsidian
           android-tools
+
+          # Fonts
+          gyre-fonts
         ];
       };
     };
@@ -442,6 +446,7 @@
 
         # Reduce RAM cache for ejectable devices
         services.udev.packages = [ pkgs.android-udev-rules ];
+        services.usbmuxd.enable = true;
         services.udev.extraRules = ''
           SUBSYSTEM=="block", ACTION=="add",\
             KERNEL=="sd[a-z]",\
@@ -486,9 +491,6 @@
           '';
           serviceConfig.Type = "oneshot";
         };
-
-        # Clear RAM on shutdown/reboot
-        systemd.shutdown.clearRam = lib.getExe pkgs.myScripts.clear-ram;
 
         services.udisks2.enable = true;
         services.blueman.enable = true;
