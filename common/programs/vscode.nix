@@ -81,6 +81,8 @@
               ms-vscode-remote.remote-ssh
               ms-vscode-remote.remote-containers
               ms-azuretools.vscode-containers
+              davidanson.vscode-markdownlint
+              vscjava.vscode-gradle
               #hashicorp.terraform
               # Visual
               catppuccin.catppuccin-vsc
@@ -97,6 +99,10 @@
               ms-python.debugpy
               # Web
               ritwickdey.liveserver
+              dbaeumer.vscode-eslint
+              christian-kohler.npm-intellisense
+              esbenp.prettier-vscode
+              orta.vscode-jest
             ];
         };
       };
