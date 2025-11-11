@@ -10,6 +10,7 @@
       home.packages = with pkgs; [
         jetbrains.pycharm-professional
         inkscape
+        devenv
       ];
 
       home.activation.createCopilotSymlink = lib.hm.dag.entryAfter ["writeBoundary"] ''
