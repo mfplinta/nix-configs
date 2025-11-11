@@ -103,7 +103,7 @@
                   ];
                 bind =
                 let
-                  wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true)";
+                  wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i)";
                 in
                   [
                     # Command binds
@@ -370,6 +370,14 @@
 
         xdg.configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
 
+        xdg.desktopEntries.scrcpy = {
+          name = "Scrcpy";
+          exec = "${lib.getExe pkgs.myScripts.scrcpy}";
+          terminal = false;
+          type = "Application";
+          categories = ["Utility"];
+        };
+
         qt = {
           enable = true;
           platformTheme.name = "gtk";
@@ -395,6 +403,17 @@
           # Fonts
           gyre-fonts
         ];
+
+        home.sessionVariables = rec {
+          GTK_PATH = "${pkgs.gnome-themes-extra}/lib/gtk-2.0:$GTK_PATH";
+          ELECTRON_OZONE_PLATFORM_HINT = "auto";
+          NIXOS_OZONE_WL = 1;
+          EDITOR = "vim";
+          XCURSOR_THEME = "Bibata-Modern-Ice";
+          XCURSOR_SIZE = 32;
+          HYPRCURSOR_THEME = XCURSOR_THEME;
+          HYPRCURSOR_SIZE = XCURSOR_SIZE;
+        };
       };
     };
 
@@ -512,16 +531,6 @@
           package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
           portalPackage =
             inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
-        };
-
-        environment.sessionVariables = rec {
-          ELECTRON_OZONE_PLATFORM_HINT = "auto";
-          NIXOS_OZONE_WL = 1;
-          EDITOR = "vim";
-          XCURSOR_THEME = "Bibata-Modern-Ice";
-          XCURSOR_SIZE = 32;
-          HYPRCURSOR_THEME = XCURSOR_THEME;
-          HYPRCURSOR_SIZE = XCURSOR_SIZE;
         };
 
         security.pam.services.hyprlock = { };
