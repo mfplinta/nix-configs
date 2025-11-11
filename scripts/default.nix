@@ -1,4 +1,7 @@
 {pkgs, ...}:
+let
+  launcherPackage = pkgs.wofi;
+in
 with pkgs;
 {
   toggle-scale = writeShellApplication {
@@ -26,6 +29,13 @@ with pkgs;
     text = ''
       util=$(iostat -dx 1 2 | awk '/^nvme0n1/ {val=$NF} END{print val}')
       printf '{"percentage":%s,"tooltip":"nvme0n1 IO: %s%%"}\n' "$util" "$util"
+    '';
+  };
+  scrcpy = writeShellApplication {
+    name = "scrcpy";
+    runtimeInputs = [ scrcpy android-tools launcherPackage ];
+    text = ''
+      adb devices | awk 'NR>1 && $2=="device" {print $1}' | ${lib.getExe launcherPackage} --dmenu -p "Select device" | xargs -r -I{} scrcpy -s {} -SwK --render-driver=opengl
     '';
   };
 }
