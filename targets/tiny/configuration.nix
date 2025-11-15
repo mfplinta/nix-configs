@@ -66,9 +66,11 @@ in
     wantedBy = [ "podman-hass.service" "podman-esphome.service" ];
     script = ''
       ${pkgs.podman}/bin/podman network exists net_hass_1 || \
-      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.1.211-10.0.1.212 --gateway=10.0.1.1 --subnet=10.0.1.0/24 -o parent=vlan1 net_hass_1
+      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.1.211-10.0.1.213 --gateway=10.0.1.1 --subnet=10.0.1.0/24 -o parent=vlan1 net_hass_1
       ${pkgs.podman}/bin/podman network exists net_hass_2 || \
-      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.2.211-10.0.2.212 --gateway=10.0.2.1 --subnet=10.0.2.0/24 -o parent=vlan2 net_hass_2
+      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.2.211-10.0.2.213 --gateway=10.0.2.1 --subnet=10.0.2.0/24 -o parent=vlan2 net_hass_2
+      ${pkgs.podman}/bin/podman network exists net_hass_3 || \
+      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.3.211-10.0.3.213 --gateway=10.0.3.1 --subnet=10.0.3.0/24 -o parent=vlan3 net_hass_3
     '';
   };
 
@@ -82,14 +84,19 @@ in
       image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
       environment = { inherit TZ; };
       environmentFiles = [ config.sops.templates.env_caddy.path ];
-      extraOptions = [ "--cap-add=NET_ADMIN" ];
+      extraOptions = [
+        "--cap-add=CAP_NET_RAW,CAP_NET_BIND_SERVICE,NET_ADMIN"
+        "--network=podman"
+        "--network=net_hass_1:ip=10.0.1.211"
+        "--network=net_hass_3:ip-10.0.3.211"
+      ];
       volumes = [
         (paths.source.caddy-data + ":/data")
         (pkgs.writeText "Caddyfile" ''
           *.matheusplinta.com {
             tls {
               issuer acme {
-                dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+                dns cloudflare {env.CF_API_KEY}
                 resolvers 8.8.8.8
               }
             }
@@ -119,8 +126,8 @@ in
       extraOptions = [
         "--cap-add=CAP_NET_RAW,CAP_NET_BIND_SERVICE"
         "--network=podman"
-        "--network=net_hass_1:ip=10.0.1.211"
-        "--network=net_hass_2:ip=10.0.2.211"
+        "--network=net_hass_1:ip=10.0.1.212"
+        "--network=net_hass_2:ip=10.0.2.212"
       ];
       volumes = [
         (paths.source.hass + ":/config")
@@ -165,8 +172,8 @@ in
       environment = { inherit TZ; };
       extraOptions = [
         "--network=podman"
-        "--network=net_hass_1:ip=10.0.1.212"
-        "--network=net_hass_2:ip=10.0.2.212"
+        "--network=net_hass_1:ip=10.0.1.213"
+        "--network=net_hass_2:ip=10.0.2.213"
       ];
       volumes = [ (paths.source.esphome + ":/config") ];
       ports = [ "6052:6052" ];
