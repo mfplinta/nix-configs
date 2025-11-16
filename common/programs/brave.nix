@@ -23,6 +23,7 @@
           { id = "eimadpbcbfnmbkopoojfekhnkhdbieeh"; }
           { id = "nngceckbapebfimnlniiiahkandclblb"; }
           { id = "hkgfoiooedgoejojocmhlaklaeopbecg"; }
+          { id = "jcbmcnpepaddcedmjdcmhbekjhbfnlff";}
         ];
         commandLineArgs = [
           "--disable-features=AutofillSavePaymentMethods"
@@ -31,6 +32,8 @@
           "--ozone-platform=wayland"
         ];
       };
+
+      services.psd.browsers = [ "brave" ];
     };
 
   sysModule =
