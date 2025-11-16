@@ -20,44 +20,38 @@
     };
 
   sysModule =
-    { pkgs, ... }:
-    let
-      smbMountOptions = [
-        "uid=1000,x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
-      ];
-    in
+    { pkgs, lib, ... }:
     {
       environment.sessionVariables = {
         STNODEFAULTFOLDER = 1;
       };
 
-      fileSystems."/home/matheus/.cache/thumbnails" = {
-        device = "none";
-        fsType = "ramfs";
-        options = [
-          "rw"
-          "user"
-          "mode=1777"
+      fileSystems = 
+        let
+          h = "/home/matheus";
+          smbMountOptions = [
+          "uid=1000,x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
         ];
-      };
-
-      fileSystems."/mnt/smb/mfp_stuff" = {
-        device = "//samba.arpa/mfp_stuff";
-        fsType = "cifs";
-        options = smbMountOptions;
-      };
-
-      fileSystems."/mnt/smb/dap_stuff" = {
-        device = "//samba.arpa/dap_stuff";
-        fsType = "cifs";
-        options = smbMountOptions;
-      };
-
-      fileSystems."/mnt/smb/public" = {
-        device = "//samba.arpa/public";
-        fsType = "cifs";
-        options = smbMountOptions;
-      };
+        in
+          lib.genAttrs [
+            "${h}/.cache/thumbnails"
+            "${h}/.cache/kdenlive"
+            "${h}/.config/session"
+            "${h}/.local/share/kdenlive"
+            "${h}/.local/share/stalefiles"
+          ] (path: {
+            device = "none";
+            fsType = "ramfs";
+            options = [ "rw" "user" "mode=1777" ];
+          }) // lib.genAttrs [
+            "/mnt/smb/mfp_stuff"
+            "/mnt/smb/dap_stuff"
+            "/mnt/smb/public"
+          ] (path: {
+            device = "//samba.arpa/${lib.last (lib.splitString "/" path)}";
+            fsType = "cifs";
+            options = smbMountOptions;
+          });
 
       systemd.tmpfiles.rules = [
         "d /home/matheus/Shared 0755 matheus users -"

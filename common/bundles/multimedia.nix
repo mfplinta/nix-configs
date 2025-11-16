@@ -12,6 +12,7 @@
         stremio
         handbrake
         darktable
+        kdePackages.kdenlive
       ];
     };
 }
