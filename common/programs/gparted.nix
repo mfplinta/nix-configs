@@ -13,6 +13,8 @@
             e2fsprogs
             exfatprogs
             ntfs3g
+            btrfs-progs
+            xfsprogs
           ];
           wrapperType = "shell";
           wrapFlags = [
