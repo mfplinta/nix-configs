@@ -162,6 +162,11 @@
                     flat-remix-kde = prev.callPackage ./packages/flat-remix-kde.nix { };
                     django-imagekit = ps: ps.callPackage ./packages/django-imagekit.nix { };
                     django-turnstile = ps: ps.callPackage ./packages/django-turnstile.nix { };
+                    profile-sync-daemon = prev.profile-sync-daemon.overrideAttrs (oldAttrs: {
+                      installPhase = oldAttrs.installPhase + ''
+                        mv $out/share/psd/contrib/* $out/share/psd/browsers/
+                      '';
+                    });
                     unstable = import inputs.nixpkgs-unstable {
                       inherit (final.stdenv.hostPlatform) system;
                       inherit (final) config;

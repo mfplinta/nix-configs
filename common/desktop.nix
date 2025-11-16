@@ -320,6 +320,7 @@
         services.blueman-applet.enable = true;
         services.udiskie.enable = true;
         services.easyeffects.enable = true;
+        services.psd.enable = true;
         services.kdeconnect = {
           enable = true;
           indicator = true;
@@ -413,6 +414,7 @@
           XCURSOR_SIZE = 32;
           HYPRCURSOR_THEME = XCURSOR_THEME;
           HYPRCURSOR_SIZE = XCURSOR_SIZE;
+          SDL_VIDEODRIVER = "wayland";
         };
       };
     };
