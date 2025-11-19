@@ -73,18 +73,21 @@ in
           ipRanges = [ "10.0.1.211-10.0.1.213" ];
           gateways = [ "10.0.1.1" ];
           subnets = [ "10.0.1.0/24" ];
+          networkDeleteOnStop = true;
         };
         net_vlan2.networkConfig = {
           driver = "macvlan";
           ipRanges = [ "10.0.2.211-10.0.2.213" ];
           gateways = [ "10.0.2.1" ];
           subnets = [ "10.0.2.0/24" ];
+          networkDeleteOnStop = true;
         };
         net_vlan3.networkConfig = {
           driver = "macvlan";
           ipRanges = [ "10.0.3.211-10.0.3.213" ];
           gateways = [ "10.0.3.1" ];
           subnets = [ "10.0.3.0/24" ];
+          networkDeleteOnStop = true;
         };
       };
       containers = {
