@@ -73,21 +73,18 @@ in
           ipRanges = [ "10.0.1.211-10.0.1.213" ];
           gateways = [ "10.0.1.1" ];
           subnets = [ "10.0.1.0/24" ];
-          networkDeleteOnStop = true;
         };
         net_vlan2.networkConfig = {
           driver = "macvlan";
           ipRanges = [ "10.0.2.211-10.0.2.213" ];
           gateways = [ "10.0.2.1" ];
           subnets = [ "10.0.2.0/24" ];
-          networkDeleteOnStop = true;
         };
         net_vlan3.networkConfig = {
           driver = "macvlan";
           ipRanges = [ "10.0.3.211-10.0.3.213" ];
           gateways = [ "10.0.3.1" ];
           subnets = [ "10.0.3.0/24" ];
-          networkDeleteOnStop = true;
         };
       };
       containers = {
@@ -95,7 +92,7 @@ in
         caddy.containerConfig = {
           addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" "NET_ADMIN" ];
           image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.211" "${networks.net_vlan3.ref}:10.0.3.211" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.211" "${networks.net_vlan3.ref}:ip=10.0.3.211" ];
           publishPorts = [ "80:80" "443:443" ];
           environmentFiles = [ config.sops.templates.env_caddy.path ];
           volumes = [ "${volumes.caddy_data.ref}:/data" "${volumes.caddy_file.ref}:/etc/caddy/Caddyfile" ];
@@ -105,7 +102,7 @@ in
         hass.containerConfig = {
           image = "ghcr.io/home-assistant/home-assistant:stable";
           addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
-          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.212" "${networks.net_vlan2.ref}:10.0.2.212" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.212" "${networks.net_vlan2.ref}:ip=10.0.2.212" ];
           publishPorts = [ "8123:8123" ];
           volumes = [
             "${volumes.hass_data.ref}:/config"
@@ -117,7 +114,7 @@ in
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
           image = "zwavejs/zwave-js-ui:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.213" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.213" ];
           publishPorts = [ "8091:8091" ];
           volumes = [ "${volumes.zwavejs_data.ref}:/usr/src/app/store" ];
           devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
@@ -126,7 +123,7 @@ in
         # --- Mosquitto ---
         mosquitto.containerConfig = {
           image = "eclipse-mosquitto:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.214" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.214" ];
           publishPorts = [ "1883:1883" ];
           volumes = [
             "${volumes.mosquitto_config.ref}:/mosquitto/config"
@@ -138,7 +135,7 @@ in
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
           image = "tsightler/ring-mqtt";
-          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.215" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.215" ];
           publishPorts = [ "8554:8554" ];
           volumes = [  "${volumes.ring_mqtt_data.ref}:/data" ];
         };
@@ -146,7 +143,7 @@ in
         # --- ESPHome ---
         esphome.containerConfig = {
           image = "ghcr.io/esphome/esphome:latest";
-          networks = [  "podman" "${networks.net_vlan1.ref}:10.0.1.216" "${networks.net_vlan2.ref}:10.0.2.216" ];
+          networks = [  "podman" "${networks.net_vlan1.ref}:ip=10.0.1.216" "${networks.net_vlan2.ref}:ip=10.0.2.216" ];
           publishPorts = [ "6052:6052" ];
           volumes = [ "${volumes.esphome_data.ref}:/config" ];
         };
