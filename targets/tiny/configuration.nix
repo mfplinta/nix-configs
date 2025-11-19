@@ -63,7 +63,7 @@ in
 
   virtualisation.quadlet =
     let
-      inherit (config.virtualisation.quadlet) networks volumes;
+      inherit (config.virtualisation.quadlet) networks;
     in
     {
       enable = true;
@@ -95,68 +95,7 @@ in
           networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.211" "${networks.net_vlan3.ref}:ip=10.0.3.211" ];
           publishPorts = [ "80:80" "443:443" ];
           environmentFiles = [ config.sops.templates.env_caddy.path ];
-          volumes = [ "${volumes.caddy_data.ref}:/data" "${volumes.caddy_file.ref}:/etc/caddy/Caddyfile" ];
-        };
-
-        # --- Home Assistant ---
-        hass.containerConfig = {
-          image = "ghcr.io/home-assistant/home-assistant:stable";
-          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.212" "${networks.net_vlan2.ref}:ip=10.0.2.212" ];
-          publishPorts = [ "8123:8123" ];
-          volumes = [
-            "${volumes.hass_data.ref}:/config"
-            "/etc/localtime:/etc/localtime:ro"
-            "/run/dbus:/run/dbus:ro"
-          ];
-        };
-
-        # --- Z-Wave JS UI ---
-        zwavejs.containerConfig = {
-          image = "zwavejs/zwave-js-ui:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.213" ];
-          publishPorts = [ "8091:8091" ];
-          volumes = [ "${volumes.zwavejs_data.ref}:/usr/src/app/store" ];
-          devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
-        };
-
-        # --- Mosquitto ---
-        mosquitto.containerConfig = {
-          image = "eclipse-mosquitto:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.214" ];
-          publishPorts = [ "1883:1883" ];
-          volumes = [
-            "${volumes.mosquitto_config.ref}:/mosquitto/config"
-            "${volumes.mosquitto_data.ref}:/mosquitto/data"
-            "${volumes.mosquitto_log.ref}:/mosquitto/log"
-          ];
-        };
-
-        # --- ring-mqtt ---
-        ring-mqtt.containerConfig = {
-          image = "tsightler/ring-mqtt";
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.215" ];
-          publishPorts = [ "8554:8554" ];
-          volumes = [  "${volumes.ring_mqtt_data.ref}:/data" ];
-        };
-
-        # --- ESPHome ---
-        esphome.containerConfig = {
-          image = "ghcr.io/esphome/esphome:latest";
-          networks = [  "podman" "${networks.net_vlan1.ref}:ip=10.0.1.216" "${networks.net_vlan2.ref}:ip=10.0.2.216" ];
-          publishPorts = [ "6052:6052" ];
-          volumes = [ "${volumes.esphome_data.ref}:/config" ];
-        };
-      };
-      volumes = {
-        # --- Caddy ---
-        caddy_data.volumeConfig = {
-          type = "bind";
-          device = paths.source.caddy-data;
-        };
-        caddy_file.volumeConfig = {
-          type = "bind";
-          device = "${pkgs.writeText "Caddyfile" ''
+          volumes = [ "${paths.source.caddy-data}:/data" "${pkgs.writeText "Caddyfile" ''
             *.matheusplinta.com {
               tls {
                 issuer acme {
@@ -179,45 +118,54 @@ in
                 abort
               }
             }
-          ''}";
+          ''}:/etc/caddy/Caddyfile" ];
         };
 
         # --- Home Assistant ---
-        hass_data.volumeConfig = {
-          type = "bind";
-          device = paths.source.hass;
+        hass.containerConfig = {
+          image = "ghcr.io/home-assistant/home-assistant:stable";
+          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.212" "${networks.net_vlan2.ref}:ip=10.0.2.212" ];
+          publishPorts = [ "8123:8123" ];
+          volumes = [
+            "${paths.source.hass}:/config"
+            "/etc/localtime:/etc/localtime:ro"
+            "/run/dbus:/run/dbus:ro"
+          ];
         };
 
         # --- Z-Wave JS UI ---
-        zwavejs_data.volumeConfig = {
-          type = "bind";
-          device = paths.source.zwavejs;
+        zwavejs.containerConfig = {
+          image = "zwavejs/zwave-js-ui:latest";
+          publishPorts = [ "8091:8091" ];
+          volumes = [ "${paths.source.zwavejs}:/usr/src/app/store" ];
+          devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
         };
 
         # --- Mosquitto ---
-        mosquitto_config.volumeConfig = {
-          type = "bind";
-          device = paths.source.mosquitto-config;
-        };
-        mosquitto_data.volumeConfig = {
-          type = "bind";
-          device = paths.source.mosquitto-data;
-        };
-        mosquitto_log.volumeConfig = {
-          type = "bind";
-          device = paths.source.mosquitto-log;
+        mosquitto.containerConfig = {
+          image = "eclipse-mosquitto:latest";
+          publishPorts = [ "1883:1883" ];
+          volumes = [
+            "${paths.source.mosquitto-config}:/mosquitto/config"
+            "${paths.source.mosquitto-data}:/mosquitto/data"
+            "${paths.source.mosquitto-log}:/mosquitto/log"
+          ];
         };
 
         # --- ring-mqtt ---
-        ring_mqtt_data.volumeConfig = {
-          type = "bind";
-          device = paths.source.ring-mqtt;
+        ring-mqtt.containerConfig = {
+          image = "tsightler/ring-mqtt";
+          publishPorts = [ "8554:8554" ];
+          volumes = [  "${paths.source.ring-mqtt}:/data" ];
         };
 
         # --- ESPHome ---
-        esphome_data.volumeConfig = {
-          type = "bind";
-          device = paths.source.esphome;
+        esphome.containerConfig = {
+          image = "ghcr.io/esphome/esphome:latest";
+          networks = [  "podman" "${networks.net_vlan1.ref}:ip=10.0.1.213" "${networks.net_vlan2.ref}:ip=10.0.2.213" ];
+          publishPorts = [ "6052:6052" ];
+          volumes = [ "${paths.source.esphome}:/config" ];
         };
       };
     };
