@@ -61,125 +61,167 @@ in
     nameservers = [ "10.0.1.2" ];
   };
 
-  systemd.services.create-podman-network = {
-    serviceConfig.Type = "oneshot";
-    wantedBy = [ "podman-hass.service" "podman-esphome.service" ];
-    script = ''
-      ${pkgs.podman}/bin/podman network exists net_hass_1 || \
-      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.1.211-10.0.1.213 --gateway=10.0.1.1 --subnet=10.0.1.0/24 -o parent=vlan1 net_hass_1
-      ${pkgs.podman}/bin/podman network exists net_hass_2 || \
-      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.2.211-10.0.2.213 --gateway=10.0.2.1 --subnet=10.0.2.0/24 -o parent=vlan2 net_hass_2
-      ${pkgs.podman}/bin/podman network exists net_hass_3 || \
-      ${pkgs.podman}/bin/podman network create --driver=macvlan --ip-range=10.0.3.211-10.0.3.213 --gateway=10.0.3.1 --subnet=10.0.3.0/24 -o parent=vlan3 net_hass_3
-    '';
-  };
+  virtualisation.quadlet =
+    let
+      inherit (config.virtualisation.quadlet) networks volumes;
+    in
+    {
+      enable = true;
+      networks = {
+        net_vlan1.networkConfig = {
+          driver = "macvlan";
+          ipRanges = [ "10.0.1.211-10.0.1.213" ];
+          gateways = [ "10.0.1.1" ];
+          subnets = [ "10.0.1.0/24" ];
+        };
+        net_vlan2.networkConfig = {
+          driver = "macvlan";
+          ipRanges = [ "10.0.2.211-10.0.2.213" ];
+          gateways = [ "10.0.2.1" ];
+          subnets = [ "10.0.2.0/24" ];
+        };
+        net_vlan3.networkConfig = {
+          driver = "macvlan";
+          ipRanges = [ "10.0.3.211-10.0.3.213" ];
+          gateways = [ "10.0.3.1" ];
+          subnets = [ "10.0.3.0/24" ];
+        };
+      };
+      containers = {
+        # --- Caddy ---
+        caddy.containerConfig = {
+          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" "NET_ADMIN" ];
+          image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
+          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.211" "${networks.net_vlan3.ref}:10.0.3.211" ];
+          publishPorts = [ "80:80" "443:443" ];
+          environmentFiles = [ config.sops.templates.env_caddy.path ];
+          volumes = [ "${volumes.caddy_data.ref}:/data" "${volumes.caddy_file.ref}:/etc/caddy/Caddyfile" ];
+        };
 
-  virtualisation.oci-containers.containers =  
-  let
-    TZ = "America/Denver";
-  in
-  {
-    caddy = {
-      autoStart = true;
-      image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
-      environment = { inherit TZ; };
-      environmentFiles = [ config.sops.templates.env_caddy.path ];
-      extraOptions = [
-        "--cap-add=CAP_NET_RAW,CAP_NET_BIND_SERVICE,NET_ADMIN"
-        "--network=podman"
-        "--network=net_hass_1:ip=10.0.1.211"
-        "--network=net_hass_3:ip-10.0.3.211"
-      ];
-      volumes = [
-        (paths.source.caddy-data + ":/data")
-        (pkgs.writeText "Caddyfile" ''
-          *.matheusplinta.com {
-            tls {
-              issuer acme {
-                dns cloudflare {env.CF_API_KEY}
-                resolvers 8.8.8.8
+        # --- Home Assistant ---
+        hass.containerConfig = {
+          image = "ghcr.io/home-assistant/home-assistant:stable";
+          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
+          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.212" "${networks.net_vlan2.ref}:10.0.2.212" ];
+          publishPorts = [ "8123:8123" ];
+          volumes = [
+            "${volumes.hass_data.ref}:/config"
+            "/etc/localtime:/etc/localtime:ro"
+            "/run/dbus:/run/dbus:ro"
+          ];
+        };
+
+        # --- Z-Wave JS UI ---
+        zwavejs.containerConfig = {
+          image = "zwavejs/zwave-js-ui:latest";
+          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.213" ];
+          publishPorts = [ "8091:8091" ];
+          volumes = [ "${volumes.zwavejs_data.ref}:/usr/src/app/store" ];
+          devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
+        };
+
+        # --- Mosquitto ---
+        mosquitto.containerConfig = {
+          image = "eclipse-mosquitto:latest";
+          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.214" ];
+          publishPorts = [ "1883:1883" ];
+          volumes = [
+            "${volumes.mosquitto_config.ref}:/mosquitto/config"
+            "${volumes.mosquitto_data.ref}:/mosquitto/data"
+            "${volumes.mosquitto_log.ref}:/mosquitto/log"
+          ];
+        };
+
+        # --- ring-mqtt ---
+        ring-mqtt.containerConfig = {
+          image = "tsightler/ring-mqtt";
+          networks = [ "podman" "${networks.net_vlan1.ref}:10.0.1.215" ];
+          publishPorts = [ "8554:8554" ];
+          volumes = [  "${volumes.ring_mqtt_data.ref}:/data" ];
+        };
+
+        # --- ESPHome ---
+        esphome.containerConfig = {
+          image = "ghcr.io/esphome/esphome:latest";
+          networks = [  "podman" "${networks.net_vlan1.ref}:10.0.1.216" "${networks.net_vlan2.ref}:10.0.2.216" ];
+          publishPorts = [ "6052:6052" ];
+          volumes = [ "${volumes.esphome_data.ref}:/config" ];
+        };
+      };
+      volumes = {
+        # --- Caddy ---
+        caddy_data.volumeConfig = {
+          type = "bind";
+          device = paths.source.caddy-data;
+        };
+        caddy_file.volumeConfig = {
+          type = "bind";
+          device = pkgs.writeText "Caddyfile" ''
+            *.matheusplinta.com {
+              tls {
+                issuer acme {
+                  dns cloudflare {env.CF_API_KEY}
+                  resolvers 8.8.8.8
+                }
+              }
+              
+              @hass host ha.matheusplinta.com
+              handle @hass {
+                reverse_proxy hass:8123
+              }
+
+              @esphome host esphome.matheusplinta.com
+              handle @esphome {
+                reverse_proxy esphome:6052
+              }
+
+              handle {
+                abort
               }
             }
-            
-            @hass host ha.matheusplinta.com
-            handle @hass {
-              reverse_proxy hass:8123
-            }
+          '';
+        };
 
-            @esphome host esphome.matheusplinta.com
-            handle @esphome {
-              reverse_proxy esphome:6052
-            }
+        # --- Home Assistant ---
+        hass_data.volumeConfig = {
+          type = "bind";
+          device = paths.source.hass;
+        };
 
-            handle {
-              abort
-            }
-          }
-        '' + ":/etc/caddy/Caddyfile")
-      ];
-      ports = [ "80:80" "443:443" ];
+        # --- Z-Wave JS UI ---
+        zwavejs_data.volumeConfig = {
+          type = "bind";
+          device = paths.source.zwavejs;
+        };
+
+        # --- Mosquitto ---
+        mosquitto_config.volumeConfig = {
+          type = "bind";
+          device = paths.source.mosquitto-config;
+        };
+        mosquitto_data.volumeConfig = {
+          type = "bind";
+          device = paths.source.mosquitto-data;
+        };
+        mosquitto_log.volumeConfig = {
+          type = "bind";
+          device = paths.source.mosquitto-log;
+        };
+
+        # --- ring-mqtt ---
+        ring_mqtt_data.volumeConfig = {
+          type = "bind";
+          device = paths.source.ring-mqtt;
+        };
+
+        # --- ESPHome ---
+        esphome_data.volumeConfig = {
+          type = "bind";
+          device = paths.source.esphome;
+        };
+      };
     };
-    hass = {
-      autoStart = true;
-      image = "ghcr.io/home-assistant/home-assistant:stable";
-      environment = { inherit TZ; };
-      extraOptions = [
-        "--cap-add=CAP_NET_RAW,CAP_NET_BIND_SERVICE"
-        "--network=podman"
-        "--network=net_hass_1:ip=10.0.1.212"
-        "--network=net_hass_2:ip=10.0.2.212"
-      ];
-      volumes = [
-        (paths.source.hass + ":/config")
-        "/etc/localtime:/etc/localtime:ro"
-        "/run/dbus:/run/dbus:ro"
-      ];
-      ports = [ "8123:8123" ];
-    };
-    zwavejs = {
-      autoStart = true;
-      image = "zwavejs/zwave-js-ui:latest";
-      environment = { inherit TZ; };
-      volumes = [
-        (paths.source.zwavejs + ":/usr/src/app/store")
-      ];
-      devices = [
-        "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"
-      ];
-      ports = [ "8091:8091" ];
-    };
-    mosquitto = {
-      autoStart = true;
-      image = "eclipse-mosquitto:latest";
-      environment = { inherit TZ; };
-      volumes = [
-        (paths.source.mosquitto-config + ":/mosquitto/config")
-        (paths.source.mosquitto-data + ":/mosquitto/data")
-        (paths.source.mosquitto-log + ":/mosquitto/log")
-      ];
-      ports = [ "1883:1883" ];
-    };
-    ring-mqtt = {
-      autoStart = true;
-      image = "tsightler/ring-mqtt";
-      environment = { inherit TZ; };
-      volumes = [ (paths.source.ring-mqtt + ":/data") ];
-      ports = [ "8554:8554" ];
-    };
-    esphome = {
-      autoStart = true;
-      image = "ghcr.io/esphome/esphome:latest";
-      environment = { inherit TZ; };
-      extraOptions = [
-        "--network=podman"
-        "--network=net_hass_1:ip=10.0.1.213"
-        "--network=net_hass_2:ip=10.0.2.213"
-      ];
-      volumes = [ (paths.source.esphome + ":/config") ];
-      ports = [ "6052:6052" ];
-    };
-  };
- 
+    
   systemd.tmpfiles.rules = with builtins; map (path: "d ${path} 0755 root root -") (
     attrValues paths.source
   ); 
