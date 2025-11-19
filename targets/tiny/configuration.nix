@@ -156,7 +156,7 @@ in
         };
         caddy_file.volumeConfig = {
           type = "bind";
-          device = pkgs.writeText "Caddyfile" ''
+          device = "${pkgs.writeText "Caddyfile" ''
             *.matheusplinta.com {
               tls {
                 issuer acme {
@@ -179,7 +179,7 @@ in
                 abort
               }
             }
-          '';
+          ''}";
         };
 
         # --- Home Assistant ---
@@ -221,7 +221,7 @@ in
         };
       };
     };
-    
+
   systemd.tmpfiles.rules = with builtins; map (path: "d ${path} 0755 root root -") (
     attrValues paths.source
   ); 
