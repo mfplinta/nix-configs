@@ -20,6 +20,7 @@ let
     source.mosquitto-log = paths.root + "/mosquitto/log";
     source.ring-mqtt = paths.root + "/ring-mqtt";
     source.esphome = paths.root + "/esphome";
+    source.matter-hub = paths.root + "/matterhub";
   };
 in
 {
@@ -36,10 +37,17 @@ in
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = {};
   sops.secrets.cloudy-http_auth_plain = {};
+  sops.secrets.tiny-ha_access_token = {};
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
+    '';
+  };
+  sops.templates.env_matter-hub = {
+    mode = "0444";
+    content = ''
+      HAMH_HOME_ASSISTANT_ACCESS_TOKEN=${config.sops.placeholder.tiny-ha_access_token}
     '';
   };
 
@@ -67,17 +75,18 @@ in
     in
     {
       enable = true;
+      autoUpdate.enable = true;
       networks = {
         net_vlan1.networkConfig = {
           driver = "macvlan";
-          ipRanges = [ "10.0.1.211-10.0.1.213" ];
+          ipRanges = [ "10.0.1.211-10.0.1.214" ];
           gateways = [ "10.0.1.1" ];
           subnets = [ "10.0.1.0/24" ];
           options.parent = "vlan1";
         };
         net_vlan2.networkConfig = {
           driver = "macvlan";
-          ipRanges = [ "10.0.2.211-10.0.2.213" ];
+          ipRanges = [ "10.0.2.211-10.0.2.214" ];
           gateways = [ "10.0.2.1" ];
           subnets = [ "10.0.2.0/24" ];
           options.parent = "vlan2";
@@ -126,7 +135,8 @@ in
 
         # --- Home Assistant ---
         hass.containerConfig = {
-          image = "ghcr.io/home-assistant/home-assistant:stable";
+          autoUpdate = "registry";
+          image = "ghcr.io/home-assistant/home-assistant:2025.11";
           addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
           networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.212" "${networks.net_vlan2.ref}:ip=10.0.2.212" ];
           publishPorts = [ "8123:8123" ];
@@ -139,7 +149,8 @@ in
 
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
-          image = "zwavejs/zwave-js-ui:latest";
+          autoUpdate = "registry";
+          image = "docker.io/zwavejs/zwave-js-ui:11";
           publishPorts = [ "8091:8091" ];
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store" ];
           devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
@@ -147,7 +158,8 @@ in
 
         # --- Mosquitto ---
         mosquitto.containerConfig = {
-          image = "eclipse-mosquitto:latest";
+          autoUpdate = "registry";
+          image = "docker.io/eclipse-mosquitto:2";
           publishPorts = [ "1883:1883" ];
           volumes = [
             "${paths.source.mosquitto-config}:/mosquitto/config"
@@ -158,17 +170,31 @@ in
 
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
-          image = "tsightler/ring-mqtt";
+          autoUpdate = "registry";
+          image = "docker.io/tsightler/ring-mqtt:latest";
           publishPorts = [ "8554:8554" ];
           volumes = [  "${paths.source.ring-mqtt}:/data" ];
         };
 
         # --- ESPHome ---
         esphome.containerConfig = {
-          image = "ghcr.io/esphome/esphome:latest";
-          networks = [  "podman" "${networks.net_vlan1.ref}:ip=10.0.1.213" "${networks.net_vlan2.ref}:ip=10.0.2.213" ];
+          autoUpdate = "registry";
+          image = "ghcr.io/esphome/esphome:stable";
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.213" "${networks.net_vlan2.ref}:ip=10.0.2.213" ];
           publishPorts = [ "6052:6052" ];
           volumes = [ "${paths.source.esphome}:/config" ];
+        };
+
+        # --- Matter Hub ---
+        matter-hub.containerConfig = {
+          autoUpdate = "registry";
+          image = "ghcr.io/t0bst4r/home-assistant-matter-hub:latest";
+          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.214" "${networks.net_vlan2.ref}:ip=10.0.2.214" ];
+          environmentFiles = [ config.sops.templates.env_matter-hub.path ];
+          environments.HAMH_HOME_ASSISTANT_URL = "http://hass:8123/";
+          environments.HAMH_LOG_LEVEL = "info";
+          environments.HAMH_HTTP_PORT = "8482";
+          volumes = [ "${paths.source.matter-hub}:/data" ];
         };
       };
     };
