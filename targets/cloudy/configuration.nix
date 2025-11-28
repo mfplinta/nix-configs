@@ -32,6 +32,10 @@ let
       host = "192.168.105.10";
       local = "192.168.105.11";
     };
+    vaultwarden = {
+      host = "192.168.106.10";
+      local = "192.168.106.11";
+    };
   };
   websiteConfig =
     {appName, envFile, extra ? {}}:
@@ -257,6 +261,7 @@ in
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 podman podman -"
+    "d /persist/containers/vaultwarden 0600 podman podman -"
   ];
 
   containers =
@@ -445,6 +450,12 @@ in
                       "</head>" "<meta name=\"darkreader-lock\"></head>"
                       "pixel.stirlingpdf.com" "{host}"
                     }
+                  }
+
+                  @vaultwarden host vaultwarden.matheusplinta.com
+                  handle @vaultwarden {
+                    ${block-bots}
+                    reverse_proxy ${addresses.vaultwarden.local}:8222
                   }
 
                   handle {
@@ -638,9 +649,40 @@ in
             };
           };
       };
+
+      vaultwarden = common // {
+        hostAddress = addresses.reverseProxy.host;
+        localAddress = addresses.reverseProxy.local;
+
+        bindMounts."/data:idmap" = {
+          hostPath = "/persist/containers/vaultwarden";
+          isReadOnly = false;
+        };
+
+        config =
+          { ... }:
+          {
+            system.stateVersion = config.system.stateVersion;
+            networking.firewall.enable = false;
+
+            systemd.tmpfiles.rules = [
+              "d /data 0755 podman podman -"
+            ];
+
+            services.vaultwarden = {
+              enable = true;
+              config.ROCKET_ADDRESS = "0.0.0.0";
+              config.ROCKET_PORT = 8222;
+              config.DATA_FOLDER = "/data";
+              config.DOMAIN = "https://vaultwarden.matheusplinta.com";
+              config.SIGNUPS_ALLOWED = false;
+            };
+          };
+      };
     };
 
   virtualisation.podman.enable = true;
+  virtualisation.podman.defaultNetwork.settings = { dns_enabled = true; };
   virtualisation.oci-containers.backend = "podman";
   users.groups.podman = {};
   users.users.podman = {
