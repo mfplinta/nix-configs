@@ -106,6 +106,11 @@
             ./targets/cloudy/configuration.nix
           ];
         };
+        "gateway" = {
+          modules = [
+            ./targets/gateway/configuration.nix
+          ];
+        };
       };
     in
     {
