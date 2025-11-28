@@ -25,7 +25,7 @@ let
             ip       = dev.vlan.${vlanId}.address;
             specific = getVlanNames dev vlanId;
             names    = general ++ specific;
-            lines    = map (n: ''local-data: "${n}. IN A ${ip}"'') names;
+            lines    = map (n: ''"${n}. IN A ${ip}"'') names;
             prev     = acc2.${vlanId} or [];
           in
             acc2 // { ${vlanId} = prev ++ lines; }
