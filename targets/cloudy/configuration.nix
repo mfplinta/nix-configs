@@ -418,12 +418,6 @@ in
                     reverse_proxy https://ha.matheusplinta.com
                   }
 
-                  @vaultwarden host vaultwarden.matheusplinta.com
-                  handle @vaultwarden {
-                    ${block-bots}
-                    reverse_proxy https://vaultwarden.matheusplinta.com
-                  }
-
                   @nextcloud host nextcloud.matheusplinta.com
                   handle @nextcloud {
                     ${block-bots}
