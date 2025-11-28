@@ -51,33 +51,74 @@ in
     (sysImport ../../common/server.nix)
     (sysImport ../../common/containers.nix)
   ];
+
+  boot.kernelParams = [ "net.ifnames=0" ];
   
+  networking =
+  let
+    net = networkConfig.device.gateway;
+  in
+  {
+    firewall.enable = false;
+    useDHCP = false;
+    nameservers = [ "1.1.1.1" ];
+    defaultGateway = {
+      address = net.vlan."1".gateway;
+      interface = "eth0";
+    };
+    interfaces."eth0".ipv4.addresses = [
+      {
+        address = net.vlan."1".address;
+        prefixLength = net.vlan."1".prefixLength;
+      }
+    ];
+    interfaces."eth1".ipv4.addresses = [
+      {
+        address = net.vlan."2".address;
+        prefixLength = net.vlan."2".prefixLength;
+      }
+    ];
+    interfaces."eth2".ipv4.addresses = [
+      {
+        address = net.vlan."3".address;
+        prefixLength = net.vlan."3".prefixLength;
+      }
+    ];
+  };
   services.unbound = {
     enable = true;
-
+    resolveLocalQueries = false;
     settings = {
       server = {
-        interface = [ "127.0.0.1" "::1" ];
+        prefetch = true;
+        tls-system-cert = true;
+        interface = [ "0.0.0.0" ];
         access-control = [
+          "10.0.0.0/8 allow"
           "127.0.0.0/8 allow"
-          "::1 allow"
+          "::1/128 allow"
         ];
+        access-control-view =
+          let
+            vlanIds = builtins.attrNames (networkConfig.topology.vlan or {});
+          in
+            map (v:
+              let subnet = networkConfig.topology.vlan.${v}.subnet;
+              in "${subnet} vlan${v}"
+            ) vlanIds;
 
         hide-identity = true;
-        hide-version = true;
-        rrset-roundrobin = true;
+        module-config = "iterator";
       };
-
-      stub-zone = [
-        {
-          name = "arpa";
-          stub-addr = "${networkConfig.topology.localnames-dns}@53";  # <-- change if your router IP differs
-        }
-      ];
 
       forward-zone = [
         {
+          name = "arpa.";
+          forward-addr = "${networkConfig.topology.localnames-dns}@53";
+        }
+        {
           name = ".";
+          forward-tls-upstream = true;
           forward-addr = networkConfig.topology.forward-dnses;
         }
       ];
