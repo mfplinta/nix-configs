@@ -104,6 +104,7 @@
                   "github:"
                 ];
               };
+              submodule.recurse = true;
             };
           };
 
