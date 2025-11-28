@@ -651,8 +651,8 @@ in
       };
 
       vaultwarden = common // {
-        hostAddress = addresses.reverseProxy.host;
-        localAddress = addresses.reverseProxy.local;
+        hostAddress = addresses.vaultwarden.host;
+        localAddress = addresses.vaultwarden.local;
 
         bindMounts."/data:idmap" = {
           hostPath = "/persist/containers/vaultwarden";
