@@ -47,7 +47,7 @@ in
   boot.initrd.kernelModules = [
     "e1000e"
   ];
-  boot.kernelModules = [ "ddcci-backlight" "kvmfr" ];
+  boot.kernelModules = [ "ddcci-backlight" "kvmfr" "uinput" ];
   boot.extraModulePackages = with config.boot.kernelPackages; [
     ddcci-driver
     kvmfr
@@ -114,6 +114,8 @@ in
         open = true;
       };
     i2c.enable = true;
+    opentabletdriver.enable = true;
+    uinput.enable = true;
   };
 
   programs.virt-manager.enable = true;
