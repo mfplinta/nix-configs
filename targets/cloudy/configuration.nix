@@ -148,7 +148,7 @@ in
     "boot.panic_on_fail"
   ];
 
-  sops.defaultSopsFile = ./../secrets.yaml;
+  sops.defaultSopsFile = ./../../private/secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
   sops.secrets.cloudy-http_auth_bcrypt = { };

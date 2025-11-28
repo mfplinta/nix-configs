@@ -20,8 +20,9 @@ let
     source.mosquitto-log = paths.root + "/mosquitto/log";
     source.ring-mqtt = paths.root + "/ring-mqtt";
     source.esphome = paths.root + "/esphome";
-    source.matter-hub = paths.root + "/matterhub";
+    source.matterhub = paths.root + "/matterhub";
   };
+  networkConfig = (import ./../../private/cfg.nix).network;
 in
 {
   imports = [
@@ -33,41 +34,54 @@ in
     (sysImport ../../common/containers.nix)
   ];
 
-  sops.defaultSopsFile = ./../secrets.yaml;
+  sops.defaultSopsFile = ./../../private/secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = {};
   sops.secrets.cloudy-http_auth_plain = {};
-  sops.secrets.tiny-ha_access_token = {};
+  sops.secrets.tiny-ha_token = {};
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
     '';
   };
-  sops.templates.env_matter-hub = {
+  sops.templates.env_matterhub = {
     mode = "0444";
     content = ''
-      HAMH_HOME_ASSISTANT_ACCESS_TOKEN=${config.sops.placeholder.tiny-ha_access_token}
+      HAMH_HOME_ASSISTANT_ACCESS_TOKEN=${config.sops.placeholder.tiny-ha_token}
     '';
   };
 
-  networking = {
-    useDHCP = false;
-    vlans = {
-      vlan1 = { id = 1; interface = nicName; };
-      vlan2 = { id = 2; interface = nicName; };
-      vlan3 = { id = 3; interface = nicName; };
-    };
-    interfaces = {
-      vlan1.ipv4.addresses = [{ address = "10.0.1.210"; prefixLength = 24; }];
-      vlan2.ipv4.addresses = [{ address = "10.0.2.210"; prefixLength = 24; }];
-      vlan3.ipv4.addresses = [{ address = "10.0.3.210"; prefixLength = 24; }];
-    };
-    defaultGateway = {
-      address = "10.0.1.1";
-    };
-    nameservers = [ "10.0.1.2" ];
-  };
+  networking = 
+    let
+      net = networkConfig.device.tiny;
+    in
+      {
+        useDHCP = false;
+        vlans = {
+          vlan1 = { id = 1; interface = nicName; };
+          vlan2 = { id = 2; interface = nicName; };
+          vlan3 = { id = 3; interface = nicName; };
+        };
+        interfaces = {
+          vlan1.ipv4.addresses = [{
+            address = net.vlan."1".address;
+            prefixLength = net.vlan."1".prefixLength;
+          }];
+          vlan2.ipv4.addresses = [{
+            address = net.vlan."2".address;
+            prefixLength = net.vlan."2".prefixLength;
+          }];
+          vlan3.ipv4.addresses = [{
+            address = net.vlan."3".address;
+            prefixLength = net.vlan."3".prefixLength;
+          }];
+        };
+        defaultGateway = {
+          address = net.vlan."1".gateway;
+        };
+        nameservers = [ net.vlan."1".dns ];
+      };
 
   virtualisation.quadlet =
     let
@@ -75,28 +89,24 @@ in
     in
     {
       enable = true;
-      autoUpdate.enable = true;
       networks = {
         net_vlan1.networkConfig = {
           driver = "macvlan";
-          ipRanges = [ "10.0.1.211-10.0.1.214" ];
-          gateways = [ "10.0.1.1" ];
-          subnets = [ "10.0.1.0/24" ];
+          ipRanges = [
+            "${networkConfig.device.tiny-ha.vlan."1".address}-${networkConfig.device.tiny-matterhub.vlan."1".address}"
+          ];
+          gateways = [ networkConfig.topology.vlan."1".gateway ];
+          subnets = [ networkConfig.topology.vlan."1".subnet ];
           options.parent = "vlan1";
         };
         net_vlan2.networkConfig = {
           driver = "macvlan";
-          ipRanges = [ "10.0.2.211-10.0.2.214" ];
-          gateways = [ "10.0.2.1" ];
-          subnets = [ "10.0.2.0/24" ];
+          ipRanges = [
+            "${networkConfig.device.tiny-ha.vlan."2".address}-${networkConfig.device.tiny-matterhub.vlan."2".address}"
+          ];
+          gateways = [ networkConfig.topology.vlan."2".gateway ];
+          subnets = [ networkConfig.topology.vlan."2".subnet ];
           options.parent = "vlan2";
-        };
-        net_vlan3.networkConfig = {
-          driver = "macvlan";
-          ipRanges = [ "10.0.3.211-10.0.3.213" ];
-          gateways = [ "10.0.3.1" ];
-          subnets = [ "10.0.3.0/24" ];
-          options.parent = "vlan3";
         };
       };
       containers = {
@@ -104,7 +114,7 @@ in
         caddy.containerConfig = {
           addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" "NET_ADMIN" ];
           image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.211" "${networks.net_vlan3.ref}:ip=10.0.3.211" ];
+          networks = [ "podman" ];
           publishPorts = [ "80:80" "443:443" ];
           environmentFiles = [ config.sops.templates.env_caddy.path ];
           volumes = [ "${paths.source.caddy-data}:/data" "${pkgs.writeText "Caddyfile" ''
@@ -126,6 +136,11 @@ in
                 reverse_proxy esphome:6052
               }
 
+              @matterhub host matterhub.matheusplinta.com
+              handle @matterhub {
+                reverse_proxy matterhub:8482
+              }
+
               handle {
                 abort
               }
@@ -135,10 +150,13 @@ in
 
         # --- Home Assistant ---
         hass.containerConfig = {
-          autoUpdate = "registry";
-          image = "ghcr.io/home-assistant/home-assistant:2025.11";
+          image = "ghcr.io/home-assistant/home-assistant:stable";
           addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.212" "${networks.net_vlan2.ref}:ip=10.0.2.212" ];
+          networks = [
+            "podman"
+            "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-ha.vlan."1".address}"
+            "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-ha.vlan."2".address}"
+          ];
           publishPorts = [ "8123:8123" ];
           volumes = [
             "${paths.source.hass}:/config"
@@ -149,8 +167,7 @@ in
 
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
-          autoUpdate = "registry";
-          image = "docker.io/zwavejs/zwave-js-ui:11";
+          image = "zwavejs/zwave-js-ui:latest";
           publishPorts = [ "8091:8091" ];
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store" ];
           devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
@@ -158,8 +175,7 @@ in
 
         # --- Mosquitto ---
         mosquitto.containerConfig = {
-          autoUpdate = "registry";
-          image = "docker.io/eclipse-mosquitto:2";
+          image = "eclipse-mosquitto:latest";
           publishPorts = [ "1883:1883" ];
           volumes = [
             "${paths.source.mosquitto-config}:/mosquitto/config"
@@ -170,31 +186,35 @@ in
 
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
-          autoUpdate = "registry";
-          image = "docker.io/tsightler/ring-mqtt:latest";
+          image = "tsightler/ring-mqtt";
           publishPorts = [ "8554:8554" ];
           volumes = [  "${paths.source.ring-mqtt}:/data" ];
         };
 
         # --- ESPHome ---
         esphome.containerConfig = {
-          autoUpdate = "registry";
-          image = "ghcr.io/esphome/esphome:stable";
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.213" "${networks.net_vlan2.ref}:ip=10.0.2.213" ];
+          image = "ghcr.io/esphome/esphome:latest";
+          networks = [
+            "podman"
+            "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-esphome.vlan."1".address}"
+            "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-esphome.vlan."2".address}"
+          ];
           publishPorts = [ "6052:6052" ];
           volumes = [ "${paths.source.esphome}:/config" ];
         };
 
-        # --- Matter Hub ---
-        matter-hub.containerConfig = {
-          autoUpdate = "registry";
+        # --- Matterhub ---
+        matterhub.containerConfig = {
           image = "ghcr.io/t0bst4r/home-assistant-matter-hub:latest";
-          networks = [ "podman" "${networks.net_vlan1.ref}:ip=10.0.1.214" "${networks.net_vlan2.ref}:ip=10.0.2.214" ];
-          environmentFiles = [ config.sops.templates.env_matter-hub.path ];
-          environments.HAMH_HOME_ASSISTANT_URL = "http://hass:8123/";
-          environments.HAMH_LOG_LEVEL = "info";
-          environments.HAMH_HTTP_PORT = "8482";
-          volumes = [ "${paths.source.matter-hub}:/data" ];
+          networks = [
+            "podman"
+            "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-matterhub.vlan."1".address}"
+            "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-matterhub.vlan."2".address}"
+          ];
+          environmentFiles = [ config.sops.templates.env_matterhub.path ];
+          environments.HAMH_HOME_ASSISTANT_URL = "http://hass:8123";
+          publishPorts = [ "8482:8482" ];
+          volumes = [ "${paths.source.matterhub}:/data" ];
         };
       };
     };
