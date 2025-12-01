@@ -261,7 +261,7 @@ in
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 podman podman -"
-    "d /persist/containers/vaultwarden 0600 podman podman -"
+    "d /persist/containers/vaultwarden 0600 root root -"
   ];
 
   containers =
@@ -648,7 +648,7 @@ in
         hostAddress = addresses.vaultwarden.host;
         localAddress = addresses.vaultwarden.local;
 
-        bindMounts."/data:idmap" = {
+        bindMounts."/var/lib/vaultwarden:idmap" = {
           hostPath = "/persist/containers/vaultwarden";
           isReadOnly = false;
         };
@@ -660,14 +660,14 @@ in
             networking.firewall.enable = false;
 
             systemd.tmpfiles.rules = [
-              "d /data 0755 podman podman -"
+              "d /data 0755 vaultwarden vaultwarden -"
             ];
 
             services.vaultwarden = {
               enable = true;
               config.ROCKET_ADDRESS = "0.0.0.0";
               config.ROCKET_PORT = 8222;
-              config.DATA_FOLDER = "/data";
+              config.DATA_FOLDER = "/var/lib/vaultwarden";
               config.DOMAIN = "https://vaultwarden.matheusplinta.com";
               config.SIGNUPS_ALLOWED = false;
             };
