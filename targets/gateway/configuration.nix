@@ -59,7 +59,8 @@ in
     net = networkConfig.device.gateway;
   in
   {
-    firewall.enable = false;
+    firewall.allowedTCPPorts = [ 53 ];
+    firewall.allowedUDPPorts = [ 53 ];
     useDHCP = false;
     nameservers = [ "1.1.1.1" ];
     defaultGateway = {
