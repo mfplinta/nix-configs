@@ -11,6 +11,7 @@
         # Utilities
         qalculate-gtk
         font-manager
+        unstable.yt-dlp
       ];
     };
 }
