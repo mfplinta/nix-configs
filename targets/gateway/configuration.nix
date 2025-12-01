@@ -117,6 +117,7 @@ in
         {
           name = "arpa.";
           forward-addr = "${networkConfig.topology.localnames-dns}@53";
+          forward-no-cache = true;
         }
         {
           name = ".";
