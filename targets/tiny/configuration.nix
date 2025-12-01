@@ -131,6 +131,11 @@ in
                 reverse_proxy hass:8123
               }
 
+              @zwavejs host zwavejs.matheusplinta.com
+              handle @zwavejs {
+                reverse_proxy zwavejs:8091
+              }
+
               @esphome host esphome.matheusplinta.com
               handle @esphome {
                 reverse_proxy esphome:6052
@@ -157,7 +162,6 @@ in
             "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-ha.vlan."1".address}"
             "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-ha.vlan."2".address}"
           ];
-          publishPorts = [ "8123:8123" ];
           volumes = [
             "${paths.source.hass}:/config"
             "/etc/localtime:/etc/localtime:ro"
@@ -168,7 +172,6 @@ in
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
           image = "zwavejs/zwave-js-ui:latest";
-          publishPorts = [ "8091:8091" ];
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store" ];
           devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
         };
@@ -187,7 +190,6 @@ in
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
           image = "tsightler/ring-mqtt";
-          publishPorts = [ "8554:8554" ];
           volumes = [  "${paths.source.ring-mqtt}:/data" ];
         };
 
@@ -199,7 +201,7 @@ in
             "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-esphome.vlan."1".address}"
             "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-esphome.vlan."2".address}"
           ];
-          publishPorts = [ "6052:6052" ];
+          #publishPorts = [ "6052:6052" ];
           volumes = [ "${paths.source.esphome}:/config" ];
         };
 
@@ -213,7 +215,6 @@ in
           ];
           environmentFiles = [ config.sops.templates.env_matterhub.path ];
           environments.HAMH_HOME_ASSISTANT_URL = "http://hass:8123";
-          publishPorts = [ "8482:8482" ];
           volumes = [ "${paths.source.matterhub}:/data" ];
         };
       };
