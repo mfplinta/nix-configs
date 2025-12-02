@@ -59,7 +59,9 @@ in
     net = networkConfig.device.gateway;
   in
   {
-    firewall.enable = false;
+    firewall.allowedTCPPorts = [ 53 ];
+    firewall.allowedUDPPorts = [ 53 ];
+    firewall.checkReversePath = "loose";
     useDHCP = false;
     nameservers = [ "1.1.1.1" ];
     defaultGateway = {
@@ -92,7 +94,7 @@ in
       server = {
         prefetch = true;
         tls-system-cert = true;
-        interface = [ "0.0.0.0" ];
+        interface-automatic = true;
         access-control = [
           "10.0.0.0/8 allow"
           "127.0.0.0/8 allow"
@@ -102,10 +104,10 @@ in
           let
             vlanIds = builtins.attrNames (networkConfig.topology.vlan or {});
           in
-            map (v:
+            (map (v:
               let subnet = networkConfig.topology.vlan.${v}.subnet;
               in "${subnet} vlan${v}"
-            ) vlanIds;
+            ) vlanIds) ++ [ "10.69.69.0/24 vlan3" ];
 
         hide-identity = true;
         module-config = "iterator";
