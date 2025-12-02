@@ -104,10 +104,10 @@ in
           let
             vlanIds = builtins.attrNames (networkConfig.topology.vlan or {});
           in
-            map (v:
+            (map (v:
               let subnet = networkConfig.topology.vlan.${v}.subnet;
               in "${subnet} vlan${v}"
-            ) vlanIds;
+            ) vlanIds) ++ [ "10.69.69.0/24 vlan3" ];
 
         hide-identity = true;
         module-config = "iterator";
