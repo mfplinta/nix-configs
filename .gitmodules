@@ -1,3 +1,4 @@
 [submodule "private"]
 	path = private
 	url = https://github.com/mfplinta/nix-private.git
+	branch = main

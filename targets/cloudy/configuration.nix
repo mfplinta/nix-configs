@@ -328,6 +328,8 @@ in
               nameservers = [ "10.0.3.2" ];
             };
 
+            environment.systemPackages = with pkgs; [ dig ];
+
             services.caddy = {
               enable = true;
               package = pkgs.caddy.withPlugins {
