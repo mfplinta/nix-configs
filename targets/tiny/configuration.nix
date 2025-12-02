@@ -59,6 +59,7 @@ in
       {
         firewall.allowedTCPPorts = [ 80 443 ];
         firewall.allowedUDPPorts = [ 80 443 ];
+        firewall.checkReversePath = "loose";
         useDHCP = false;
         vlans = {
           vlan1 = { id = 1; interface = nicName; };

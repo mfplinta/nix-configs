@@ -61,6 +61,7 @@ in
   {
     firewall.allowedTCPPorts = [ 53 ];
     firewall.allowedUDPPorts = [ 53 ];
+    firewall.checkReversePath = "loose";
     useDHCP = false;
     nameservers = [ "1.1.1.1" ];
     defaultGateway = {
