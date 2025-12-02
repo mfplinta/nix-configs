@@ -94,7 +94,7 @@ in
       server = {
         prefetch = true;
         tls-system-cert = true;
-        interface = [ "0.0.0.0" ];
+        interface-automatic = true;
         access-control = [
           "10.0.0.0/8 allow"
           "127.0.0.0/8 allow"
