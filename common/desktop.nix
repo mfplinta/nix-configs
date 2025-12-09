@@ -103,7 +103,7 @@
                   ];
                 bind =
                 let
-                  wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i)";
+                  wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
                 in
                   [
                     # Command binds
