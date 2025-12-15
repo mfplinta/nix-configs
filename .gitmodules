@@ -2,3 +2,6 @@
 	path = private
 	url = https://github.com/mfplinta/nix-private.git
 	branch = main
+[submodule "packages/nix-nvibrant"]
+	path = packages/nix-nvibrant
+	url = https://github.com/mfplinta/nix-nvibrant

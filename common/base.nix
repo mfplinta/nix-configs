@@ -121,6 +121,8 @@
             smartmontools
             netcat-gnu
             sops
+            killall
+            lm_sensors
           ];
         }
         (lib.mkIf config.myCfg.vmagentEnable {

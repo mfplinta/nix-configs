@@ -15,21 +15,22 @@
         "application/x-extension-xht"
       ];
 
-      programs.chromium = {
+      programs.brave = {
         enable = true;
-        package = pkgs.brave;
+        #package = pkgs.brave;
         extensions = [
           { id = "cjpalhdlnbpafiamejdnhcphjbkeiagm"; }
           { id = "eimadpbcbfnmbkopoojfekhnkhdbieeh"; }
           { id = "nngceckbapebfimnlniiiahkandclblb"; }
           { id = "hkgfoiooedgoejojocmhlaklaeopbecg"; }
-          { id = "jcbmcnpepaddcedmjdcmhbekjhbfnlff";}
+          { id = "jcbmcnpepaddcedmjdcmhbekjhbfnlff"; }
         ];
         commandLineArgs = [
           "--disable-features=AutofillSavePaymentMethods"
           "--password-store=kwallet6"
           "--disk-cache-dir=\"/tmp/BraveCache\""
           "--ozone-platform=wayland"
+          "--enable-features=WaylandLinuxDrmSyncobj"
         ];
       };
 

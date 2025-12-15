@@ -104,6 +104,17 @@ in
     '';
     serviceConfig.Type = "oneshot";
   };
+  systemd.services."nvidia_oc" = {
+    script = ''
+      ${pkgs.nvidia_oc}/bin/nvidia_oc set --index 0 --power-limit 200000
+    '';
+    serviceConfig.Type = "oneshot";
+  };
+  services.nvibrant = {
+    enable = true;
+    vibrancy = [ "0" "0" "0" "0" "0" "0" "0" ];
+    dithering = [ "2" "0" "0" "2" "0" "2" "0" ];
+  };
 
   hardware = {
     nvidia =
@@ -166,6 +177,7 @@ in
   home-manager.users.matheus =
     {
       hmImport,
+      inputs,
       ...
     }:
     {
@@ -204,14 +216,14 @@ in
             ];
           windowrule =
             let
-              moonlight = "initialTitle:^(.*)(- Moonlight)";
+              moonlight = "match:initial_title ^(.*)(- Moonlight)";
             in
             [
-              "monitor ${leftMonitor},class:(flameshot)" # Flameshot 0x0 on left monitor
+              "match:class (flameshot),monitor ${leftMonitor}" # Flameshot 0x0 on left monitor
 
-              "workspace name:win,${moonlight}"
-              "fullscreen,${moonlight}"
-              "idleinhibit focus,${moonlight}"
+              "${moonlight},workspace name:win"
+              "${moonlight},fullscreen 1"
+              "${moonlight},idle_inhibit focus"
             ];
           bind = [
             "SUPER, W, workspace, name:win"
@@ -272,6 +284,28 @@ in
 
       programs.looking-glass-client.enable = true;
 
+      services.easyeffects = {
+        preset = "default";
+        extraPresets = {
+          default = {
+            input = {
+              blocklist = [];
+              plugins_order = [
+                "stereo_tools#0"
+                "rnnoise#0"
+              ];
+              "stereo_tools#0" = {
+                mode = "LR > LL (Mono Left Channel)";
+              };
+              "rnnoise#0" = {
+                "enable-vad" = false;
+                release = 50.0;
+              };
+            };
+          };
+        };
+      };
+
       home.packages =
         with pkgs;
         with pkgs.kdePackages;
@@ -279,6 +313,7 @@ in
           moonlight-qt
           blender
           soundwireserver
+          nvibrant
         ];
     };
 }

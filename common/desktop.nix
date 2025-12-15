@@ -49,6 +49,7 @@
               wofi-emoji = getExe pkgs.wofi-emoji;
               wofi-power-menu = getExe pkgs.wofi-power-menu;
               galaxy-buds-client = getExe pkgs.galaxy-buds-client;
+              kwallet = "${pkgs.kdePackages.kwallet}/bin/kwalletd6";
               flameshot = getExe (pkgs.flameshot.override { enableWlrSupport = true; });
               wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
               wl-paste = "${pkgs.wl-clipboard}/bin/wl-paste";
@@ -71,35 +72,39 @@
                   "uwsm app -- ${galaxy-buds-client} /StartMinimized"
                   "uwsm app -- ${wl-paste} --type text --watch ${cliphist} store"
                   "uwsm app -- ${wl-paste} --type image --watch ${cliphist} store"
+                  "uwsm app -- ${kwallet}"
                 ];
                 windowrule =
                   let
-                    floatInCursorMatcher = "title:^(Picture in picture|Syncthing Tray|Bitwarden)";
+                    floatInCursorMatcher = "match:title ^(Picture in picture|Syncthing Tray|Bitwarden)";
                   in
                   [
-                    "suppressevent maximize, class:.*"
-                    "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
+                    #"match:class .*,suppress_event maximize"
+                    "match:class ^$,match:title ^$,match:xwayland 1,match:float 1,match:fullscreen 0,match:pin 0,no_initial_focus 1"
 
-                    "float,${floatInCursorMatcher}"
-                    "pin,${floatInCursorMatcher}"
-                    "noanim,${floatInCursorMatcher}"
-                    "move onscreen cursor -50% -50%,${floatInCursorMatcher}"
-                    "opaque,${floatInCursorMatcher}"
-                    "noborder,${floatInCursorMatcher}"
+                    "${floatInCursorMatcher},float 1"
+                    "${floatInCursorMatcher},pin 1"
+                    "${floatInCursorMatcher},no_anim 1"
+                    "${floatInCursorMatcher},move onscreen cursor -50% -50%"
+                    "${floatInCursorMatcher},opaque 1"
+                    "${floatInCursorMatcher},border_size 0"
 
-                    "move 0 0,class:(flameshot)"
-                    "pin,class:(flameshot)"
-                    "noborder,class:(flameshot)"
-                    "stayfocused,class:(flameshot)"
-                    "float,class:(flameshot)"
-                    "opaque,class:(flameshot)"
+                    "match:title (flameshot),move -1080 0"
+                    "match:title (flameshot),size 6000 2160"
+                    "match:title (flameshot),pin 1"
+                    "match:title (flameshot),border_size 0"
+                    "match:title (flameshot),float 1"
+                    "match:title (flameshot),opaque 1"
+                    "match:title (flameshot),no_anim 1"
+                    #"match:title (flameshot),no_initial_focus 1"
+                    "match:title (flameshot),no_max_size 1"
 
-                    "noanim,floating:1,class:(ONLYOFFICE)"
-                    "noborder,floating:1,class:(ONLYOFFICE)"
-                    "center 1,class:(DesktopEditors)"
-                    "pin,class:(DesktopEditors)"
+                    "match:class (ONLYOFFICE),match:float 1,no_anim 1"
+                    "match:class (ONLYOFFICE),match:float 1,border_size 0"
+                    "match:class (DesktopEditors),center 1"
+                    "match:class (DesktopEditors),pin 1"
 
-                    "keepaspectratio,title:^(Picture in picture)"
+                    "match:title ^(Picture in picture),keep_aspect_ratio 1"
                   ];
                 bind =
                 let
@@ -162,6 +167,9 @@
                 misc."force_default_wallpaper" = 1;
                 misc."disable_hyprland_logo" = true;
                 misc."enable_anr_dialog" = false;
+                misc."disable_watchdog_warning" = true;
+                ecosystem."no_update_news" = true;
+                ecosystem."no_donation_nag" = true;
               }
               config.myCfg.hyprland
             ];
@@ -194,6 +202,23 @@
             config.myCfg.hyprpanel
           ];
         };
+
+        xdg.configFile."hypr/xdph.conf".source =
+          (pkgs.writeText "xdph"
+            ''
+            screencopy {
+              allow_token_by_default = true
+            }
+            ''
+          );
+
+        xdg.configFile."wofi-power-menu.toml".source =
+          (pkgs.writeText "wofi-power-menu-config"
+            ''
+            [menu.logout]
+              cmd = "bash -c 'uwsm stop'"
+            ''
+          );
 
         xdg.configFile."hyprpanel/modules.json".source =
           (pkgs.formats.json { }).generate "hyprpanel-modules"
@@ -434,7 +459,8 @@
       };
 
       config = {
-        boot.kernelPackages = pkgs.lib.mkDefault pkgs.linuxPackages_cachyos;
+        #boot.kernelPackages = pkgs.lib.mkDefault pkgs.linuxPackages_cachyos;
+        boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;
         boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
         boot.kernelParams = [
           "quiet"
@@ -496,7 +522,11 @@
               backend=drm
               ${config.myCfg.westonOutput}
             ''}";
-            theme = "catppuccin-mocha";
+            theme = "${pkgs.catppuccin-sddm.override {
+              flavor = "mocha";
+              accent = "mauve";
+              disableBackground = true;
+            }}/share/sddm/themes/catppuccin-mocha-mauve";
             package = pkgs.kdePackages.sddm;
           };
         };
@@ -521,10 +551,6 @@
         };
         programs.dconf.enable = true;
 
-        environment.systemPackages = [
-          pkgs.catppuccin-sddm
-        ];
-
         programs.hyprland = {
           enable = true;
           withUWSM = true;
@@ -533,6 +559,23 @@
           package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
           portalPackage =
             inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+        };
+
+        xdg.portal = {
+          enable = true;
+          extraPortals =
+            with pkgs;
+            lib.mkForce [
+              kdePackages.xdg-desktop-portal-kde
+              xdg-desktop-portal-gtk
+              inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
+            ];
+
+          config = {
+            common = {
+              "org.freedesktop.impl.portal.FileChooser" = "kde";
+            };
+          };
         };
 
         security.pam.services.hyprlock = { };

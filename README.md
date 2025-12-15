@@ -10,7 +10,7 @@ nix-shell -p clevis
 echo "password" | clevis encrypt tang '{"url": "http://tang.local"}' > /mnt/root/tang.jwe
 
 # Install system
-nixos-install --flake .#hostname --option 'extra-substituters' 'https://chaotic-nyx.cachix.org/' --option extra-trusted-public-keys "chaotic-nyx.cachix.org-1:HfnXSw4pj95iI/n17rIDy40agHj12WfF+Gqk6SonIT8=" --option 'extra-substituters' 'https://hyprland.cachix.org/' --option extra-trusted-public-keys "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" --option 'extra-substituters' 'https://devenv.cachix.org' --option extra-trusted-public-keys "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+nixos-install --flake .#hostname --option 'extra-substituters' 'https://hyprland.cachix.org/' --option extra-trusted-public-keys "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" --option 'extra-substituters' 'https://devenv.cachix.org' --option extra-trusted-public-keys "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
 ```
 
 Upgrading configuration:

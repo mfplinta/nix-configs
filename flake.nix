@@ -1,23 +1,24 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs-old.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-    home-manager.url = "github:nix-community/home-manager/release-25.05";
+    home-manager.url = "github:nix-community/home-manager/release-25.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     hyprland.url = "github:hyprwm/Hyprland";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
-    nixd.url = "github:mfplinta/nixd/7aedde58da4f5d215ff445517708f6efcf5d615f";
-    nixd.inputs.nixpkgs.follows = "nixpkgs";
+    nixd.url = "github:mfplinta/nixd";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    nvibrant.url = "path:./packages/nix-nvibrant";
+    nvibrant.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
     inputs@{
@@ -25,13 +26,13 @@
       nixpkgs,
       disko,
       wrapper-manager,
-      chaotic,
       home-manager,
       nix-vscode-extensions,
       nix-index-database,
       nixd,
       sops-nix,
       quadlet-nix,
+      nvibrant,
       ...
     }:
     let
@@ -124,11 +125,9 @@
           };
           modules = [
             disko.nixosModules.disko
-            chaotic.nixosModules.nyx-cache
-            chaotic.nixosModules.nyx-overlay
-            chaotic.nixosModules.nyx-registry
             sops-nix.nixosModules.sops
             quadlet-nix.nixosModules.quadlet
+            nvibrant.nixosModules.default
             (
               { ... }:
               {
@@ -153,8 +152,9 @@
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
-                  (final: prev: {
-                    nixd = prev.callPackage "${nixd}" { };
+                  nvibrant.overlays.default
+                  (final: prev: rec {
+                    nixd = unstable.nixd;
                     myScripts =
                       let
                         scripts = (import ./scripts/default.nix { pkgs = prev; });
@@ -179,6 +179,14 @@
                       inherit (final.stdenv.hostPlatform) system;
                       inherit (final) config;
                     };
+                    stremio = (import inputs.nixpkgs-old {
+                      inherit (final.stdenv.hostPlatform) system;
+                      inherit (final) config;
+                    }).stremio;
+                    android-udev-rules = (import inputs.nixpkgs-old {
+                      inherit (final.stdenv.hostPlatform) system;
+                      inherit (final) config;
+                    }).android-udev-rules;
                   })
                 ];
                 networking.hostName = name;
