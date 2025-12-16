@@ -170,7 +170,9 @@ in
   sops.secrets.cloudy-mm_secretkey = { };
   sops.secrets.cloudy-mm_turnstile_sitekey = { };
   sops.secrets.cloudy-mm_turnstile_secret = { };
-  sops.secrets.cloudy-nextcloud_admin = { };
+  sops.secrets.cloudy-nextcloud_admin = {
+    mode = "0444";
+  };
   sops.secrets.cloudy-private_wg = {
     mode = "0444";
   };
@@ -715,7 +717,7 @@ in
               package = pkgs.nextcloud32;
               extraAppsEnable = true;
               extraApps = {
-                inherit (pkgs.nextcloud32.packages.apps) calendar bookmarks;
+                inherit (pkgs.nextcloud32.packages.apps) calendar bookmarks end_to_end_encryption;
               };
               hostName = hostName;
               https = true;
@@ -748,7 +750,7 @@ in
             };
             services.nginx.virtualHosts."${hostName}".listen = [
               {
-                addr = "127.0.0.1";
+                addr = "0.0.0.0";
                 port = 8000;
               }
             ];
