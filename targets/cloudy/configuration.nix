@@ -265,6 +265,8 @@ in
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
     "d /persist/containers/vaultwarden 0600 root root -"
+    "d /persist/containers/nextcloud/app 0600 root root -"
+    "d /persist/containers/nextcloud/db 0600 root root -"
     # Podman containers
     "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
     "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
