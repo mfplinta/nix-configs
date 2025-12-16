@@ -711,7 +711,8 @@ in
           {
             system.stateVersion = config.system.stateVersion;
             networking.firewall.enable = false;
-
+            environment.systemPackages = [ pkgs.cron ];
+            
             services.nextcloud = {
               enable = true;
               package = pkgs.nextcloud32;
@@ -738,6 +739,7 @@ in
               ];
               settings.trusted_proxies = [
                 "127.0.0.1"
+                addresses.reverseProxy.local
               ];
               settings.filelocking.enabled = true;
               settings.log_type = "file";
