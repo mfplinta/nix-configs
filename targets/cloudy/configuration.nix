@@ -16,10 +16,6 @@ let
       host = "192.168.101.10";
       local = "192.168.101.11";
     };
-    gitea = {
-      host = "192.168.104.10";
-      local = "192.168.104.11";
-    };
     ws-blog = {
       host = "192.168.102.10";
       local = "192.168.102.11";
@@ -28,6 +24,10 @@ let
       host = "192.168.103.10";
       local = "192.168.103.11";
     };
+    gitea = {
+      host = "192.168.104.10";
+      local = "192.168.104.11";
+    };
     ws-mastermovement = {
       host = "192.168.105.10";
       local = "192.168.105.11";
@@ -35,6 +35,10 @@ let
     vaultwarden = {
       host = "192.168.106.10";
       local = "192.168.106.11";
+    };
+    nextcloud = {
+      host = "192.168.107.10";
+      local = "192.168.107.11";
     };
   };
   websiteConfig =
@@ -166,6 +170,7 @@ in
   sops.secrets.cloudy-mm_secretkey = { };
   sops.secrets.cloudy-mm_turnstile_sitekey = { };
   sops.secrets.cloudy-mm_turnstile_secret = { };
+  sops.secrets.cloudy-nextcloud_admin = { };
   sops.secrets.cloudy-private_wg = {
     mode = "0444";
   };
@@ -425,7 +430,7 @@ in
                   @nextcloud host nextcloud.matheusplinta.com
                   handle @nextcloud {
                     ${block-bots}
-                    reverse_proxy https://nextcloud.matheusplinta.com
+                    reverse_proxy ${addresses.nextcloud.local}:8000
                   }
 
                   @tmdb host tmdb-addon-stremio.matheusplinta.com
@@ -675,6 +680,76 @@ in
               config.DOMAIN = "https://vaultwarden.matheusplinta.com";
               config.SIGNUPS_ALLOWED = false;
             };
+          };
+      };
+
+      nextcloud = common // {
+        hostAddress = addresses.nextcloud.host;
+        localAddress = addresses.nextcloud.local;
+
+        bindMounts."${config.sops.secrets.cloudy-nextcloud_admin.path}".isReadOnly = true;
+
+        bindMounts."/var/lib/nextcloud:idmap" = {
+          hostPath = "/persist/containers/nextcloud/app";
+          isReadOnly = false;
+        };
+
+        bindMounts."/var/lib/postgresql:idmap" = {
+          hostPath = "/persist/containers/nextcloud/db";
+          isReadOnly = false;
+        };
+
+        config =
+          { ... }:
+          let
+            hostName = "nextcloud";
+          in
+          {
+            system.stateVersion = config.system.stateVersion;
+            networking.firewall.enable = false;
+
+            services.nextcloud = {
+              enable = true;
+              package = pkgs.nextcloud31;
+              extraAppsEnable = true;
+              extraApps = {
+                inherit (pkgs.nextcloud31.packages.apps) calendar bookmarks;
+              };
+              hostName = hostName;
+              https = true;
+              configureRedis = true;
+              phpOptions = {
+                "opcache.interned_strings_buffer" = "16";
+              };
+              caching = {
+                redis = true;
+                memcached = true;
+              };
+              maxUploadSize = "20G";
+              database.createLocally = true;
+              settings.maintenance_window_start = 9; # 2 AM MST
+              settings.default_phone_region = "US";
+              settings.trusted_domains = [
+                "nextcloud.matheusplinta.com"
+              ];
+              settings.trusted_proxies = [
+                "127.0.0.1"
+              ];
+              settings.filelocking.enabled = true;
+              settings.log_type = "file";
+              config = {
+                dbtype = "pgsql";
+                adminuser = "admin";
+                adminpassFile = "${config.sops.secrets.cloudy-nextcloud_admin.path}";
+              };
+              settings."overwriteprotocol" = "https"; # Fix redirect after login
+            };
+            services.nginx.virtualHosts."${hostName}".listen = [
+              {
+                addr = "127.0.0.1";
+                port = 8000;
+              }
+            ];
           };
       };
     };
