@@ -625,14 +625,18 @@
         ]
       },
       "locked": {
-        "path": "./packages/nix-nvibrant",
-        "type": "path"
+        "lastModified": 1765800442,
+        "narHash": "sha256-gMEF+KV0iC+jLGAfrquCpABY6tEybUHxpvF+8jeWXXY=",
+        "owner": "mfplinta",
+        "repo": "nix-nvibrant",
+        "rev": "8ed59130ea2d1c6b875ef228717ec636b6014e97",
+        "type": "github"
       },
       "original": {
-        "path": "./packages/nix-nvibrant",
-        "type": "path"
-      },
-      "parent": []
+        "owner": "mfplinta",
+        "repo": "nix-nvibrant",
+        "type": "github"
+      }
     },
     "pre-commit-hooks": {
       "inputs": {
