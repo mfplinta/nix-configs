@@ -153,8 +153,8 @@
                 nixpkgs.overlays = [
                   nix-vscode-extensions.overlays.default
                   nvibrant.overlays.default
+                  nixd.overlays.default
                   (final: prev: rec {
-                    nixd = unstable.nixd;
                     myScripts =
                       let
                         scripts = (import ./scripts/default.nix { pkgs = prev; });

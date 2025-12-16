@@ -56,6 +56,9 @@
                   "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options.home-manager.users.type.getSubOptions []";
               };
             };
+            "nix.hiddenLanguageServerErrors" = [
+              "textDocument/definition"
+            ];
             # C/C++
             "cmake.cmakePath" = lib.getExe cmake;
             "cmake.environment" = rec {
@@ -65,6 +68,7 @@
             "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
             # Python
             "python.analysis.typeCheckingMode" = "basic";
+            
           };
 
           extensions =

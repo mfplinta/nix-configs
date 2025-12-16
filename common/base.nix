@@ -123,6 +123,7 @@
             sops
             killall
             lm_sensors
+            net-tools
           ];
         }
         (lib.mkIf config.myCfg.vmagentEnable {
