@@ -253,15 +253,17 @@ in
     };
 
   systemd.tmpfiles.rules = [
+    # NixOS containers
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
     "d /persist/containers/ws-blog/app 0600 root root -"
-    "d /persist/containers/ws-blog/quartz-vault 0600 podman podman -"
-    "d /persist/containers/ws-blog/quartz-repo 0600 podman podman -"
     "d /persist/containers/ws-ots 0600 root root -"
     "d /persist/containers/ws-mastermovement 0600 root root -"
     "d /persist/containers/gitea 0600 root root -"
-    "d /persist/containers/stirling-pdf 0600 podman podman -"
     "d /persist/containers/vaultwarden 0600 root root -"
+    # Podman containers
+    "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
+    "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
+    "d /persist/containers/stirling-pdf 0600 root root -"
   ];
 
   containers =
@@ -680,18 +682,14 @@ in
   virtualisation.podman.enable = true;
   virtualisation.podman.defaultNetwork.settings = { dns_enabled = true; };
   virtualisation.oci-containers.backend = "podman";
-  users.groups.podman = {};
-  users.users.podman = {
+  users.groups.containers = {};
+  users.users.containers = {
     home = "/persist/podman";
     isNormalUser = true;
-    group = "podman";
+    group = "containers";
 
     subUidRanges = [ { startUid = 100000; count = 65536; } ];
     subGidRanges = [ { startGid = 100000; count = 65536; } ];
-
-    extraGroups = [
-      "podman"
-    ];
   };
 
   virtualisation.quadlet = {
@@ -700,34 +698,37 @@ in
       # --- Quartz ---
       quartz.containerConfig = {
         image = "docker.io/mfplinta016/dockerized-quartz:latest";
+        publishPorts = [ "8080:80" ];
+        userns = "auto";
+        volumes = [
+          "/persist/containers/ws-blog/quartz-vault:/vault:ro,U"
+          "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz:U"
+        ];
         environments = {
           GIT_BRANCH = "jackyzha0/v4";
           AUTO_REBUILD = "true";
         };
-        volumes = [
-          "/persist/containers/ws-blog/quartz-vault:/vault:ro"
-          "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz"
-        ];
-        publishPorts = [ "8080:80" ];
       };
 
       # --- TMDB Addon ---
       tmdb-addon.containerConfig = {
         image = "docker.io/viren070/tmdb-addon:latest";
-        environmentFiles = [ config.sops.templates.env_tmdb.path ];
         publishPorts = [ "1337:1337" ];
+        userns = "auto";
+        environmentFiles = [ config.sops.templates.env_tmdb.path ];
       };
 
       # --- Stirling PDF ---
       stirling-pdf.containerConfig = {
         image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
         publishPorts = [ "8088:8080" ];
+        userns = "auto";
         volumes = [
-          "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata"
-          "/persist/containers/stirling-pdf/extraConfigs:/configs"
-          "/persist/containers/stirling-pdf/customFiles:/customFiles"
-          "/persist/containers/stirling-pdf/logs:/logs"
-          "/persist/containers/stirling-pdf/pipeline:/pipeline"
+          "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata:U"
+          "/persist/containers/stirling-pdf/extraConfigs:/configs:U"
+          "/persist/containers/stirling-pdf/customFiles:/customFiles:U"
+          "/persist/containers/stirling-pdf/logs:/logs:U"
+          "/persist/containers/stirling-pdf/pipeline:/pipeline:U"
         ];
         environments = {
           DISABLE_ADDITIONAL_FEATURES = "false";
@@ -736,49 +737,6 @@ in
       };
     };
   };
-
-  # virtualisation.oci-containers.containers = {
-  #   quartz = {
-  #     autoStart = true;
-  #     image = "docker.io/mfplinta016/dockerized-quartz:latest";
-  #     environment = {
-  #       GIT_BRANCH = "jackyzha0/v4";
-  #       AUTO_REBUILD = "true";
-  #     };
-  #     volumes = [
-  #       "/persist/containers/ws-blog/quartz-vault:/vault:ro"
-  #       "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz"
-  #     ];
-  #     ports = [ "8080:80" ];
-  #     podman.user = "podman";
-  #   };
-  #   tmdb-addon = {
-  #     autoStart = true;
-  #     image = "docker.io/viren070/tmdb-addon:latest";
-  #     environmentFiles = [
-  #       config.sops.templates.env_tmdb.path
-  #     ];
-  #     ports = [ "1337:1337" ];
-  #     podman.user = "podman";
-  #   };
-  #   stirling-pdf = {
-  #     autoStart = true;
-  #     image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
-  #     ports = [ "8088:8080" ];
-  #     volumes = [
-  #       "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata"
-  #       "/persist/containers/stirling-pdf/extraConfigs:/configs"
-  #       "/persist/containers/stirling-pdf/customFiles:/customFiles"
-  #       "/persist/containers/stirling-pdf/logs:/logs"
-  #       "/persist/containers/stirling-pdf/pipeline:/pipeline"
-  #     ];
-  #     environment = {
-  #       DISABLE_ADDITIONAL_FEATURES = "false";
-  #       LANGS = "en_US";
-  #     };
-  #     podman.user = "podman";
-  #   };
-  # };
 
   services.fail2ban.enable = true;
 
