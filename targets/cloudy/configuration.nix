@@ -710,10 +710,10 @@ in
 
             services.nextcloud = {
               enable = true;
-              package = pkgs.nextcloud31;
+              package = pkgs.nextcloud32;
               extraAppsEnable = true;
               extraApps = {
-                inherit (pkgs.nextcloud31.packages.apps) calendar bookmarks;
+                inherit (pkgs.nextcloud32.packages.apps) calendar bookmarks;
               };
               hostName = hostName;
               https = true;
