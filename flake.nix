@@ -17,7 +17,7 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
-    nvibrant.url = "path:./packages/nix-nvibrant";
+    nvibrant.url = "gtihub:mfplinta/nix-nvibrant";
     nvibrant.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
