@@ -339,7 +339,7 @@ in
                   "github.com/caddy-dns/cloudflare@v0.2.1"
                   "github.com/caddyserver/replace-response@v0.0.0-20250618171559-80962887e4c6"
                 ];
-                hash = "sha256-UJ5IwoCBGs9koDGglHyNAD8UpgifKnDCJI7UvAw6ZD4=";
+                hash = "sha256-zBhsiXgA4CAJgjgpHpLo27CFO5tF0x8YKbLvnUawmck=";
               };
               environmentFile = config.sops.templates.env_caddy.path;
               configFile = 
