@@ -184,6 +184,10 @@ in
   sops.secrets.cloudy-nextcloud_admin = {
     mode = "0444";
   };
+  sops.secrets.cloudy-nextcloud_onlyoffice_jwt = {
+    mode = "0444";
+  };
+  sops.secrets.cloudy-nextcloud_onlyoffice_nonce = { };
   sops.secrets.cloudy-private_wg = {
     mode = "0444";
   };
@@ -227,6 +231,12 @@ in
       SECRET_KEY=${config.sops.placeholder.cloudy-mm_secretkey}
       TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-mm_turnstile_sitekey}
       TURNSTILE_SECRET=${config.sops.placeholder.cloudy-mm_turnstile_secret}
+    '';
+  };
+  sops.templates.nextcloud_nonce = {
+    mode = "0444";
+    content = ''
+      set $secure_link_secret "${config.sops.placeholder.cloudy-nextcloud_onlyoffice_nonce}";
     '';
   };
 
@@ -297,9 +307,15 @@ in
       };
 
       commonConfig = {
+        nixpkgs.config.allowUnfree = true;
         system.stateVersion = config.system.stateVersion;
         networking.firewall.enable = false;
+
         environment.enableAllTerminfo = true;
+        environment.systemPackages = with pkgs; [
+          dig
+          net-tools
+        ];
       };
 
       commonWith = extra: common // extra;
@@ -363,8 +379,6 @@ in
               };
               nameservers = [ "10.0.3.2" ];
             };
-
-            environment.systemPackages = with pkgs; [ dig ];
 
             services.caddy = {
               enable = true;
@@ -459,7 +473,16 @@ in
                     @nextcloud host nextcloud.matheusplinta.com
                     handle @nextcloud {
                       ${block-bots}
+                      header Content-Security-Policy "upgrade-insecure-requests"
                       reverse_proxy ${addresses.nextcloud.local}:8000
+                    }
+
+                    @nextcloud-ds host nextcloud-ds.matheusplinta.com
+                    handle @nextcloud-ds {
+                      ${block-bots}
+                      reverse_proxy ${addresses.nextcloud.local}:8001 {
+                        header_up X-Forwarded-Proto https
+                      }
                     }
 
                     @tmdb host tmdb-addon-stremio.matheusplinta.com
@@ -663,7 +686,6 @@ in
         config = commonConfigWith (
           { ... }:
           {
-
             systemd.tmpfiles.rules = [
               "d /var/lib/gitea 0755 gitea gitea -"
             ];
@@ -719,6 +741,8 @@ in
         localAddress = addresses.nextcloud.local;
 
         bindMounts."${config.sops.secrets.cloudy-nextcloud_admin.path}".isReadOnly = true;
+        bindMounts."${config.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path}".isReadOnly = true;
+        bindMounts."${config.sops.templates.nextcloud_nonce.path}".isReadOnly = true;
 
         bindMounts."/var/lib/nextcloud:idmap" = {
           hostPath = "/persist/containers/nextcloud/app";
@@ -734,11 +758,26 @@ in
           { config, ... }:
           {
             environment.systemPackages = with pkgs; [
+              config.services.nextcloud.occ
               cron
               ghostscript
               exiftool
-              config.services.nextcloud.occ
             ];
+
+            services.onlyoffice = {
+              enable = true;
+              hostname = "onlyoffice";
+              port = 10000;
+              jwtSecretFile = "${hostConfig.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path}";
+              securityNonceFile = "${hostConfig.sops.templates.nextcloud_nonce.path}";
+            };
+            services.nginx.virtualHosts."${config.services.onlyoffice.hostname}".listen = [
+              {
+                addr = "0.0.0.0";
+                port = 8001;
+              }
+            ];
+
 
             services.nextcloud = {
               enable = true;
@@ -746,11 +785,11 @@ in
               extraAppsEnable = true;
               extraApps = {
                 inherit (pkgs.nextcloud32.packages.apps)
-                  calendar
                   bookmarks
                   end_to_end_encryption
                   memories
                   previewgenerator
+                  onlyoffice
                   ;
               };
               hostName = "nextcloud";
@@ -782,7 +821,6 @@ in
               settings.filelocking.enabled = true;
               settings.log_type = "file";
               settings."overwriteprotocol" = "https"; # Fix redirect after login
-              settings."preview_libreoffice_path" = "${pkgs.libreoffice}/bin/libreoffice";
               settings."preview_ffmpeg_path" = "${pkgs.ffmpeg}/bin/ffmpeg";
               settings.enabledPreviewProviders = [
                 "OC\\Preview\\BMP"
@@ -803,6 +841,7 @@ in
                 "OC\\Preview\\Photoshop"
                 "OC\\Preview\\SVG"
                 "OC\\Preview\\TIFF"
+                "OC\\Preview\\HEIC"
               ];
             };
             services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
