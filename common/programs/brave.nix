@@ -1,6 +1,6 @@
 {
   hmModule =
-    { pkgs, setMimeTypes, ... }:
+    { setMimeTypes, ... }:
     {
       xdg.mimeApps.defaultApplications = setMimeTypes "brave-browser.desktop" [
         "x-scheme-handler/http"
@@ -17,13 +17,14 @@
 
       programs.brave = {
         enable = true;
-        #package = pkgs.brave;
         extensions = [
-          { id = "cjpalhdlnbpafiamejdnhcphjbkeiagm"; }
-          { id = "eimadpbcbfnmbkopoojfekhnkhdbieeh"; }
-          { id = "nngceckbapebfimnlniiiahkandclblb"; }
-          { id = "hkgfoiooedgoejojocmhlaklaeopbecg"; }
-          { id = "jcbmcnpepaddcedmjdcmhbekjhbfnlff"; }
+          { id = "cjpalhdlnbpafiamejdnhcphjbkeiagm"; } # uBlock Origin
+          { id = "eimadpbcbfnmbkopoojfekhnkhdbieeh"; } # Dark Reader
+          { id = "nngceckbapebfimnlniiiahkandclblb"; } # Bitwarden
+          { id = "hkgfoiooedgoejojocmhlaklaeopbecg"; } # PIP
+          { id = "jcbmcnpepaddcedmjdcmhbekjhbfnlff"; } # Page ruler
+          { id = "fnaicdffflnofjppbagibeoednhnbjhg"; } # Floccus
+          { id = "gebbhagfogifgggkldgodflihgfeippi"; } # Return YouTube Dislike
         ];
         commandLineArgs = [
           "--disable-features=AutofillSavePaymentMethods"
