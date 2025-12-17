@@ -1,6 +1,13 @@
 {
   hmModule =
-    { pkgs, hmModule-nix-index, lib, config, hmImport, ... }:
+    {
+      pkgs,
+      hmModule-nix-index,
+      lib,
+      config,
+      hmImport,
+      ...
+    }:
     {
       imports = [
         hmModule-nix-index
@@ -11,13 +18,15 @@
 
       options.myCfg.kdeglobals = lib.mkOption {
         type = with lib.types; attrsOf anything;
-        default = {};
+        default = { };
         description = ".kdeglobals configuration";
       };
 
       config = {
         xdg = {
-          configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.myCfg.kdeglobals;
+          configFile."kdeglobals".source =
+            (pkgs.formats.ini { }).generate "kdeglobals"
+              config.myCfg.kdeglobals;
           userDirs.enable = true;
           userDirs.createDirectories = true;
           userDirs.extraConfig = {
@@ -34,7 +43,13 @@
     };
 
   sysModule =
-    { pkgs, config, lib, sysImport, ... }:
+    {
+      pkgs,
+      config,
+      lib,
+      sysImport,
+      ...
+    }:
     {
       imports = [
         (sysImport ./programs/fish.nix)

@@ -26,32 +26,42 @@
         STNODEFAULTFOLDER = 1;
       };
 
-      fileSystems = 
+      fileSystems =
         let
           h = "/home/matheus";
           smbMountOptions = [
-          "uid=1000,x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
-        ];
+            "uid=1000,x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
+          ];
         in
-          lib.genAttrs [
+        lib.genAttrs
+          [
             "${h}/.cache/thumbnails"
             "${h}/.cache/kdenlive"
             "${h}/.config/session"
             "${h}/.local/share/kdenlive"
             "${h}/.local/share/stalefiles"
-          ] (path: {
+          ]
+          (path: {
             device = "none";
             fsType = "ramfs";
-            options = [ "rw" "user" "mode=1777" ];
-          }) // lib.genAttrs [
-            "/mnt/smb/mfp_stuff"
-            "/mnt/smb/dap_stuff"
-            "/mnt/smb/public"
-          ] (path: {
-            device = "//samba.arpa/${lib.last (lib.splitString "/" path)}";
-            fsType = "cifs";
-            options = smbMountOptions;
-          });
+            options = [
+              "rw"
+              "user"
+              "mode=1777"
+            ];
+          })
+        //
+          lib.genAttrs
+            [
+              "/mnt/smb/mfp_stuff"
+              "/mnt/smb/dap_stuff"
+              "/mnt/smb/public"
+            ]
+            (path: {
+              device = "//samba.arpa/${lib.last (lib.splitString "/" path)}";
+              fsType = "cifs";
+              options = smbMountOptions;
+            });
 
       systemd.tmpfiles.rules = [
         "d /home/matheus/Shared 0755 matheus users -"

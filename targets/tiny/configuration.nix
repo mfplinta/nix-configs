@@ -36,9 +36,9 @@ in
 
   sops.defaultSopsFile = ./../../private/secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
-  sops.secrets.cf_api_key = {};
-  sops.secrets.cloudy-http_auth_plain = {};
-  sops.secrets.tiny-ha_token = {};
+  sops.secrets.cf_api_key = { };
+  sops.secrets.cloudy-http_auth_plain = { };
+  sops.secrets.tiny-ha_token = { };
   sops.templates.env_caddy = {
     mode = "0444";
     content = ''
@@ -52,39 +52,60 @@ in
     '';
   };
 
-  networking = 
+  networking =
     let
       net = networkConfig.device.tiny;
     in
-      {
-        firewall.allowedTCPPorts = [ 80 443 ];
-        firewall.allowedUDPPorts = [ 80 443 ];
-        firewall.checkReversePath = "loose";
-        useDHCP = false;
-        vlans = {
-          vlan1 = { id = 1; interface = nicName; };
-          vlan2 = { id = 2; interface = nicName; };
-          vlan3 = { id = 3; interface = nicName; };
+    {
+      firewall.allowedTCPPorts = [
+        80
+        443
+      ];
+      firewall.allowedUDPPorts = [
+        80
+        443
+      ];
+      firewall.checkReversePath = "loose";
+      useDHCP = false;
+      vlans = {
+        vlan1 = {
+          id = 1;
+          interface = nicName;
         };
-        interfaces = {
-          vlan1.ipv4.addresses = [{
+        vlan2 = {
+          id = 2;
+          interface = nicName;
+        };
+        vlan3 = {
+          id = 3;
+          interface = nicName;
+        };
+      };
+      interfaces = {
+        vlan1.ipv4.addresses = [
+          {
             address = net.vlan."1".address;
             prefixLength = net.vlan."1".prefixLength;
-          }];
-          vlan2.ipv4.addresses = [{
+          }
+        ];
+        vlan2.ipv4.addresses = [
+          {
             address = net.vlan."2".address;
             prefixLength = net.vlan."2".prefixLength;
-          }];
-          vlan3.ipv4.addresses = [{
+          }
+        ];
+        vlan3.ipv4.addresses = [
+          {
             address = net.vlan."3".address;
             prefixLength = net.vlan."3".prefixLength;
-          }];
-        };
-        defaultGateway = {
-          address = net.vlan."1".gateway;
-        };
-        nameservers = [ net.vlan."1".dns ];
+          }
+        ];
       };
+      defaultGateway = {
+        address = net.vlan."1".gateway;
+      };
+      nameservers = [ net.vlan."1".dns ];
+    };
 
   virtualisation.quadlet =
     let
@@ -96,7 +117,9 @@ in
         net_vlan1.networkConfig = {
           driver = "macvlan";
           ipRanges = [
-            "${networkConfig.device.tiny-ha.vlan."1".address}-${networkConfig.device.tiny-matterhub.vlan."1".address}"
+            "${networkConfig.device.tiny-ha.vlan."1".address}-${
+              networkConfig.device.tiny-matterhub.vlan."1".address
+            }"
           ];
           gateways = [ networkConfig.topology.vlan."1".gateway ];
           subnets = [ networkConfig.topology.vlan."1".subnet ];
@@ -105,7 +128,9 @@ in
         net_vlan2.networkConfig = {
           driver = "macvlan";
           ipRanges = [
-            "${networkConfig.device.tiny-ha.vlan."2".address}-${networkConfig.device.tiny-matterhub.vlan."2".address}"
+            "${networkConfig.device.tiny-ha.vlan."2".address}-${
+              networkConfig.device.tiny-matterhub.vlan."2".address
+            }"
           ];
           gateways = [ networkConfig.topology.vlan."2".gateway ];
           subnets = [ networkConfig.topology.vlan."2".subnet ];
@@ -115,51 +140,64 @@ in
       containers = {
         # --- Caddy ---
         caddy.containerConfig = {
-          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" "NET_ADMIN" ];
+          addCapabilities = [
+            "CAP_NET_RAW"
+            "CAP_NET_BIND_SERVICE"
+            "NET_ADMIN"
+          ];
           image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
           networks = [ "podman" ];
-          publishPorts = [ "80:80" "443:443" ];
+          publishPorts = [
+            "80:80"
+            "443:443"
+          ];
           environmentFiles = [ config.sops.templates.env_caddy.path ];
-          volumes = [ "${paths.source.caddy-data}:/data" "${pkgs.writeText "Caddyfile" ''
-            *.matheusplinta.com {
-              tls {
-                issuer acme {
-                  dns cloudflare {env.CF_API_KEY}
-                  resolvers 8.8.8.8
+          volumes = [
+            "${paths.source.caddy-data}:/data"
+            "${pkgs.writeText "Caddyfile" ''
+              *.matheusplinta.com {
+                tls {
+                  issuer acme {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 8.8.8.8
+                  }
+                }
+                
+                @hass host ha.matheusplinta.com
+                handle @hass {
+                  reverse_proxy hass:8123
+                }
+
+                @zwavejs host zwavejs.matheusplinta.com
+                handle @zwavejs {
+                  reverse_proxy zwavejs:8091
+                }
+
+                @esphome host esphome.matheusplinta.com
+                handle @esphome {
+                  reverse_proxy esphome:6052
+                }
+
+                @matterhub host matterhub.matheusplinta.com
+                handle @matterhub {
+                  reverse_proxy matterhub:8482
+                }
+
+                handle {
+                  abort
                 }
               }
-              
-              @hass host ha.matheusplinta.com
-              handle @hass {
-                reverse_proxy hass:8123
-              }
-
-              @zwavejs host zwavejs.matheusplinta.com
-              handle @zwavejs {
-                reverse_proxy zwavejs:8091
-              }
-
-              @esphome host esphome.matheusplinta.com
-              handle @esphome {
-                reverse_proxy esphome:6052
-              }
-
-              @matterhub host matterhub.matheusplinta.com
-              handle @matterhub {
-                reverse_proxy matterhub:8482
-              }
-
-              handle {
-                abort
-              }
-            }
-          ''}:/etc/caddy/Caddyfile" ];
+            ''}:/etc/caddy/Caddyfile"
+          ];
         };
 
         # --- Home Assistant ---
         hass.containerConfig = {
           image = "ghcr.io/home-assistant/home-assistant:stable";
-          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
+          addCapabilities = [
+            "CAP_NET_RAW"
+            "CAP_NET_BIND_SERVICE"
+          ];
           networks = [
             "podman"
             "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-ha.vlan."1".address}"
@@ -176,7 +214,9 @@ in
         zwavejs.containerConfig = {
           image = "zwavejs/zwave-js-ui:latest";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store" ];
-          devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
+          devices = [
+            "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"
+          ];
         };
 
         # --- Mosquitto ---
@@ -193,7 +233,7 @@ in
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
           image = "tsightler/ring-mqtt";
-          volumes = [  "${paths.source.ring-mqtt}:/data" ];
+          volumes = [ "${paths.source.ring-mqtt}:/data" ];
         };
 
         # --- ESPHome ---
@@ -223,9 +263,9 @@ in
       };
     };
 
-  systemd.tmpfiles.rules = with builtins; map (path: "d ${path} 0755 root root -") (
-    attrValues paths.source
-  ); 
+  systemd.tmpfiles.rules =
+    with builtins;
+    map (path: "d ${path} 0755 root root -") (attrValues paths.source);
 
   services.openssh.settings.PermitRootLogin = "yes";
 

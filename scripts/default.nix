@@ -1,4 +1,4 @@
-{pkgs, ...}:
+{ pkgs, ... }:
 let
   launcherPackage = pkgs.wofi;
 in
@@ -6,7 +6,10 @@ with pkgs;
 {
   toggle-scale = writeShellApplication {
     name = "toggle-scale";
-    runtimeInputs = [ hyprland python3 ];
+    runtimeInputs = [
+      hyprland
+      python3
+    ];
     text = ''
       exec python3 ${./toggle-scale} "$@"
     '';
@@ -33,7 +36,11 @@ with pkgs;
   };
   scrcpy = writeShellApplication {
     name = "scrcpy";
-    runtimeInputs = [ scrcpy android-tools launcherPackage ];
+    runtimeInputs = [
+      scrcpy
+      android-tools
+      launcherPackage
+    ];
     text = ''
       adb devices | awk 'NR>1 && $2=="device" {print $1}' | ${lib.getExe launcherPackage} --dmenu -p "Select device" | xargs -r -I{} scrcpy -s {} -SwK --render-driver=opengl
     '';

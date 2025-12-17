@@ -14,7 +14,7 @@
       ];
     };
 
-    sysModule =
+  sysModule =
     { sysImport, ... }:
     {
       imports = [

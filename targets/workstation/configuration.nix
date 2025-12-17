@@ -47,7 +47,11 @@ in
   boot.initrd.kernelModules = [
     "e1000e"
   ];
-  boot.kernelModules = [ "ddcci-backlight" "kvmfr" "uinput" ];
+  boot.kernelModules = [
+    "ddcci-backlight"
+    "kvmfr"
+    "uinput"
+  ];
   boot.extraModulePackages = with config.boot.kernelPackages; [
     ddcci-driver
     kvmfr
@@ -112,18 +116,33 @@ in
   };
   services.nvibrant = {
     enable = true;
-    vibrancy = [ "0" "0" "0" "0" "0" "0" "0" ];
-    dithering = [ "2" "0" "0" "2" "0" "2" "0" ];
+    vibrancy = [
+      "0"
+      "0"
+      "0"
+      "0"
+      "0"
+      "0"
+      "0"
+    ];
+    dithering = [
+      "2"
+      "0"
+      "0"
+      "2"
+      "0"
+      "2"
+      "0"
+    ];
   };
 
   hardware = {
-    nvidia =
-      {
-        powerManagement.enable = true;
-        modesetting.enable = true;
-        nvidiaSettings = true;
-        open = true;
-      };
+    nvidia = {
+      powerManagement.enable = true;
+      modesetting.enable = true;
+      nvidiaSettings = true;
+      open = true;
+    };
     i2c.enable = true;
     opentabletdriver.enable = true;
     uinput.enable = true;
@@ -160,7 +179,8 @@ in
   ];
 
   networking.firewall.allowedUDPPorts = [
-    59010 59011 # Soundwire
+    59010
+    59011 # Soundwire
   ];
 
   users.users.matheus = {
@@ -177,7 +197,6 @@ in
   home-manager.users.matheus =
     {
       hmImport,
-      inputs,
       ...
     }:
     {
@@ -277,8 +296,8 @@ in
 
       dconf.settings = {
         "org/virt-manager/virt-manager/connections" = {
-          autoconnect = ["qemu:///system"];
-          uris = ["qemu:///system"];
+          autoconnect = [ "qemu:///system" ];
+          uris = [ "qemu:///system" ];
         };
       };
 
@@ -289,7 +308,7 @@ in
         extraPresets = {
           default = {
             input = {
-              blocklist = [];
+              blocklist = [ ];
               plugins_order = [
                 "stereo_tools#0"
                 "rnnoise#0"
@@ -313,7 +332,6 @@ in
           moonlight-qt
           blender
           soundwireserver
-          nvibrant
         ];
     };
 }

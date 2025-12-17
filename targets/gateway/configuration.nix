@@ -1,4 +1,4 @@
-{ 
+{
   lib,
   pkgs,
   config,
@@ -9,36 +9,39 @@
 let
   networkConfig = (import ./../../private/cfg.nix).network;
   unboundViews =
-  { networkConfig }:
-  let
-    inherit (builtins) attrNames attrValues foldl';
+    { networkConfig }:
+    let
+      inherit (builtins) attrNames attrValues foldl';
 
-    getGeneralNames = dev: dev.names or [];
-    getVlanNames = dev: vlanId: dev.vlan.${vlanId}.names or [];
+      getGeneralNames = dev: dev.names or [ ];
+      getVlanNames = dev: vlanId: dev.vlan.${vlanId}.names or [ ];
 
-    byVlan =
-      foldl' (acc: dev:
-        let vlanIds = attrNames dev.vlan;
-            general = getGeneralNames dev;
-        in foldl' (acc2: vlanId:
+      byVlan = foldl' (
+        acc: dev:
+        let
+          vlanIds = attrNames dev.vlan;
+          general = getGeneralNames dev;
+        in
+        foldl' (
+          acc2: vlanId:
           let
-            ip       = dev.vlan.${vlanId}.address;
+            ip = dev.vlan.${vlanId}.address;
             specific = getVlanNames dev vlanId;
-            names    = general ++ specific;
-            lines    = map (n: ''"${n}. IN A ${ip}"'') names;
-            prev     = acc2.${vlanId} or [];
+            names = general ++ specific;
+            lines = map (n: ''"${n}. IN A ${ip}"'') names;
+            prev = acc2.${vlanId} or [ ];
           in
-            acc2 // { ${vlanId} = prev ++ lines; }
+          acc2 // { ${vlanId} = prev ++ lines; }
         ) acc vlanIds
-      ) {} (attrValues networkConfig.device or {});
+      ) { } (attrValues networkConfig.device or { });
 
-    mkView = vlanId: lines: {
-      name = "vlan${vlanId}";
-      view-first = true;
-      local-data = lines;
-    };
+      mkView = vlanId: lines: {
+        name = "vlan${vlanId}";
+        view-first = true;
+        local-data = lines;
+      };
 
-  in
+    in
     map (vlanId: mkView vlanId byVlan.${vlanId}) (attrNames byVlan);
 
 in
@@ -53,40 +56,40 @@ in
   ];
 
   boot.kernelParams = [ "net.ifnames=0" ];
-  
+
   networking =
-  let
-    net = networkConfig.device.gateway;
-  in
-  {
-    firewall.allowedTCPPorts = [ 53 ];
-    firewall.allowedUDPPorts = [ 53 ];
-    firewall.checkReversePath = "loose";
-    useDHCP = false;
-    nameservers = [ "1.1.1.1" ];
-    defaultGateway = {
-      address = net.vlan."1".gateway;
-      interface = "eth0";
+    let
+      net = networkConfig.device.gateway;
+    in
+    {
+      firewall.allowedTCPPorts = [ 53 ];
+      firewall.allowedUDPPorts = [ 53 ];
+      firewall.checkReversePath = "loose";
+      useDHCP = false;
+      nameservers = [ "1.1.1.1" ];
+      defaultGateway = {
+        address = net.vlan."1".gateway;
+        interface = "eth0";
+      };
+      interfaces."eth0".ipv4.addresses = [
+        {
+          address = net.vlan."1".address;
+          prefixLength = net.vlan."1".prefixLength;
+        }
+      ];
+      interfaces."eth1".ipv4.addresses = [
+        {
+          address = net.vlan."2".address;
+          prefixLength = net.vlan."2".prefixLength;
+        }
+      ];
+      interfaces."eth2".ipv4.addresses = [
+        {
+          address = net.vlan."3".address;
+          prefixLength = net.vlan."3".prefixLength;
+        }
+      ];
     };
-    interfaces."eth0".ipv4.addresses = [
-      {
-        address = net.vlan."1".address;
-        prefixLength = net.vlan."1".prefixLength;
-      }
-    ];
-    interfaces."eth1".ipv4.addresses = [
-      {
-        address = net.vlan."2".address;
-        prefixLength = net.vlan."2".prefixLength;
-      }
-    ];
-    interfaces."eth2".ipv4.addresses = [
-      {
-        address = net.vlan."3".address;
-        prefixLength = net.vlan."3".prefixLength;
-      }
-    ];
-  };
   services.unbound = {
     enable = true;
     resolveLocalQueries = false;
@@ -102,12 +105,16 @@ in
         ];
         access-control-view =
           let
-            vlanIds = builtins.attrNames (networkConfig.topology.vlan or {});
+            vlanIds = builtins.attrNames (networkConfig.topology.vlan or { });
           in
-            (map (v:
-              let subnet = networkConfig.topology.vlan.${v}.subnet;
-              in "${subnet} vlan${v}"
-            ) vlanIds) ++ [ "10.69.69.0/24 vlan3" ];
+          (map (
+            v:
+            let
+              subnet = networkConfig.topology.vlan.${v}.subnet;
+            in
+            "${subnet} vlan${v}"
+          ) vlanIds)
+          ++ [ "10.69.69.0/24 vlan3" ];
 
         hide-identity = true;
         module-config = "iterator";

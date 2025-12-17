@@ -1,6 +1,11 @@
 {
   hmModule =
-    { lib, pkgs, config, ... }:
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
     {
       home.packages = with pkgs; [
         onlyoffice-desktopeditors
@@ -9,7 +14,7 @@
         vista-fonts
       ];
 
-      home.activation.copyOfficeFonts = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      home.activation.copyOfficeFonts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         rm -rf ~/.local/share/fonts
         mkdir -p ~/.local/share/fonts
         cp -Lr ${config.xdg.stateHome}/home-manager/gcroots/current-home/home-path/share/fonts/* \

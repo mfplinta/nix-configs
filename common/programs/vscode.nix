@@ -11,7 +11,7 @@
       warnings = pkgs.lib.mkIf (!config.fonts.fontconfig.enable) [
         "fonts.fontconfig.enable is not set. Nerd Font may not render correctly in VS Code."
       ];
-      
+
       xdg.mimeApps.defaultApplications = setMimeTypes "code.desktop" [
         "text/plain"
         "text/x-c++src"
@@ -68,7 +68,7 @@
             "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
             # Python
             "python.analysis.typeCheckingMode" = "basic";
-            
+
           };
 
           extensions =

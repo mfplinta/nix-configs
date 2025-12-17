@@ -147,7 +147,7 @@
                 };
                 nixpkgs.config = {
                   allowUnfree = true;
-                  android_sdk.accept_license = true; 
+                  android_sdk.accept_license = true;
                 };
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
                 nixpkgs.overlays = [
@@ -179,14 +179,16 @@
                       inherit (final.stdenv.hostPlatform) system;
                       inherit (final) config;
                     };
-                    stremio = (import inputs.nixpkgs-old {
-                      inherit (final.stdenv.hostPlatform) system;
-                      inherit (final) config;
-                    }).stremio;
-                    android-udev-rules = (import inputs.nixpkgs-old {
-                      inherit (final.stdenv.hostPlatform) system;
-                      inherit (final) config;
-                    }).android-udev-rules;
+                    stremio =
+                      (import inputs.nixpkgs-old {
+                        inherit (final.stdenv.hostPlatform) system;
+                        inherit (final) config;
+                      }).stremio;
+                    android-udev-rules =
+                      (import inputs.nixpkgs-old {
+                        inherit (final.stdenv.hostPlatform) system;
+                        inherit (final) config;
+                      }).android-udev-rules;
                   })
                 ];
                 networking.hostName = name;

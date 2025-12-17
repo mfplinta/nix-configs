@@ -107,9 +107,9 @@
                     "match:title ^(Picture in picture),keep_aspect_ratio 1"
                   ];
                 bind =
-                let
-                  wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
-                in
+                  let
+                    wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
+                  in
                   [
                     # Command binds
                     "${mod}, Q, killactive"
@@ -125,7 +125,9 @@
                     "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
                     "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
                     "${mod}_SHIFT, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
-                    "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(echo -e \"${replaceStrings ["\n"] ["\\n"] cmdHelp}\")\""
+                    "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(echo -e \"${
+                      replaceStrings [ "\n" ] [ "\\n" ] cmdHelp
+                    }\")\""
                     # Scroll through workspaces
                     "${mod}, mouse_down, workspace, e+1"
                     "${mod}, mouse_up, workspace, e-1"
@@ -203,22 +205,20 @@
           ];
         };
 
-        xdg.configFile."hypr/xdph.conf".source =
-          (pkgs.writeText "xdph"
-            ''
+        xdg.configFile."hypr/xdph.conf".source = (
+          pkgs.writeText "xdph" ''
             screencopy {
               allow_token_by_default = true
             }
-            ''
-          );
+          ''
+        );
 
-        xdg.configFile."wofi-power-menu.toml".source =
-          (pkgs.writeText "wofi-power-menu-config"
-            ''
+        xdg.configFile."wofi-power-menu.toml".source = (
+          pkgs.writeText "wofi-power-menu-config" ''
             [menu.logout]
               cmd = "bash -c 'uwsm stop'"
-            ''
-          );
+          ''
+        );
 
         xdg.configFile."hyprpanel/modules.json".source =
           (pkgs.formats.json { }).generate "hyprpanel-modules"
@@ -394,14 +394,15 @@
           "aurorae/themes".source = "${pkgs.flat-remix-kde}/share/aurorae/themes";
         };
 
-        xdg.configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
+        xdg.configFile."uwsm/env".source =
+          "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
 
         xdg.desktopEntries.scrcpy = {
           name = "Scrcpy";
           exec = "${lib.getExe pkgs.myScripts.scrcpy}";
           terminal = false;
           type = "Application";
-          categories = ["Utility"];
+          categories = [ "Utility" ];
         };
 
         qt = {
@@ -477,7 +478,7 @@
         boot.initrd.systemd.enable = true;
 
         networking.networkmanager.enable = true;
-        
+
         hardware = {
           graphics.enable = true;
           bluetooth.enable = true;
@@ -522,11 +523,13 @@
               backend=drm
               ${config.myCfg.westonOutput}
             ''}";
-            theme = "${pkgs.catppuccin-sddm.override {
-              flavor = "mocha";
-              accent = "mauve";
-              disableBackground = true;
-            }}/share/sddm/themes/catppuccin-mocha-mauve";
+            theme = "${
+              pkgs.catppuccin-sddm.override {
+                flavor = "mocha";
+                accent = "mauve";
+                disableBackground = true;
+              }
+            }/share/sddm/themes/catppuccin-mocha-mauve";
             package = pkgs.kdePackages.sddm;
           };
         };
