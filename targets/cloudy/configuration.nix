@@ -7,6 +7,7 @@
 }:
 
 let
+  hostConfig = config;
   addresses = {
     reverseProxy = {
       host = "192.168.100.10";
@@ -42,7 +43,11 @@ let
     };
   };
   websiteConfig =
-    {appName, envFile, extra ? {}}:
+    {
+      appName,
+      envFile,
+      extra ? { },
+    }:
     { ... }:
     let
       caddy-django-env =
@@ -68,7 +73,10 @@ let
         environment.systemPackages = with pkgs; [
           (writeShellApplication {
             name = "update-website";
-            runtimeInputs = [ git caddy-django-env ];
+            runtimeInputs = [
+              git
+              caddy-django-env
+            ];
             text = ''
               set -e
               set -x
@@ -116,7 +124,10 @@ let
 
         systemd.services.django-gunicorn = {
           description = "Gunicorn service for Django app";
-          after = [ "network.target" "systemd-tmpfiles-setup.service" ];
+          after = [
+            "network.target"
+            "systemd-tmpfiles-setup.service"
+          ];
           wantedBy = [ "multi-user.target" ];
           environment.DJANGO_DEBUG = "False";
           serviceConfig = {
@@ -284,9 +295,25 @@ in
         privateNetwork = true;
         extraFlags = [ "-U" ];
       };
+
+      commonConfig = {
+        system.stateVersion = config.system.stateVersion;
+        networking.firewall.enable = false;
+        environment.enableAllTerminfo = true;
+      };
+
+      commonWith = extra: common // extra;
+
+      commonConfigWith =
+        extraModule:
+        { ... }@args:
+        lib.mkMerge [
+          commonConfig
+          (if lib.isFunction extraModule then extraModule args else extraModule)
+        ];
     in
     {
-      reverseProxy = common // {
+      reverseProxy = commonWith {
         hostAddress = addresses.reverseProxy.host;
         localAddress = addresses.reverseProxy.local;
         forwardPorts = [
@@ -314,10 +341,9 @@ in
           isReadOnly = false;
         };
 
-        config =
+        config = commonConfigWith (
           { ... }:
           {
-            system.stateVersion = config.system.stateVersion;
             networking = {
               wireguard.enable = true;
               wireguard.interfaces.wg0 = {
@@ -335,7 +361,6 @@ in
                   }
                 ];
               };
-              firewall.enable = false;
               nameservers = [ "10.0.3.2" ];
             };
 
@@ -351,7 +376,7 @@ in
                 hash = "sha256-zBhsiXgA4CAJgjgpHpLo27CFO5tF0x8YKbLvnUawmck=";
               };
               environmentFile = config.sops.templates.env_caddy.path;
-              configFile = 
+              configFile =
                 let
                   cf = ''
                     tls {
@@ -375,155 +400,153 @@ in
                   '';
                 in
                 pkgs.writeText "Caddyfile" ''
-                http://matheusplinta.com, https://matheusplinta.com {
-                  ${cf}
+                  http://matheusplinta.com, https://matheusplinta.com {
+                    ${cf}
 
-                  redir https://www.matheusplinta.com{uri} permanent
-                }
-
-                *.matheusplinta.com {
-                  ${cf}
-
-                  @debug host debug.matheusplinta.com
-                  handle @debug {
-                    ${block-bots}
-                    basic_auth {
-                      mfplinta {env.HTTP_AUTH_PWD}
-                    }
-                    reverse_proxy localhost:2019 {
-                      header_up Host {upstream_hostport}
-                    }
+                    redir https://www.matheusplinta.com{uri} permanent
                   }
 
-                  @www host www.matheusplinta.com
-                  handle @www {
-                    redir /blog /blog/
-                    handle_path /blog/* {
-                      reverse_proxy ${addresses.reverseProxy.host}:8080
-                    }
-                    reverse_proxy ${addresses.ws-blog.local}:8000
-                  }
+                  *.matheusplinta.com {
+                    ${cf}
 
-                  @grafana host grafana.matheusplinta.com
-                  handle @grafana {
-                    ${block-bots}
-                    reverse_proxy ${addresses.monitoring.local}:3000
-                  }
-
-                  @victoriametrics host victoriametrics.matheusplinta.com
-                  handle @victoriametrics {
-                    ${block-bots}
-                    basic_auth {
-                      mfplinta {env.HTTP_AUTH_PWD}
-                    }
-                    reverse_proxy ${addresses.monitoring.local}:8428
-                  }
-
-                  @gitea host gitea.matheusplinta.com
-                  handle @gitea {
-                    ${block-bots}
-                    reverse_proxy ${addresses.gitea.local}:3000
-                  }
-
-                  @ha host ha.matheusplinta.com
-                  handle @ha {
-                    ${block-bots}
-                    reverse_proxy https://ha.matheusplinta.com
-                  }
-
-                  @nextcloud host nextcloud.matheusplinta.com
-                  handle @nextcloud {
-                    ${block-bots}
-                    reverse_proxy ${addresses.nextcloud.local}:8000
-                  }
-
-                  @tmdb host tmdb-addon-stremio.matheusplinta.com
-                  handle @tmdb {
-                    ${block-bots}
-                    reverse_proxy ${addresses.reverseProxy.host}:1337
-                  }
-
-                  @pdf host pdf.matheusplinta.com
-                  handle @pdf {
-                    ${block-bots}
-                    reverse_proxy ${addresses.reverseProxy.host}:8088
-
-                    # Remove "Upgrade to PRO"
-                    replace stream {
-                      match {
-                          header Content-Type text/html*
+                    @debug host debug.matheusplinta.com
+                    handle @debug {
+                      ${block-bots}
+                      basic_auth {
+                        mfplinta {env.HTTP_AUTH_PWD}
                       }
-                      "</body>" "<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>"
-                      "</head>" "<meta name=\"darkreader-lock\"></head>"
-                      "pixel.stirlingpdf.com" "{host}"
+                      reverse_proxy localhost:2019 {
+                        header_up Host {upstream_hostport}
+                      }
+                    }
+
+                    @www host www.matheusplinta.com
+                    handle @www {
+                      redir /blog /blog/
+                      handle_path /blog/* {
+                        reverse_proxy ${addresses.reverseProxy.host}:8080
+                      }
+                      reverse_proxy ${addresses.ws-blog.local}:8000
+                    }
+
+                    @grafana host grafana.matheusplinta.com
+                    handle @grafana {
+                      ${block-bots}
+                      reverse_proxy ${addresses.monitoring.local}:3000
+                    }
+
+                    @victoriametrics host victoriametrics.matheusplinta.com
+                    handle @victoriametrics {
+                      ${block-bots}
+                      basic_auth {
+                        mfplinta {env.HTTP_AUTH_PWD}
+                      }
+                      reverse_proxy ${addresses.monitoring.local}:8428
+                    }
+
+                    @gitea host gitea.matheusplinta.com
+                    handle @gitea {
+                      ${block-bots}
+                      reverse_proxy ${addresses.gitea.local}:3000
+                    }
+
+                    @ha host ha.matheusplinta.com
+                    handle @ha {
+                      ${block-bots}
+                      reverse_proxy https://ha.matheusplinta.com
+                    }
+
+                    @nextcloud host nextcloud.matheusplinta.com
+                    handle @nextcloud {
+                      ${block-bots}
+                      reverse_proxy ${addresses.nextcloud.local}:8000
+                    }
+
+                    @tmdb host tmdb-addon-stremio.matheusplinta.com
+                    handle @tmdb {
+                      ${block-bots}
+                      reverse_proxy ${addresses.reverseProxy.host}:1337
+                    }
+
+                    @pdf host pdf.matheusplinta.com
+                    handle @pdf {
+                      ${block-bots}
+                      reverse_proxy ${addresses.reverseProxy.host}:8088
+
+                      # Remove "Upgrade to PRO"
+                      replace stream {
+                        match {
+                            header Content-Type text/html*
+                        }
+                        "</body>" "<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>"
+                        "</head>" "<meta name=\"darkreader-lock\"></head>"
+                        "pixel.stirlingpdf.com" "{host}"
+                      }
+                    }
+
+                    @vaultwarden host vaultwarden.matheusplinta.com
+                    handle @vaultwarden {
+                      ${block-bots}
+                      reverse_proxy ${addresses.vaultwarden.local}:8222
+                    }
+
+                    handle {
+                      abort
                     }
                   }
 
-                  @vaultwarden host vaultwarden.matheusplinta.com
-                  handle @vaultwarden {
-                    ${block-bots}
-                    reverse_proxy ${addresses.vaultwarden.local}:8222
+                  http://optimaltech.us, https://optimaltech.us {
+                    ${cf}
+
+                    redir https://www.optimaltech.us{uri} permanent 
                   }
 
-                  handle {
-                    abort
-                  }
-                }
+                  *.optimaltech.us {
+                    ${cf}
 
-                http://optimaltech.us, https://optimaltech.us {
-                  ${cf}
+                    @www host www.optimaltech.us
+                    handle @www {
+                      reverse_proxy ${addresses.ws-ots.local}:8000
+                    }
 
-                  redir https://www.optimaltech.us{uri} permanent 
-                }
-
-                *.optimaltech.us {
-                  ${cf}
-
-                  @www host www.optimaltech.us
-                  handle @www {
-                    reverse_proxy ${addresses.ws-ots.local}:8000
+                    handle {
+                      abort
+                    }
                   }
 
-                  handle {
-                    abort
-                  }
-                }
+                  http://mastermovement.us, https://mastermovement.us {
+                    ${cf}
 
-                http://mastermovement.us, https://mastermovement.us {
-                  ${cf}
-
-                  redir https://www.mastermovement.us{uri} permanent 
-                }
-
-                *.mastermovement.us {
-                  ${cf}
-
-                  @www host www.mastermovement.us
-                  handle @www {
-                    reverse_proxy ${addresses.ws-mastermovement.local}:8000
+                    redir https://www.mastermovement.us{uri} permanent 
                   }
 
-                  handle {
-                    abort
+                  *.mastermovement.us {
+                    ${cf}
+
+                    @www host www.mastermovement.us
+                    handle @www {
+                      reverse_proxy ${addresses.ws-mastermovement.local}:8000
+                    }
+
+                    handle {
+                      abort
+                    }
                   }
-                }
-              '';
+                '';
             };
-          };
+          }
+        );
       };
 
-      monitoring = common // {
+      monitoring = commonWith {
         hostAddress = addresses.monitoring.host;
         localAddress = addresses.monitoring.local;
 
         bindMounts."${config.sops.secrets.cloudy-grafana_pwd.path}".isReadOnly = true;
 
-        config =
+        config = commonConfigWith (
           { ... }:
           {
-            system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
-
             services.grafana = {
               enable = true;
               declarativePlugins = [ ];
@@ -576,10 +599,11 @@ in
               enable = true;
               listenAddress = ":8428";
             };
-          };
+          }
+        );
       };
 
-      ws-blog = common // {
+      ws-blog = commonWith {
         hostAddress = addresses.ws-blog.host;
         localAddress = addresses.ws-blog.local;
 
@@ -595,7 +619,7 @@ in
         };
       };
 
-      ws-ots = common // {
+      ws-ots = commonWith {
         hostAddress = addresses.ws-ots.host;
         localAddress = addresses.ws-ots.local;
 
@@ -605,10 +629,13 @@ in
           isReadOnly = false;
         };
 
-        config = websiteConfig { appName = "otswebsite"; envFile = config.sops.templates.env_ots.path; };
+        config = websiteConfig {
+          appName = "otswebsite";
+          envFile = config.sops.templates.env_ots.path;
+        };
       };
 
-      ws-mastermovement = common // {
+      ws-mastermovement = commonWith {
         hostAddress = addresses.ws-mastermovement.host;
         localAddress = addresses.ws-mastermovement.local;
 
@@ -618,10 +645,13 @@ in
           isReadOnly = false;
         };
 
-        config = websiteConfig { appName = "mastermovement"; envFile = config.sops.templates.env_mastermovement.path; };
+        config = websiteConfig {
+          appName = "mastermovement";
+          envFile = config.sops.templates.env_mastermovement.path;
+        };
       };
 
-      gitea = common // {
+      gitea = commonWith {
         hostAddress = addresses.gitea.host;
         localAddress = addresses.gitea.local;
 
@@ -630,11 +660,9 @@ in
           isReadOnly = false;
         };
 
-        config =
+        config = commonConfigWith (
           { ... }:
           {
-            system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
 
             systemd.tmpfiles.rules = [
               "d /var/lib/gitea 0755 gitea gitea -"
@@ -654,10 +682,11 @@ in
                 repository.DISABLE_STARS = true;
               };
             };
-          };
+          }
+        );
       };
 
-      vaultwarden = common // {
+      vaultwarden = commonWith {
         hostAddress = addresses.vaultwarden.host;
         localAddress = addresses.vaultwarden.local;
 
@@ -666,12 +695,9 @@ in
           isReadOnly = false;
         };
 
-        config =
+        config = commonConfigWith (
           { ... }:
           {
-            system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
-
             systemd.tmpfiles.rules = [
               "d /data 0755 vaultwarden vaultwarden -"
             ];
@@ -684,10 +710,11 @@ in
               config.DOMAIN = "https://vaultwarden.matheusplinta.com";
               config.SIGNUPS_ALLOWED = false;
             };
-          };
+          }
+        );
       };
 
-      nextcloud = common // {
+      nextcloud = commonWith {
         hostAddress = addresses.nextcloud.host;
         localAddress = addresses.nextcloud.local;
 
@@ -703,35 +730,46 @@ in
           isReadOnly = false;
         };
 
-        config =
-          { ... }:
-          let
-            hostName = "nextcloud";
-          in
+        config = commonConfigWith (
+          { config, ... }:
           {
-            system.stateVersion = config.system.stateVersion;
-            networking.firewall.enable = false;
-            environment.systemPackages = [ pkgs.cron ];
-            
+            environment.systemPackages = with pkgs; [
+              cron
+              ghostscript
+              exiftool
+              config.services.nextcloud.occ
+            ];
+
             services.nextcloud = {
               enable = true;
               package = pkgs.nextcloud32;
               extraAppsEnable = true;
               extraApps = {
-                inherit (pkgs.nextcloud32.packages.apps) calendar bookmarks end_to_end_encryption;
+                inherit (pkgs.nextcloud32.packages.apps)
+                  calendar
+                  bookmarks
+                  end_to_end_encryption
+                  memories
+                  previewgenerator
+                  ;
               };
-              hostName = hostName;
+              hostName = "nextcloud";
               https = true;
               configureRedis = true;
+              maxUploadSize = "20G";
+              database.createLocally = true;
               phpOptions = {
-                "opcache.interned_strings_buffer" = "16";
+                "opcache.interned_strings_buffer" = "32";
               };
               caching = {
                 redis = true;
                 memcached = true;
               };
-              maxUploadSize = "20G";
-              database.createLocally = true;
+              config = {
+                dbtype = "pgsql";
+                adminuser = "admin";
+                adminpassFile = "${hostConfig.sops.secrets.cloudy-nextcloud_admin.path}";
+              };
               settings.maintenance_window_start = 9; # 2 AM MST
               settings.default_phone_region = "US";
               settings.trusted_domains = [
@@ -743,34 +781,64 @@ in
               ];
               settings.filelocking.enabled = true;
               settings.log_type = "file";
-              config = {
-                dbtype = "pgsql";
-                adminuser = "admin";
-                adminpassFile = "${config.sops.secrets.cloudy-nextcloud_admin.path}";
-              };
               settings."overwriteprotocol" = "https"; # Fix redirect after login
+              settings."preview_libreoffice_path" = "${pkgs.libreoffice}/bin/libreoffice";
+              settings."preview_ffmpeg_path" = "${pkgs.ffmpeg}/bin/ffmpeg";
+              settings.enabledPreviewProviders = [
+                "OC\\Preview\\BMP"
+                "OC\\Preview\\GIF"
+                "OC\\Preview\\JPEG"
+                "OC\\Preview\\Krita"
+                "OC\\Preview\\MarkDown"
+                "OC\\Preview\\MP3"
+                "OC\\Preview\\OpenDocument"
+                "OC\\Preview\\PNG"
+                "OC\\Preview\\TXT"
+                "OC\\Preview\\XBitmap"
+                "OC\\Preview\\Movie"
+                "OC\\Preview\\MSOffice2003"
+                "OC\\Preview\\MSOffice2007"
+                "OC\\Preview\\MSOfficeDoc"
+                "OC\\Preview\\PDF"
+                "OC\\Preview\\Photoshop"
+                "OC\\Preview\\SVG"
+                "OC\\Preview\\TIFF"
+              ];
             };
-            services.nginx.virtualHosts."${hostName}".listen = [
+            services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
               {
                 addr = "0.0.0.0";
                 port = 8000;
               }
             ];
-          };
+          }
+        );
       };
     };
 
   virtualisation.podman.enable = true;
-  virtualisation.podman.defaultNetwork.settings = { dns_enabled = true; };
+  virtualisation.podman.defaultNetwork.settings = {
+    dns_enabled = true;
+  };
   virtualisation.oci-containers.backend = "podman";
-  users.groups.containers = {};
+  users.groups.containers = { };
   users.users.containers = {
     home = "/persist/podman";
     isNormalUser = true;
     group = "containers";
 
-    subUidRanges = [ { startUid = 100000; count = 65536; } ];
-    subGidRanges = [ { startGid = 100000; count = 65536; } ];
+    subUidRanges = [
+      {
+        startUid = 100000;
+        count = 65536;
+      }
+    ];
+    subGidRanges = [
+      {
+        startGid = 100000;
+        count = 65536;
+      }
+    ];
   };
 
   virtualisation.quadlet = {
