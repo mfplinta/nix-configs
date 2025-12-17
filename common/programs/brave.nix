@@ -25,6 +25,8 @@
           { id = "jcbmcnpepaddcedmjdcmhbekjhbfnlff"; } # Page ruler
           { id = "fnaicdffflnofjppbagibeoednhnbjhg"; } # Floccus
           { id = "gebbhagfogifgggkldgodflihgfeippi"; } # Return YouTube Dislike
+          { id = "ghbmnnjooekpmoecnnnilnnbdlolhkhi"; } # Google Docs Offline
+          { id = "bcjindcccaagfpapjjmafapmmgkkhgoa"; } # JSON Formatter
         ];
         commandLineArgs = [
           "--disable-features=AutofillSavePaymentMethods"
