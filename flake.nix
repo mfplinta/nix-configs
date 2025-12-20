@@ -19,11 +19,14 @@
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
     nvibrant.url = "github:mfplinta/nix-nvibrant";
     nvibrant.inputs.nixpkgs.follows = "nixpkgs";
+    nixpkgs-crowdsec.url = "github:TornaxO7/nixpkgs/a4ff7e18d1440a41f4b5a75274cfac6c96df558a";
   };
   outputs =
     inputs@{
       self,
       nixpkgs,
+      nixpkgs-unstable,
+      nixpkgs-old,
       disko,
       wrapper-manager,
       home-manager,
@@ -33,6 +36,7 @@
       sops-nix,
       quadlet-nix,
       nvibrant,
+      nixpkgs-crowdsec,
       ...
     }:
     let
@@ -131,6 +135,12 @@
             (
               { ... }:
               {
+                disabledModules = [
+                  "services/security/crowdsec.nix"
+                ];
+                imports = [
+                  "${nixpkgs-crowdsec}/nixos/modules/services/security/crowdsec.nix"
+                ];
                 nix.settings = {
                   substituters = [
                     "https://hyprland.cachix.org"
@@ -175,17 +185,17 @@
                         mv $out/share/psd/contrib/* $out/share/psd/browsers/
                       '';
                     });
-                    unstable = import inputs.nixpkgs-unstable {
+                    unstable = import nixpkgs-unstable {
                       inherit (final.stdenv.hostPlatform) system;
                       inherit (final) config;
                     };
                     stremio =
-                      (import inputs.nixpkgs-old {
+                      (import nixpkgs-old {
                         inherit (final.stdenv.hostPlatform) system;
                         inherit (final) config;
                       }).stremio;
                     android-udev-rules =
-                      (import inputs.nixpkgs-old {
+                      (import nixpkgs-old {
                         inherit (final.stdenv.hostPlatform) system;
                         inherit (final) config;
                       }).android-udev-rules;

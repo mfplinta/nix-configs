@@ -542,6 +542,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-crowdsec": {
+      "locked": {
+        "lastModified": 1766012269,
+        "narHash": "sha256-sZJZSoBwvk3jbTmRR7uqIIou334oQKyN96vZ6ZFld9k=",
+        "owner": "TornaxO7",
+        "repo": "nixpkgs",
+        "rev": "a4ff7e18d1440a41f4b5a75274cfac6c96df558a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TornaxO7",
+        "repo": "nixpkgs",
+        "rev": "a4ff7e18d1440a41f4b5a75274cfac6c96df558a",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1733096140,
@@ -685,6 +701,7 @@
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixd": "nixd",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-crowdsec": "nixpkgs-crowdsec",
         "nixpkgs-old": "nixpkgs-old",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nvibrant": "nvibrant",

@@ -170,6 +170,9 @@ in
   sops.defaultSopsFile = ./../../private/secrets.yaml;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
+  sops.secrets.cloudy-crowdsec_token = {
+    mode = "0444";
+  };
   sops.secrets.cloudy-http_auth_bcrypt = { };
   sops.secrets.cloudy-grafana_pwd = {
     mode = "0444";
@@ -245,6 +248,7 @@ in
       hostNic = "eth0";
     in
     {
+      nftables.enable = true;
       useDHCP = false;
       interfaces = {
         "${hostNic}".ipv4.addresses = [
@@ -294,7 +298,20 @@ in
     "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
     "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 root root -"
+    # Others
+    # "d /var/lib/crowdsec 0755 crowdsec crowdsec"
   ];
+
+  # Restart containers when systemd-tmpfiles config changes
+  systemd.services.systemd-tmpfiles-resetup = {
+    serviceConfig.ExecStartPost = let
+      names = builtins.attrNames config.containers;
+      units = map (n: "container@${n}.service") names;
+    in
+      lib.mkIf (names != []) [
+        "+${config.systemd.package}/bin/systemctl restart ${lib.concatStringsSep " " units}"
+      ];
+  };
 
   containers =
     let
@@ -507,9 +524,9 @@ in
                         match {
                           header Content-Type text/html*
                         }
-                        "</body>" "<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>"
-                        "</head>" "<meta name=\"darkreader-lock\"></head>"
-                        "pixel.stirlingpdf.com" "{host}"
+                        `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
+                        `</head>` `<meta name="darkreader-lock"></head>`
+                        `pixel.stirlingpdf.com` "{host}"
                       }
                     }
 
@@ -931,7 +948,39 @@ in
     };
   };
 
-  services.fail2ban.enable = true;
+  services.crowdsec = {
+    enable = true;
+    settings = {
+      general.api.server.enable = true;
+      general.api.server.listen_uri = "127.0.0.1:30000";
+      general.api.server.online_client.credentials_path = "/var/lib/crowdsec/online_api_credentials.yaml";
+      console.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
+      console.configuration = {
+        share_context = true;
+        share_custom = true;
+        share_manual_decisions = true;
+        share_tainted = false;
+      };
+      acquisitions = [
+        {
+          source = "journalctl";
+          journalctl_filter = [ "_SYSTEMD_UNIT=sshd.service" ];
+          labels = {
+            type = "syslog";
+          };
+        }
+      ];
+    };
+    hub.collections = [
+      "crowdsecurity/linux"
+      "crowdsecurity/sshd"
+    ];
+  };
+
+  services.crowdsec-firewall-bouncer = {
+    enable = true;
+    registerBouncer.enable = true;
+  };
 
   services.endlessh = {
     enable = true;
