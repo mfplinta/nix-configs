@@ -473,7 +473,6 @@ in
                     @nextcloud host nextcloud.matheusplinta.com
                     handle @nextcloud {
                       ${block-bots}
-                      header Content-Security-Policy "upgrade-insecure-requests"
                       reverse_proxy ${addresses.nextcloud.local}:8000
                     }
 
@@ -481,7 +480,14 @@ in
                     handle @nextcloud-ds {
                       ${block-bots}
                       reverse_proxy ${addresses.nextcloud.local}:8001 {
-                        header_up X-Forwarded-Proto https
+                        header_up Accept-Encoding identity
+                      }
+
+                      replace stream {
+                        match {
+                          header Content-Type text/javascript*
+                        }
+                        re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
                       }
                     }
 
@@ -499,7 +505,7 @@ in
                       # Remove "Upgrade to PRO"
                       replace stream {
                         match {
-                            header Content-Type text/html*
+                          header Content-Type text/html*
                         }
                         "</body>" "<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>"
                         "</head>" "<meta name=\"darkreader-lock\"></head>"
