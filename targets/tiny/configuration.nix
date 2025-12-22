@@ -107,6 +107,26 @@ in
       nameservers = [ net.vlan."1".dns ];
     };
 
+  users.groups.containers = { };
+  users.users.containers = {
+    home = "/persist/podman";
+    isNormalUser = true;
+    group = "containers";
+
+    subUidRanges = [
+      {
+        startUid = 100000;
+        count = 65536;
+      }
+    ];
+    subGidRanges = [
+      {
+        startGid = 100000;
+        count = 65536;
+      }
+    ];
+  };
+
   virtualisation.quadlet =
     let
       inherit (config.virtualisation.quadlet) networks;
@@ -124,6 +144,7 @@ in
           gateways = [ networkConfig.topology.vlan."1".gateway ];
           subnets = [ networkConfig.topology.vlan."1".subnet ];
           options.parent = "vlan1";
+          options.metric = "1";
         };
         net_vlan2.networkConfig = {
           driver = "macvlan";
@@ -146,65 +167,63 @@ in
             "NET_ADMIN"
           ];
           image = "ghcr.io/caddybuilds/caddy-cloudflare:latest";
+          userns = "auto";
           networks = [ "podman" ];
           publishPorts = [
             "80:80"
             "443:443"
           ];
           environmentFiles = [ config.sops.templates.env_caddy.path ];
-          volumes = [
-            "${paths.source.caddy-data}:/data"
-            "${pkgs.writeText "Caddyfile" ''
-              *.matheusplinta.com {
-                tls {
-                  issuer acme {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 8.8.8.8
-                  }
-                }
-                
-                @hass host ha.matheusplinta.com
-                handle @hass {
-                  reverse_proxy hass:8123
-                }
-
-                @zwavejs host zwavejs.matheusplinta.com
-                handle @zwavejs {
-                  reverse_proxy zwavejs:8091
-                }
-
-                @esphome host esphome.matheusplinta.com
-                handle @esphome {
-                  reverse_proxy esphome:6052
-                }
-
-                @matterhub host matterhub.matheusplinta.com
-                handle @matterhub {
-                  reverse_proxy matterhub:8482
-                }
-
-                handle {
-                  abort
+          volumes = [ "${paths.source.caddy-data}:/data:U" "${pkgs.writeText "Caddyfile" ''
+            *.matheusplinta.com {
+              tls {
+                issuer acme {
+                  dns cloudflare {env.CF_API_KEY}
+                  resolvers 8.8.8.8
                 }
               }
-            ''}:/etc/caddy/Caddyfile"
-          ];
+              
+              @hass host ha.matheusplinta.com
+              handle @hass {
+                reverse_proxy hass:8123
+              }
+
+              @zwavejs host zwavejs.matheusplinta.com
+              handle @zwavejs {
+                reverse_proxy zwavejs:8091
+              }
+
+              @esphome host esphome.matheusplinta.com
+              handle @esphome {
+                reverse_proxy esphome:6052
+              }
+
+              @matterhub host matterhub.matheusplinta.com
+              handle @matterhub {
+                reverse_proxy matterhub:8482
+              }
+
+              handle {
+                abort
+              }
+            }
+          ''}:/etc/caddy/Caddyfile:ro" ];
         };
 
         # --- Home Assistant ---
         hass.containerConfig = {
-          image = "ghcr.io/home-assistant/home-assistant:stable";
+          image = "ghcr.io/home-assistant/home-assistant:2025.12";
           addCapabilities = [
-            "CAP_NET_RAW"
-            "CAP_NET_BIND_SERVICE"
+            "CAP_NET_RAW" # Needed for ping
           ];
+          userns = "auto";
           networks = [
             "podman"
             "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-ha.vlan."1".address}"
             "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-ha.vlan."2".address}"
           ];
           volumes = [
-            "${paths.source.hass}:/config"
+            "${paths.source.hass}:/config:U"
             "/etc/localtime:/etc/localtime:ro"
             "/run/dbus:/run/dbus:ro"
           ];
@@ -213,44 +232,45 @@ in
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
           image = "zwavejs/zwave-js-ui:latest";
-          volumes = [ "${paths.source.zwavejs}:/usr/src/app/store" ];
-          devices = [
-            "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"
-          ];
+          userns = "auto";
+          volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
+          devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
         };
 
         # --- Mosquitto ---
         mosquitto.containerConfig = {
           image = "eclipse-mosquitto:latest";
-          publishPorts = [ "1883:1883" ];
+          userns = "auto";
           volumes = [
-            "${paths.source.mosquitto-config}:/mosquitto/config"
-            "${paths.source.mosquitto-data}:/mosquitto/data"
-            "${paths.source.mosquitto-log}:/mosquitto/log"
+            "${paths.source.mosquitto-config}:/mosquitto/config:U"
+            "${paths.source.mosquitto-data}:/mosquitto/data:U"
+            "${paths.source.mosquitto-log}:/mosquitto/log:U"
           ];
         };
 
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
           image = "tsightler/ring-mqtt";
-          volumes = [ "${paths.source.ring-mqtt}:/data" ];
+          userns = "auto";
+          volumes = [ "${paths.source.ring-mqtt}:/data:U" ];
         };
 
         # --- ESPHome ---
         esphome.containerConfig = {
           image = "ghcr.io/esphome/esphome:latest";
+          userns = "auto";
           networks = [
             "podman"
             "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-esphome.vlan."1".address}"
             "${networks.net_vlan2.ref}:ip=${networkConfig.device.tiny-esphome.vlan."2".address}"
           ];
-          #publishPorts = [ "6052:6052" ];
-          volumes = [ "${paths.source.esphome}:/config" ];
+          volumes = [ "${paths.source.esphome}:/config:U" ];
         };
 
         # --- Matterhub ---
         matterhub.containerConfig = {
           image = "ghcr.io/t0bst4r/home-assistant-matter-hub:latest";
+          userns = "auto";
           networks = [
             "podman"
             "${networks.net_vlan1.ref}:ip=${networkConfig.device.tiny-matterhub.vlan."1".address}"
@@ -258,7 +278,7 @@ in
           ];
           environmentFiles = [ config.sops.templates.env_matterhub.path ];
           environments.HAMH_HOME_ASSISTANT_URL = "http://hass:8123";
-          volumes = [ "${paths.source.matterhub}:/data" ];
+          volumes = [ "${paths.source.matterhub}:/data:U" ];
         };
       };
     };
