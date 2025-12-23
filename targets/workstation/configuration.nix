@@ -21,7 +21,6 @@ in
     (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
-    (sysImport ./../../common/programs/jdownloader2.nix)
   ];
 
   myCfg.westonOutput = ''
@@ -108,12 +107,6 @@ in
     '';
     serviceConfig.Type = "oneshot";
   };
-  systemd.services."nvidia_oc" = {
-    script = ''
-      ${pkgs.nvidia_oc}/bin/nvidia_oc set --index 0 --power-limit 200000
-    '';
-    serviceConfig.Type = "oneshot";
-  };
   services.nvibrant = {
     enable = true;
     vibrancy = [
@@ -146,6 +139,11 @@ in
     i2c.enable = true;
     opentabletdriver.enable = true;
     uinput.enable = true;
+  };
+
+  services.nvidia_oc = {
+    enable = true;
+    powerLimit = 200;
   };
 
   programs.virt-manager.enable = true;
@@ -185,6 +183,7 @@ in
 
   users.users.matheus = {
     isNormalUser = true;
+    autoSubUidGidRange = true;
     extraGroups = [
       "wheel"
       "scanner"
@@ -212,6 +211,7 @@ in
         (hmImport ./../../common/bundles/office.nix)
 
         (hmImport ./../../common/programs/dolphin.nix)
+        (hmImport ./../../modules/services/jdownloader2.nix)
       ];
 
       myCfg = {

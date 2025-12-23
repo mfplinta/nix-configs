@@ -881,7 +881,6 @@ in
   virtualisation.podman.defaultNetwork.settings = {
     dns_enabled = true;
   };
-  virtualisation.oci-containers.backend = "podman";
   users.groups.containers = { };
   users.users.containers = {
     home = "/persist/podman";
