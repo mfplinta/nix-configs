@@ -42,114 +42,6 @@ let
       local = "192.168.107.11";
     };
   };
-  websiteConfig =
-    {
-      appName,
-      envFile,
-      extra ? { },
-    }:
-    { ... }:
-    let
-      caddy-django-env =
-        with pkgs.python3Packages;
-        with pkgs;
-        python3.withPackages (
-          ps: with ps; [
-            django
-            gunicorn
-            pillow
-            django-markdownx
-            whitenoise
-            (django-imagekit ps)
-            (django-turnstile ps)
-          ]
-        );
-    in
-    lib.mkMerge [
-      {
-        system.stateVersion = config.system.stateVersion;
-        networking.firewall.enable = false;
-
-        environment.systemPackages = with pkgs; [
-          (writeShellApplication {
-            name = "update-website";
-            runtimeInputs = [
-              git
-              caddy-django-env
-            ];
-            text = ''
-              set -e
-              set -x
-              cd /app/
-
-              if [ "$USER" = "django" ]
-              then
-                git pull
-                python manage.py collectstatic --noinput
-              elif [ "$USER" = "root" ]
-              then
-                git config --global --add safe.directory '*'
-                chown -R django:django .
-                sudo -u django "$0" "$@"
-                systemctl restart django-gunicorn.service
-              else
-                echo "Please run as sudo or django"
-                exit 1
-              fi
-            '';
-          })
-        ];
-
-        services.caddy = {
-          enable = true;
-          configFile = pkgs.writeText "Caddyfile" ''
-            :8000 {
-              encode gzip
-
-              handle_path /media/* {
-                root * /app/media
-                file_server
-              }
-
-              handle {
-                reverse_proxy 127.0.0.1:9000
-              }
-            }
-          '';
-        };
-
-        systemd.tmpfiles.rules = [
-          "d /app 0755 django django -"
-        ];
-
-        systemd.services.django-gunicorn = {
-          description = "Gunicorn service for Django app";
-          after = [
-            "network.target"
-            "systemd-tmpfiles-setup.service"
-          ];
-          wantedBy = [ "multi-user.target" ];
-          environment.DJANGO_DEBUG = "False";
-          serviceConfig = {
-            Type = "simple";
-            User = "django";
-            Group = "django";
-            WorkingDirectory = "/app";
-            EnvironmentFile = [ envFile ];
-            ExecStart = "${caddy-django-env}/bin/gunicorn --workers 3 --bind 127.0.0.1:9000 ${appName}.wsgi:application";
-            Restart = "always";
-          };
-        };
-
-        users.users.django = {
-          isSystemUser = true;
-          group = "django";
-        };
-
-        users.groups.django = { };
-      }
-      extra
-    ];
 in
 {
   imports = [
@@ -300,7 +192,6 @@ in
     "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 root root -"
     # Others
-    # "d /var/lib/crowdsec 0755 crowdsec crowdsec"
   ];
 
   # Restart containers when systemd-tmpfiles config changes
@@ -325,7 +216,7 @@ in
       };
 
       commonConfig = {
-        nixpkgs.config.allowUnfree = true;
+        nixpkgs.pkgs = pkgs;
         system.stateVersion = config.system.stateVersion;
         networking.firewall.enable = false;
 
@@ -341,10 +232,22 @@ in
       commonConfigWith =
         extraModule:
         { ... }@args:
-        lib.mkMerge [
-          commonConfig
-          (if lib.isFunction extraModule then extraModule args else extraModule)
-        ];
+        let
+          # Evaluate extraModule if it's a function
+          extra = if lib.isFunction extraModule then extraModule args else extraModule;
+        in
+        {
+          # Place imports at the top level so they are discoverable by Nix
+          imports = (extra.imports or []) ++ [
+            (sysImport ../../modules/services/django-website.nix)
+          ];
+
+          # Merge the actual configuration definitions
+          config = lib.mkMerge [
+            commonConfig
+            (builtins.removeAttrs extra [ "imports" ])
+          ];
+        };
     in
     {
       reverseProxy = commonWith {
@@ -660,9 +563,12 @@ in
           isReadOnly = false;
         };
 
-        config = websiteConfig {
-          appName = "matheusplintacom";
-          envFile = config.sops.templates.env_blog.path;
+        config = commonConfigWith {
+          cfg.services.django-website = {
+            enable = true;
+            appName = "matheusplintacom";
+            envFile = config.sops.templates.env_blog.path;
+          };
         };
       };
 
@@ -676,9 +582,12 @@ in
           isReadOnly = false;
         };
 
-        config = websiteConfig {
-          appName = "otswebsite";
-          envFile = config.sops.templates.env_ots.path;
+        config = commonConfigWith {
+          cfg.services.django-website = {
+            enable = true;
+            appName = "otswebsite";
+            envFile = config.sops.templates.env_ots.path;
+          };
         };
       };
 
@@ -692,9 +601,12 @@ in
           isReadOnly = false;
         };
 
-        config = websiteConfig {
-          appName = "mastermovement";
-          envFile = config.sops.templates.env_mastermovement.path;
+        config = commonConfigWith {
+          cfg.services.django-website = {
+            enable = true;
+            appName = "mastermovement";
+            envFile = config.sops.templates.env_mastermovement.path;
+          };
         };
       };
 
