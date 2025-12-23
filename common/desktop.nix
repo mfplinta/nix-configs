@@ -477,7 +477,12 @@
         boot.initrd.verbose = false;
         boot.initrd.systemd.enable = true;
 
-        networking.networkmanager.enable = true;
+        networking.networkmanager = {
+          enable = true;
+          plugins = with pkgs; [
+            networkmanager-openvpn
+          ];
+        };
 
         hardware = {
           graphics.enable = true;
