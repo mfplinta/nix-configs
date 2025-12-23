@@ -20,7 +20,6 @@
             "%h/.config/containers/jdownloader2:/config"
           ];
           publishPorts = [ "5800:5800" ];
-          #userns = "keep-id";
         };
       };
     };

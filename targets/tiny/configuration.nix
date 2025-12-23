@@ -32,6 +32,7 @@ in
     (sysImport ../../common/base.nix)
     (sysImport ../../common/server.nix)
     (sysImport ../../common/containers.nix)
+    (sysImport ../../modules/services/vmagent.nix)
   ];
 
   sops.defaultSopsFile = ./../../private/secrets.yaml;
@@ -294,8 +295,10 @@ in
 
   services.openssh.settings.PermitRootLogin = "yes";
 
-  myCfg.vmagentEnable = true;
-  myCfg.vmagentRemoteWriteUrl = "https://victoriametrics.matheusplinta.com/api/v1/write";
-  myCfg.vmagentUsername = "mfplinta";
-  myCfg.vmagentPasswordFile = config.sops.secrets.cloudy-http_auth_plain.path;
+  cfg.services.vmagent = {
+    enable = true;
+    remoteWriteUrl = "https://victoriametrics.matheusplinta.com/api/v1/write";
+    username = "mfplinta";
+    passwordFile = config.sops.secrets.cloudy-http_auth_plain.path;
+  };
 }

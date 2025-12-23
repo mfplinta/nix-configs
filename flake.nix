@@ -140,7 +140,6 @@
                 ];
                 imports = [
                   "${nixpkgs-crowdsec}/nixos/modules/services/security/crowdsec.nix"
-                  ./modules/services/nvidia_oc.nix
                 ];
                 nix.settings = {
                   substituters = [

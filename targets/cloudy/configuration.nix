@@ -158,6 +158,7 @@ in
 
     (sysImport ../../common/base.nix)
     (sysImport ../../common/server.nix)
+    (sysImport ../../modules/services/vmagent.nix)
   ];
 
   boot.kernelParams = [
@@ -992,6 +993,6 @@ in
 
   services.openssh.ports = [ 22000 ];
 
-  myCfg.vmagentEnable = true;
-  myCfg.vmagentRemoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
+  cfg.services.vmagent.enable = true;
+  cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
 }

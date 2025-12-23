@@ -21,6 +21,7 @@ in
     (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
+    (sysImport ./../../modules/services/nvidia_oc.nix)
   ];
 
   myCfg.westonOutput = ''

@@ -54,27 +54,8 @@
       imports = [
         (sysImport ./programs/fish.nix)
       ];
-
-      options.myCfg = {
-        vmagentEnable = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-        };
-        vmagentRemoteWriteUrl = lib.mkOption {
-          type = lib.types.str;
-        };
-        vmagentUsername = lib.mkOption {
-          type = lib.types.nullOr lib.types.str;
-          default = null;
-        };
-        vmagentPasswordFile = lib.mkOption {
-          type = lib.types.nullOr lib.types.str;
-          default = null;
-        };
-      };
-
-      config = lib.mkMerge [
-        {
+      
+      config = {
           boot.loader.systemd-boot.enable = true;
           boot.loader.timeout = 0;
           boot.loader.efi.canTouchEfiVariables = true;
@@ -140,37 +121,6 @@
             lm_sensors
             net-tools
           ];
-        }
-        (lib.mkIf config.myCfg.vmagentEnable {
-          services.vmagent = {
-            enable = true;
-            remoteWrite = {
-              url = config.myCfg.vmagentRemoteWriteUrl;
-              basicAuthUsername = config.myCfg.vmagentUsername;
-              basicAuthPasswordFile = config.myCfg.vmagentPasswordFile;
-            };
-            prometheusConfig = {
-              scrape_configs = [
-                {
-                  job_name = "node-exporter";
-                  scrape_interval = "60s";
-                  static_configs = [
-                    {
-                      targets = [ "127.0.0.1:9100" ];
-                      labels.instance = config.networking.hostName;
-                    }
-                  ];
-                }
-              ];
-            };
-          };
-
-          services.prometheus.exporters.node = {
-            enable = true;
-            port = 9100;
-            enabledCollectors = [ "systemd" ];
-          };
-        })
-      ];
+      };
     };
 }
