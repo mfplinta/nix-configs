@@ -903,6 +903,7 @@ in
 
   virtualisation.quadlet = {
     enable = true;
+    autoUpdate.enable = true;
     containers = {
       # --- Quartz ---
       quartz.containerConfig = {
@@ -921,6 +922,7 @@ in
 
       # --- TMDB Addon ---
       tmdb-addon.containerConfig = {
+        autoUpdate = "registry";
         image = "docker.io/viren070/tmdb-addon:latest";
         publishPorts = [ "1337:1337" ];
         userns = "auto";
@@ -929,6 +931,7 @@ in
 
       # --- Stirling PDF ---
       stirling-pdf.containerConfig = {
+        autoUpdate = "registry";
         image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
         publishPorts = [ "8088:8080" ];
         userns = "auto";
