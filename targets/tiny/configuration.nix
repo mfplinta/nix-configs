@@ -133,6 +133,7 @@ in
     in
     {
       enable = true;
+      autoUpdate.enable = true;
       networks = {
         net_vlan1.networkConfig = {
           driver = "macvlan";
@@ -231,6 +232,7 @@ in
 
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
+          autoUpdate = "registry";
           image = "zwavejs/zwave-js-ui:latest";
           userns = "auto";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
@@ -239,6 +241,7 @@ in
 
         # --- Mosquitto ---
         mosquitto.containerConfig = {
+          autoUpdate = "registry";
           image = "eclipse-mosquitto:latest";
           userns = "auto";
           volumes = [
@@ -250,6 +253,7 @@ in
 
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
+          autoUpdate = "registry";
           image = "tsightler/ring-mqtt";
           userns = "auto";
           volumes = [ "${paths.source.ring-mqtt}:/data:U" ];
@@ -257,6 +261,7 @@ in
 
         # --- ESPHome ---
         esphome.containerConfig = {
+          autoUpdate = "registry";
           image = "ghcr.io/esphome/esphome:latest";
           userns = "auto";
           networks = [
