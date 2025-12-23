@@ -7,41 +7,18 @@
 }:
 
 let
+  hostNic = "eth0";
+  hostAddress = "10.0.0.104";
+  bridgeAddress = "192.168.100.1";
   hostConfig = config;
-  addresses = {
-    reverseProxy = {
-      host = "192.168.100.10";
-      local = "192.168.100.11";
+  containerNames = builtins.attrNames config.containers;
+  addresses = lib.listToAttrs (lib.imap0 (i: name: {
+    inherit name;
+    value = rec {
+      local = "192.168.100.${toString (100 + i)}";
+      localWithSubnet = "${local}/24";
     };
-    monitoring = {
-      host = "192.168.101.10";
-      local = "192.168.101.11";
-    };
-    ws-blog = {
-      host = "192.168.102.10";
-      local = "192.168.102.11";
-    };
-    ws-ots = {
-      host = "192.168.103.10";
-      local = "192.168.103.11";
-    };
-    gitea = {
-      host = "192.168.104.10";
-      local = "192.168.104.11";
-    };
-    ws-mastermovement = {
-      host = "192.168.105.10";
-      local = "192.168.105.11";
-    };
-    vaultwarden = {
-      host = "192.168.106.10";
-      local = "192.168.106.11";
-    };
-    nextcloud = {
-      host = "192.168.107.10";
-      local = "192.168.107.11";
-    };
-  };
+  }) containerNames);
 in
 {
   imports = [
@@ -137,29 +114,45 @@ in
   };
 
   networking =
-    let
-      hostNic = "eth0";
-    in
     {
-      nftables.enable = true;
+      ### Basic network config ###
       useDHCP = false;
       interfaces = {
         "${hostNic}".ipv4.addresses = [
           {
-            address = "10.0.0.104";
+            address = hostAddress;
             prefixLength = 24;
           }
         ];
+        "br0".ipv4.addresses = [{
+          address = bridgeAddress;
+          prefixLength = 24;
+        }];
       };
       defaultGateway = {
         address = "10.0.0.1";
         interface = "eth0";
       };
       nameservers = [ "1.1.1.1" ];
+      nftables.enable = true;
+      ### Container bridge cfg ###
+      bridges."br0".interfaces = [ ];
       nat = {
         enable = true;
-        internalInterfaces = [ "ve-+" ];
+        internalInterfaces = [ "ve-+" "br0" ];
         externalInterface = hostNic;
+        forwardPorts = [
+          {
+            destination = "${addresses.reverseProxy.local}:80";
+            proto = "tcp";
+            sourcePort = 80;
+          }
+          {
+            destination = "${addresses.reverseProxy.local}:443";
+            proto = "tcp";
+            sourcePort = 443;
+          }
+        ];
       };
       firewall = {
         enable = true;
@@ -191,7 +184,6 @@ in
     "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
     "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 root root -"
-    # Others
   ];
 
   # Restart containers when systemd-tmpfiles config changes
@@ -213,12 +205,14 @@ in
         enableTun = true;
         privateNetwork = true;
         extraFlags = [ "-U" ];
+        hostBridge = "br0";
       };
 
       commonConfig = {
         nixpkgs.pkgs = pkgs;
         system.stateVersion = config.system.stateVersion;
         networking.firewall.enable = false;
+        networking.defaultGateway = bridgeAddress;
 
         environment.enableAllTerminfo = true;
         environment.systemPackages = with pkgs; [
@@ -245,31 +239,13 @@ in
           # Merge the actual configuration definitions
           config = lib.mkMerge [
             commonConfig
-            (builtins.removeAttrs extra [ "imports" ])
+            (removeAttrs extra [ "imports" ])
           ];
         };
     in
     {
       reverseProxy = commonWith {
-        hostAddress = addresses.reverseProxy.host;
-        localAddress = addresses.reverseProxy.local;
-        forwardPorts = [
-          {
-            containerPort = 80;
-            hostPort = 80;
-            protocol = "tcp";
-          }
-          {
-            containerPort = 443;
-            hostPort = 443;
-            protocol = "tcp";
-          }
-          {
-            containerPort = 51820;
-            hostPort = 51820;
-            protocol = "udp";
-          }
-        ];
+        localAddress = addresses.reverseProxy.localWithSubnet;
 
         bindMounts."${config.sops.secrets.cloudy-private_wg.path}".isReadOnly = true;
         bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
@@ -313,13 +289,9 @@ in
               environmentFile = config.sops.templates.env_caddy.path;
               configFile =
                 let
-                  cf = ''
-                    tls {
-                      dns cloudflare {env.CF_API_KEY}
-                      resolvers 1.1.1.1
-                    }
-                  '';
-                  block-bots = ''
+                in
+                pkgs.writeText "Caddyfile" ''
+                  (bot_block) {
                     @botForbidden header_regexp User-Agent "(?i)AdsBot-Google|Amazonbot|anthropic-ai|Applebot|Applebot-Extended|AwarioRssBot|AwarioSmartBot|Bytespider|CCBot|ChatGPT|ChatGPT-User|Claude-Web|ClaudeBot|cohere-ai|DataForSeoBot|Diffbot|FacebookBot|Google-Extended|GPTBot|ImagesiftBot|magpie-crawler|omgili|Omgilibot|peer39_crawler|PerplexityBot|YouBot"
 
                     handle @botForbidden {
@@ -329,24 +301,32 @@ in
                     }
 
                     respond /robots.txt 200 {
-                                body "User-agent: *
-                    Disallow: /"
+                      body "User-agent: *
+                      Disallow: /"
                     }
-                  '';
-                in
-                pkgs.writeText "Caddyfile" ''
-                  http://matheusplinta.com, https://matheusplinta.com {
-                    ${cf}
+                  }
 
+                  (cf) {
+                    tls {
+                      dns cloudflare {env.CF_API_KEY}
+                      resolvers 1.1.1.1
+                    }
+                  }
+
+                  (tunneled) {
+                    header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+                  }
+
+                  http://matheusplinta.com, https://matheusplinta.com {
+                    import cf
                     redir https://www.matheusplinta.com{uri} permanent
                   }
 
                   *.matheusplinta.com {
-                    ${cf}
-
+                    import cf
                     @debug host debug.matheusplinta.com
                     handle @debug {
-                      ${block-bots}
+                      import bot_block
                       basic_auth {
                         mfplinta {env.HTTP_AUTH_PWD}
                       }
@@ -359,20 +339,22 @@ in
                     handle @www {
                       redir /blog /blog/
                       handle_path /blog/* {
-                        reverse_proxy ${addresses.reverseProxy.host}:8080
+                        reverse_proxy ${bridgeAddress}:8080
                       }
-                      reverse_proxy ${addresses.ws-blog.local}:8000
+                      reverse_proxy ${addresses.ws-blog.local}:8000 {
+                        import tunneled
+                      }
                     }
 
                     @grafana host grafana.matheusplinta.com
                     handle @grafana {
-                      ${block-bots}
+                      import bot_block
                       reverse_proxy ${addresses.monitoring.local}:3000
                     }
 
                     @victoriametrics host victoriametrics.matheusplinta.com
                     handle @victoriametrics {
-                      ${block-bots}
+                      import bot_block
                       basic_auth {
                         mfplinta {env.HTTP_AUTH_PWD}
                       }
@@ -381,25 +363,25 @@ in
 
                     @gitea host gitea.matheusplinta.com
                     handle @gitea {
-                      ${block-bots}
+                      import bot_block
                       reverse_proxy ${addresses.gitea.local}:3000
                     }
 
                     @ha host ha.matheusplinta.com
                     handle @ha {
-                      ${block-bots}
+                      import bot_block
                       reverse_proxy https://ha.matheusplinta.com
                     }
 
                     @nextcloud host nextcloud.matheusplinta.com
                     handle @nextcloud {
-                      ${block-bots}
+                      import bot_block
                       reverse_proxy ${addresses.nextcloud.local}:8000
                     }
 
                     @nextcloud-ds host nextcloud-ds.matheusplinta.com
                     handle @nextcloud-ds {
-                      ${block-bots}
+                      import bot_block
                       reverse_proxy ${addresses.nextcloud.local}:8001 {
                         header_up Accept-Encoding identity
                       }
@@ -414,14 +396,14 @@ in
 
                     @tmdb host tmdb-addon-stremio.matheusplinta.com
                     handle @tmdb {
-                      ${block-bots}
-                      reverse_proxy ${addresses.reverseProxy.host}:1337
+                      import bot_block
+                      reverse_proxy ${bridgeAddress}:1337
                     }
 
                     @pdf host pdf.matheusplinta.com
                     handle @pdf {
-                      ${block-bots}
-                      reverse_proxy ${addresses.reverseProxy.host}:8088
+                      import bot_block
+                      reverse_proxy ${bridgeAddress}:8088
 
                       # Remove "Upgrade to PRO"
                       replace stream {
@@ -436,7 +418,7 @@ in
 
                     @vaultwarden host vaultwarden.matheusplinta.com
                     handle @vaultwarden {
-                      ${block-bots}
+                      import bot_block
                       reverse_proxy ${addresses.vaultwarden.local}:8222
                     }
 
@@ -446,17 +428,17 @@ in
                   }
 
                   http://optimaltech.us, https://optimaltech.us {
-                    ${cf}
-
-                    redir https://www.optimaltech.us{uri} permanent 
+                    import cf
+                    redir https://www.optimaltech.us{uri} permanent
                   }
 
                   *.optimaltech.us {
-                    ${cf}
-
+                    import cf
                     @www host www.optimaltech.us
                     handle @www {
-                      reverse_proxy ${addresses.ws-ots.local}:8000
+                      reverse_proxy ${addresses.ws-ots.local}:8000 {
+                        import tunneled
+                      }
                     }
 
                     handle {
@@ -465,17 +447,17 @@ in
                   }
 
                   http://mastermovement.us, https://mastermovement.us {
-                    ${cf}
-
-                    redir https://www.mastermovement.us{uri} permanent 
+                    import cf
+                    redir https://www.mastermovement.us{uri} permanent
                   }
 
                   *.mastermovement.us {
-                    ${cf}
-
+                    import cf
                     @www host www.mastermovement.us
                     handle @www {
-                      reverse_proxy ${addresses.ws-mastermovement.local}:8000
+                      reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
+                        import tunneled
+                      }
                     }
 
                     handle {
@@ -489,8 +471,7 @@ in
       };
 
       monitoring = commonWith {
-        hostAddress = addresses.monitoring.host;
-        localAddress = addresses.monitoring.local;
+        localAddress = addresses.monitoring.localWithSubnet;
 
         bindMounts."${config.sops.secrets.cloudy-grafana_pwd.path}".isReadOnly = true;
 
@@ -554,8 +535,7 @@ in
       };
 
       ws-blog = commonWith {
-        hostAddress = addresses.ws-blog.host;
-        localAddress = addresses.ws-blog.local;
+        localAddress = addresses.ws-blog.localWithSubnet;
 
         bindMounts."${config.sops.templates.env_blog.path}".isReadOnly = true;
         bindMounts."/app:idmap" = {
@@ -573,8 +553,7 @@ in
       };
 
       ws-ots = commonWith {
-        hostAddress = addresses.ws-ots.host;
-        localAddress = addresses.ws-ots.local;
+        localAddress = addresses.ws-ots.localWithSubnet;
 
         bindMounts."${config.sops.templates.env_ots.path}".isReadOnly = true;
         bindMounts."/app:idmap" = {
@@ -592,8 +571,7 @@ in
       };
 
       ws-mastermovement = commonWith {
-        hostAddress = addresses.ws-mastermovement.host;
-        localAddress = addresses.ws-mastermovement.local;
+        localAddress = addresses.ws-mastermovement.localWithSubnet;
 
         bindMounts."${config.sops.templates.env_mastermovement.path}".isReadOnly = true;
         bindMounts."/app:idmap" = {
@@ -611,8 +589,7 @@ in
       };
 
       gitea = commonWith {
-        hostAddress = addresses.gitea.host;
-        localAddress = addresses.gitea.local;
+        localAddress = addresses.gitea.localWithSubnet;
 
         bindMounts."/var/lib/gitea:idmap" = {
           hostPath = "/persist/containers/gitea";
@@ -645,8 +622,7 @@ in
       };
 
       vaultwarden = commonWith {
-        hostAddress = addresses.vaultwarden.host;
-        localAddress = addresses.vaultwarden.local;
+        localAddress = addresses.vaultwarden.localWithSubnet;
 
         bindMounts."/var/lib/vaultwarden:idmap" = {
           hostPath = "/persist/containers/vaultwarden";
@@ -673,8 +649,7 @@ in
       };
 
       nextcloud = commonWith {
-        hostAddress = addresses.nextcloud.host;
-        localAddress = addresses.nextcloud.local;
+        localAddress = addresses.nextcloud.localWithSubnet;
 
         bindMounts."${config.sops.secrets.cloudy-nextcloud_admin.path}".isReadOnly = true;
         bindMounts."${config.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path}".isReadOnly = true;
@@ -757,26 +732,10 @@ in
               settings.log_type = "file";
               settings."overwriteprotocol" = "https"; # Fix redirect after login
               settings."preview_ffmpeg_path" = "${pkgs.ffmpeg}/bin/ffmpeg";
-              settings.enabledPreviewProviders = [
-                "OC\\Preview\\BMP"
-                "OC\\Preview\\GIF"
-                "OC\\Preview\\JPEG"
-                "OC\\Preview\\Krita"
-                "OC\\Preview\\MarkDown"
-                "OC\\Preview\\MP3"
-                "OC\\Preview\\OpenDocument"
-                "OC\\Preview\\PNG"
-                "OC\\Preview\\TXT"
-                "OC\\Preview\\XBitmap"
-                "OC\\Preview\\Movie"
-                "OC\\Preview\\MSOffice2003"
-                "OC\\Preview\\MSOffice2007"
-                "OC\\Preview\\MSOfficeDoc"
-                "OC\\Preview\\PDF"
-                "OC\\Preview\\Photoshop"
-                "OC\\Preview\\SVG"
-                "OC\\Preview\\TIFF"
-                "OC\\Preview\\HEIC"
+              settings.enabledPreviewProviders = map (type: "OC\\Preview\\${type}") [
+                "BMP" "GIF" "JPEG" "Krita" "MarkDown" "MP3" "OpenDocument"
+                "PNG" "TXT" "XBitmap" "Movie" "MSOffice2003" "MSOffice2007"
+                "MSOfficeDoc" "PDF" "Photoshop" "SVG" "TIFF" "HEIC"
               ];
             };
             services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
@@ -796,22 +755,10 @@ in
   };
   users.groups.containers = { };
   users.users.containers = {
+    group = "containers";
     home = "/persist/podman";
     isNormalUser = true;
-    group = "containers";
-
-    subUidRanges = [
-      {
-        startUid = 100000;
-        count = 65536;
-      }
-    ];
-    subGidRanges = [
-      {
-        startGid = 100000;
-        count = 65536;
-      }
-    ];
+    autoSubUidGidRange = true;
   };
 
   virtualisation.quadlet = {
