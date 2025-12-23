@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  bootdisk.id = "/dev/disk/by-id/mmc-DF4032_0x83432b3f";
+  bootdisk.id = "/dev/disk/by-id/ata-SAMSUNG_MZNTY128HDHP-000L1_S2YRNB0J434099";
 in
 {
   disko.devices = {
