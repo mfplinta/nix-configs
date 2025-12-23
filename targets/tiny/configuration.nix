@@ -233,7 +233,7 @@ in
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
           autoUpdate = "registry";
-          image = "zwavejs/zwave-js-ui:latest";
+          image = "docker.io/zwavejs/zwave-js-ui:latest";
           userns = "auto";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
           devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
@@ -242,7 +242,7 @@ in
         # --- Mosquitto ---
         mosquitto.containerConfig = {
           autoUpdate = "registry";
-          image = "eclipse-mosquitto:latest";
+          image = "docker.io/eclipse-mosquitto:latest";
           userns = "auto";
           volumes = [
             "${paths.source.mosquitto-config}:/mosquitto/config:U"
@@ -254,7 +254,7 @@ in
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
           autoUpdate = "registry";
-          image = "tsightler/ring-mqtt";
+          image = "docker.io/tsightler/ring-mqtt";
           userns = "auto";
           volumes = [ "${paths.source.ring-mqtt}:/data:U" ];
         };
