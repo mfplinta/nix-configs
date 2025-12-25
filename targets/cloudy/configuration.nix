@@ -11,7 +11,7 @@ let
   hostAddress = "10.0.0.104";
   bridgeAddress = "192.168.100.1";
   hostConfig = config;
-  containerNames = builtins.attrNames config.containers;
+  containerNames = (builtins.attrNames config.containers) ++ (builtins.attrNames config.virtualisation.quadlet.containers);
   addresses = lib.listToAttrs (lib.imap0 (i: name: {
     inherit name;
     value = rec {
@@ -139,7 +139,7 @@ in
       bridges."br0".interfaces = [ ];
       nat = {
         enable = true;
-        internalInterfaces = [ "ve-+" "br0" ];
+        internalInterfaces = [ "br0" ];
         externalInterface = hostNic;
         forwardPorts = [
           {
@@ -152,22 +152,19 @@ in
             proto = "tcp";
             sourcePort = 443;
           }
+          {
+            destination = "${addresses.reverseProxy.local}:51820";
+            proto = "tcp";
+            sourcePort = 51820;
+          }
+          {
+            destination = "${addresses.reverseProxy.local}:51820";
+            proto = "udp";
+            sourcePort = 51820;
+          }
         ];
       };
-      firewall = {
-        enable = true;
-        interfaces.ve-reverseProxy.allowedTCPPorts = [
-          8080 # Quartz
-          8088 # Stirling PDF
-          1337 # TMDB Addon
-        ];
-        allowedTCPPorts = [
-          5201 # Probe point
-        ];
-        allowedUDPPorts = [
-          5201 # Probe point
-        ];
-      };
+      firewall.enable = true;
     };
 
   systemd.tmpfiles.rules = [
@@ -339,7 +336,7 @@ in
                     handle @www {
                       redir /blog /blog/
                       handle_path /blog/* {
-                        reverse_proxy ${bridgeAddress}:8080
+                        reverse_proxy ${addresses.quartz.local}:80
                       }
                       reverse_proxy ${addresses.ws-blog.local}:8000 {
                         import tunneled
@@ -397,13 +394,13 @@ in
                     @tmdb host tmdb-addon-stremio.matheusplinta.com
                     handle @tmdb {
                       import bot_block
-                      reverse_proxy ${bridgeAddress}:1337
+                      reverse_proxy ${addresses.tmdb-addon.local}:1337
                     }
 
                     @pdf host pdf.matheusplinta.com
                     handle @pdf {
                       import bot_block
-                      reverse_proxy ${bridgeAddress}:8088
+                      reverse_proxy ${addresses.stirling-pdf.local}:8080
 
                       # Remove "Upgrade to PRO"
                       replace stream {
@@ -761,53 +758,65 @@ in
     autoSubUidGidRange = true;
   };
 
-  virtualisation.quadlet = {
-    enable = true;
-    autoUpdate.enable = true;
-    containers = {
-      # --- Quartz ---
-      quartz.containerConfig = {
-        image = "docker.io/mfplinta016/dockerized-quartz:latest";
-        publishPorts = [ "8080:80" ];
-        userns = "auto";
-        volumes = [
-          "/persist/containers/ws-blog/quartz-vault:/vault:ro,U"
-          "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz:U"
-        ];
-        environments = {
-          GIT_BRANCH = "jackyzha0/v4";
-          AUTO_REBUILD = "true";
+  virtualisation.quadlet =
+    let
+      inherit (config.virtualisation.quadlet) networks;
+    in
+    {
+      enable = true;
+      autoUpdate.enable = true;
+      networks = {
+          net_br0.networkConfig = {
+            driver = "macvlan";
+            gateways = [ "192.168.100.1" ];
+            subnets = [ "192.168.100.0/24" ];
+            options.parent = "br0";
+          };
+        };
+      containers = {
+        # --- Quartz ---
+        quartz.containerConfig = {
+          image = "docker.io/mfplinta016/dockerized-quartz:latest";
+          userns = "auto";
+          networks = [ "${networks.net_br0.ref}:ip=${addresses.quartz.local}" ];
+          volumes = [
+            "/persist/containers/ws-blog/quartz-vault:/vault:ro,U"
+            "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz:U"
+          ];
+          environments = {
+            GIT_BRANCH = "jackyzha0/v4";
+            AUTO_REBUILD = "true";
+          };
+        };
+
+        # --- TMDB Addon ---
+        tmdb-addon.containerConfig = {
+          autoUpdate = "registry";
+          image = "docker.io/viren070/tmdb-addon:latest";
+          userns = "auto";
+          networks = [ "${networks.net_br0.ref}:ip=${addresses.tmdb-addon.local}" ];
+          environmentFiles = [ config.sops.templates.env_tmdb.path ];
+        };
+
+        # --- Stirling PDF ---
+        stirling-pdf.containerConfig = {
+          autoUpdate = "registry";
+          image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
+          userns = "auto";
+          networks = [ "${networks.net_br0.ref}:ip=${addresses.stirling-pdf.local}" ];
+          volumes = [
+            "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata:U"
+            "/persist/containers/stirling-pdf/extraConfigs:/configs:U"
+            "/persist/containers/stirling-pdf/customFiles:/customFiles:U"
+            "/persist/containers/stirling-pdf/logs:/logs:U"
+            "/persist/containers/stirling-pdf/pipeline:/pipeline:U"
+          ];
+          environments = {
+            DISABLE_ADDITIONAL_FEATURES = "false";
+            LANGS = "en_US";
+          };
         };
       };
-
-      # --- TMDB Addon ---
-      tmdb-addon.containerConfig = {
-        autoUpdate = "registry";
-        image = "docker.io/viren070/tmdb-addon:latest";
-        publishPorts = [ "1337:1337" ];
-        userns = "auto";
-        environmentFiles = [ config.sops.templates.env_tmdb.path ];
-      };
-
-      # --- Stirling PDF ---
-      stirling-pdf.containerConfig = {
-        autoUpdate = "registry";
-        image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
-        publishPorts = [ "8088:8080" ];
-        userns = "auto";
-        volumes = [
-          "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata:U"
-          "/persist/containers/stirling-pdf/extraConfigs:/configs:U"
-          "/persist/containers/stirling-pdf/customFiles:/customFiles:U"
-          "/persist/containers/stirling-pdf/logs:/logs:U"
-          "/persist/containers/stirling-pdf/pipeline:/pipeline:U"
-        ];
-        environments = {
-          DISABLE_ADDITIONAL_FEATURES = "false";
-          LANGS = "en_US";
-        };
-      };
-    };
   };
 
   services.crowdsec = {

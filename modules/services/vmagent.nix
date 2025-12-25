@@ -26,6 +26,7 @@
     config = mkIf cfg.enable {
       services.vmagent = {
         enable = true;
+        extraArgs = [ "-httpListenAddr=''" ];
         remoteWrite = {
           url = cfg.remoteWriteUrl;
           basicAuthUsername = cfg.username;
