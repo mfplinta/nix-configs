@@ -35,7 +35,7 @@ in
   boot.initrd.kernelModules = [ "i915" ];
 
   hardware.graphics.extraPackages = with pkgs; [
-    vaapiIntel
+    intel-vaapi-driver
     intel-media-driver
     vpl-gpu-rt
     intel-compute-runtime-legacy1

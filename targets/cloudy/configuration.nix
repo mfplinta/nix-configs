@@ -3,6 +3,7 @@
   lib,
   config,
   sysImport,
+  private,
   ...
 }:
 
@@ -11,14 +12,18 @@ let
   hostAddress = "10.0.0.104";
   bridgeAddress = "192.168.100.1";
   hostConfig = config;
-  containerNames = (builtins.attrNames config.containers) ++ (builtins.attrNames config.virtualisation.quadlet.containers);
-  addresses = lib.listToAttrs (lib.imap0 (i: name: {
-    inherit name;
-    value = rec {
-      local = "192.168.100.${toString (100 + i)}";
-      localWithSubnet = "${local}/24";
-    };
-  }) containerNames);
+  containerNames =
+    (builtins.attrNames config.containers)
+    ++ (builtins.attrNames config.virtualisation.quadlet.containers);
+  addresses = lib.listToAttrs (
+    lib.imap0 (i: name: {
+      inherit name;
+      value = rec {
+        local = "192.168.100.${toString (100 + i)}";
+        localWithSubnet = "${local}/24";
+      };
+    }) containerNames
+  );
 in
 {
   imports = [
@@ -27,7 +32,6 @@ in
 
     (sysImport ../../common/base.nix)
     (sysImport ../../common/server.nix)
-    (sysImport ../../modules/services/vmagent.nix)
   ];
 
   boot.kernelParams = [
@@ -37,7 +41,7 @@ in
     "boot.panic_on_fail"
   ];
 
-  sops.defaultSopsFile = ./../../private/secrets.yaml;
+  sops.defaultSopsFile = private.secretsFile;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
   sops.secrets.cloudy-crowdsec_token = {
@@ -113,59 +117,60 @@ in
     '';
   };
 
-  networking =
-    {
-      ### Basic network config ###
-      useDHCP = false;
-      interfaces = {
-        "${hostNic}".ipv4.addresses = [
-          {
-            address = hostAddress;
-            prefixLength = 24;
-          }
-        ];
-        "br0".ipv4.addresses = [{
+  networking = {
+    ### Basic network config ###
+    useDHCP = false;
+    interfaces = {
+      "${hostNic}".ipv4.addresses = [
+        {
+          address = hostAddress;
+          prefixLength = 24;
+        }
+      ];
+      "br0".ipv4.addresses = [
+        {
           address = bridgeAddress;
           prefixLength = 24;
-        }];
-      };
-      defaultGateway = {
-        address = "10.0.0.1";
-        interface = "eth0";
-      };
-      nameservers = [ "1.1.1.1" ];
-      nftables.enable = true;
-      ### Container bridge cfg ###
-      bridges."br0".interfaces = [ ];
-      nat = {
-        enable = true;
-        internalInterfaces = [ "br0" ];
-        externalInterface = hostNic;
-        forwardPorts = [
-          {
-            destination = "${addresses.reverseProxy.local}:80";
-            proto = "tcp";
-            sourcePort = 80;
-          }
-          {
-            destination = "${addresses.reverseProxy.local}:443";
-            proto = "tcp";
-            sourcePort = 443;
-          }
-          {
-            destination = "${addresses.reverseProxy.local}:51820";
-            proto = "tcp";
-            sourcePort = 51820;
-          }
-          {
-            destination = "${addresses.reverseProxy.local}:51820";
-            proto = "udp";
-            sourcePort = 51820;
-          }
-        ];
-      };
-      firewall.enable = true;
+        }
+      ];
     };
+    defaultGateway = {
+      address = "10.0.0.1";
+      interface = "eth0";
+    };
+    nameservers = [ "1.1.1.1" ];
+    nftables.enable = true;
+    ### Container bridge cfg ###
+    bridges."br0".interfaces = [ ];
+    nat = {
+      enable = true;
+      internalInterfaces = [ "br0" ];
+      externalInterface = hostNic;
+      forwardPorts = [
+        {
+          destination = "${addresses.reverseProxy.local}:80";
+          proto = "tcp";
+          sourcePort = 80;
+        }
+        {
+          destination = "${addresses.reverseProxy.local}:443";
+          proto = "tcp";
+          sourcePort = 443;
+        }
+        {
+          destination = "${addresses.reverseProxy.local}:51820";
+          proto = "tcp";
+          sourcePort = 51820;
+        }
+        {
+          destination = "${addresses.reverseProxy.local}:51820";
+          proto = "udp";
+          sourcePort = 51820;
+        }
+      ];
+    };
+    firewall.enable = true;
+  };
 
   systemd.tmpfiles.rules = [
     # NixOS containers
@@ -185,11 +190,12 @@ in
 
   # Restart containers when systemd-tmpfiles config changes
   systemd.services.systemd-tmpfiles-resetup = {
-    serviceConfig.ExecStartPost = let
-      names = builtins.attrNames config.containers;
-      units = map (n: "container@${n}.service") names;
-    in
-      lib.mkIf (names != []) [
+    serviceConfig.ExecStartPost =
+      let
+        names = builtins.attrNames config.containers;
+        units = map (n: "container@${n}.service") names;
+      in
+      lib.mkIf (names != [ ]) [
         "+${config.systemd.package}/bin/systemctl restart ${lib.concatStringsSep " " units}"
       ];
   };
@@ -229,7 +235,7 @@ in
         in
         {
           # Place imports at the top level so they are discoverable by Nix
-          imports = (extra.imports or []) ++ [
+          imports = (extra.imports or [ ]) ++ [
             (sysImport ../../modules/services/django-website.nix)
           ];
 
@@ -730,9 +736,25 @@ in
               settings."overwriteprotocol" = "https"; # Fix redirect after login
               settings."preview_ffmpeg_path" = "${pkgs.ffmpeg}/bin/ffmpeg";
               settings.enabledPreviewProviders = map (type: "OC\\Preview\\${type}") [
-                "BMP" "GIF" "JPEG" "Krita" "MarkDown" "MP3" "OpenDocument"
-                "PNG" "TXT" "XBitmap" "Movie" "MSOffice2003" "MSOffice2007"
-                "MSOfficeDoc" "PDF" "Photoshop" "SVG" "TIFF" "HEIC"
+                "BMP"
+                "GIF"
+                "JPEG"
+                "Krita"
+                "MarkDown"
+                "MP3"
+                "OpenDocument"
+                "PNG"
+                "TXT"
+                "XBitmap"
+                "Movie"
+                "MSOffice2003"
+                "MSOffice2007"
+                "MSOfficeDoc"
+                "PDF"
+                "Photoshop"
+                "SVG"
+                "TIFF"
+                "HEIC"
               ];
             };
             services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
@@ -753,8 +775,7 @@ in
   users.groups.containers = { };
   users.users.containers = {
     group = "containers";
-    home = "/persist/podman";
-    isNormalUser = true;
+    isSystemUser = true;
     autoSubUidGidRange = true;
   };
 
@@ -766,13 +787,13 @@ in
       enable = true;
       autoUpdate.enable = true;
       networks = {
-          net_br0.networkConfig = {
-            driver = "macvlan";
-            gateways = [ "192.168.100.1" ];
-            subnets = [ "192.168.100.0/24" ];
-            options.parent = "br0";
-          };
+        net_br0.networkConfig = {
+          driver = "macvlan";
+          gateways = [ "192.168.100.1" ];
+          subnets = [ "192.168.100.0/24" ];
+          options.parent = "br0";
         };
+      };
       containers = {
         # --- Quartz ---
         quartz.containerConfig = {
@@ -817,7 +838,7 @@ in
           };
         };
       };
-  };
+    };
 
   services.crowdsec = {
     enable = true;

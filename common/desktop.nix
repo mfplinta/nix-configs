@@ -498,7 +498,7 @@
         };
 
         # Reduce RAM cache for ejectable devices
-        services.udev.packages = [ pkgs.android-udev-rules ];
+        services.udev.packages = [ pkgs.nixpkgs-old.android-udev-rules ];
         services.usbmuxd.enable = true;
         services.udev.extraRules = ''
           SUBSYSTEM=="block", ACTION=="add",\

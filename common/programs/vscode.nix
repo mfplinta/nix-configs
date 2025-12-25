@@ -2,13 +2,17 @@
   hmModule =
     {
       pkgs,
+      lib,
       config,
       sysConfig,
       setMimeTypes,
       ...
     }:
+    let
+      inherit (lib) getExe mkIf;
+    in
     {
-      warnings = pkgs.lib.mkIf (!config.fonts.fontconfig.enable) [
+      warnings = mkIf (!config.fonts.fontconfig.enable) [
         "fonts.fontconfig.enable is not set. Nerd Font may not render correctly in VS Code."
       ];
 
@@ -38,17 +42,17 @@
             "editor.fontFamily" = "'DroidSansM Nerd Font', monospace";
             # Containers
             "containers.containerClient" = "com.microsoft.visualstudio.containers.podman";
-            "dev.containers.dockerPath" = lib.getExe podman;
-            "containers.containerCommand" = lib.getExe podman;
-            "containers.composeCommand" = lib.getExe podman-compose;
+            "dev.containers.dockerPath" = getExe podman;
+            "containers.containerCommand" = getExe podman;
+            "containers.composeCommand" = getExe podman-compose;
             # Visual
             "workbench.colorTheme" = "Catppuccin Mocha";
             "workbench.iconTheme" = "material-icon-theme";
             # Nix
             "nix.enableLanguageServer" = true;
-            "nix.serverPath" = lib.getExe nixd;
+            "nix.serverPath" = getExe nixd;
             "nix.serverSettings"."nixd" = {
-              "formatting.command" = [ (lib.getExe nixfmt-rfc-style) ];
+              "formatting.command" = [ (getExe nixfmt-rfc-style) ];
               "options" = {
                 "nixos.expr" =
                   "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options";
@@ -60,7 +64,7 @@
               "textDocument/definition"
             ];
             # C/C++
-            "cmake.cmakePath" = lib.getExe cmake;
+            "cmake.cmakePath" = getExe cmake;
             "cmake.environment" = rec {
               PATH = "${gcc}/bin:${cmake}/bin:${coreutils}/bin:${bash}/bin:${ninja}/bin";
               LD_LIBRARY_PATH = PATH;

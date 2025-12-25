@@ -1,17 +1,17 @@
 {
-  lib,
   pkgs,
   config,
   sysImport,
+  private,
   ...
 }:
 
 let
   ### Constants
   nicName = "enp1s0";
+  networkConfig = private.network;
   paths = {
     root = "/persist";
-    source.caddy-cloudflare-token = paths.root + "/caddy/cloudflare.env";
     source.caddy-data = paths.root + "/caddy/data";
     source.hass = paths.root + "/hass";
     source.zwavejs = paths.root + "/zwavejs";
@@ -22,7 +22,6 @@ let
     source.esphome = paths.root + "/esphome";
     source.matterhub = paths.root + "/matterhub";
   };
-  networkConfig = (import ./../../private/cfg.nix).network;
 in
 {
   imports = [
@@ -31,11 +30,9 @@ in
 
     (sysImport ../../common/base.nix)
     (sysImport ../../common/server.nix)
-    (sysImport ../../common/containers.nix)
-    (sysImport ../../modules/services/vmagent.nix)
   ];
 
-  sops.defaultSopsFile = ./../../private/secrets.yaml;
+  sops.defaultSopsFile = private.secretsFile;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
   sops.secrets.cloudy-http_auth_plain = { };
@@ -59,10 +56,6 @@ in
     in
     {
       firewall.allowedTCPPorts = [
-        80
-        443
-      ];
-      firewall.allowedUDPPorts = [
         80
         443
       ];
@@ -108,33 +101,12 @@ in
       nameservers = [ net.vlan."1".dns ];
     };
 
-  users.groups.containers = { };
-  users.users.containers = {
-    home = "/persist/podman";
-    isNormalUser = true;
-    group = "containers";
-
-    subUidRanges = [
-      {
-        startUid = 100000;
-        count = 65536;
-      }
-    ];
-    subGidRanges = [
-      {
-        startGid = 100000;
-        count = 65536;
-      }
-    ];
-  };
-
+  cfg.virtualisation.quadlet.enable = true;
   virtualisation.quadlet =
     let
       inherit (config.virtualisation.quadlet) networks;
     in
     {
-      enable = true;
-      autoUpdate.enable = true;
       networks = {
         net_vlan1.networkConfig = {
           driver = "macvlan";
@@ -166,40 +138,43 @@ in
             "443:443"
           ];
           environmentFiles = [ config.sops.templates.env_caddy.path ];
-          volumes = [ "${paths.source.caddy-data}:/data:U" "${pkgs.writeText "Caddyfile" ''
-            *.matheusplinta.com {
-              tls {
-                issuer acme {
-                  dns cloudflare {env.CF_API_KEY}
-                  resolvers 8.8.8.8
+          volumes = [
+            "${paths.source.caddy-data}:/data:U"
+            "${pkgs.writeText "Caddyfile" ''
+              *.matheusplinta.com {
+                tls {
+                  issuer acme {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 8.8.8.8
+                  }
+                }
+                
+                @hass host ha.matheusplinta.com
+                handle @hass {
+                  reverse_proxy hass:8123
+                }
+
+                @zwavejs host zwavejs.matheusplinta.com
+                handle @zwavejs {
+                  reverse_proxy zwavejs:8091
+                }
+
+                @esphome host esphome.matheusplinta.com
+                handle @esphome {
+                  reverse_proxy esphome:6052
+                }
+
+                @matterhub host matterhub.matheusplinta.com
+                handle @matterhub {
+                  reverse_proxy matterhub:8482
+                }
+
+                handle {
+                  abort
                 }
               }
-              
-              @hass host ha.matheusplinta.com
-              handle @hass {
-                reverse_proxy hass:8123
-              }
-
-              @zwavejs host zwavejs.matheusplinta.com
-              handle @zwavejs {
-                reverse_proxy zwavejs:8091
-              }
-
-              @esphome host esphome.matheusplinta.com
-              handle @esphome {
-                reverse_proxy esphome:6052
-              }
-
-              @matterhub host matterhub.matheusplinta.com
-              handle @matterhub {
-                reverse_proxy matterhub:8482
-              }
-
-              handle {
-                abort
-              }
-            }
-          ''}:/etc/caddy/Caddyfile:ro" ];
+            ''}:/etc/caddy/Caddyfile:ro"
+          ];
         };
 
         # --- Home Assistant ---
@@ -228,7 +203,9 @@ in
           image = "docker.io/zwavejs/zwave-js-ui:latest";
           userns = "auto";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
-          devices = [ "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00" ];
+          devices = [
+            "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"
+          ];
         };
 
         # --- Mosquitto ---

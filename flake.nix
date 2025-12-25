@@ -23,7 +23,6 @@
   };
   outputs =
     inputs@{
-      self,
       nixpkgs,
       nixpkgs-unstable,
       nixpkgs-old,
@@ -31,7 +30,6 @@
       wrapper-manager,
       home-manager,
       nix-vscode-extensions,
-      nix-index-database,
       nixd,
       sops-nix,
       quadlet-nix,
@@ -43,46 +41,20 @@
       homeManagerConfig = [
         home-manager.nixosModules.default
         (
-          {
-            config,
-            lib,
-            pkgs,
-            ...
-          }:
+          { config, ... }:
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "old-hm";
+            home-manager.sharedModules = [ 
+              inputs.quadlet-nix.homeManagerModules.quadlet
+              (import ./modules).hmModule
+            ];
             home-manager.extraSpecialArgs = {
+              inherit inputs;
               sysConfig = config;
-              hmImport =
-                module:
-                args@{
-                  sysConfig,
-                  ...
-                }:
-                (import module).hmModule (
-                  {
-                    inherit
-                      config
-                      lib
-                      pkgs
-                      inputs
-                      sysConfig
-                      wrapper-manager
-                      ;
-                    hmModule-nix-index = nix-index-database.homeModules.nix-index;
-                    setMimeTypes =
-                      desktopEntry: types:
-                      builtins.listToAttrs (
-                        map (type: {
-                          name = type;
-                          value = [ desktopEntry ];
-                        }) types
-                      );
-                  }
-                  // args
-                );
+              wrapper-manager = wrapper-manager;
+              hmImport = module: (import module).hmModule;
             };
           }
         )
@@ -102,17 +74,20 @@
         };
         "tiny-nix" = {
           modules = [
+            ./private/default.nix
             ./targets/tiny/configuration.nix
           ];
         };
         "cloudy" = {
           arch = "aarch64-linux";
           modules = [
+            ./private/default.nix
             ./targets/cloudy/configuration.nix
           ];
         };
         "gateway" = {
           modules = [
+            ./private/default.nix
             ./targets/gateway/configuration.nix
           ];
         };
@@ -140,6 +115,7 @@
                 ];
                 imports = [
                   "${nixpkgs-crowdsec}/nixos/modules/services/security/crowdsec.nix"
+                  (import ./modules).sysModule
                 ];
                 nix.settings = {
                   substituters = [
@@ -160,47 +136,26 @@
                   android_sdk.accept_license = true;
                 };
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
-                nixpkgs.overlays = [
-                  nix-vscode-extensions.overlays.default
-                  nvibrant.overlays.default
-                  nixd.overlays.default
-                  (final: prev: rec {
-                    myScripts =
-                      let
-                        scripts = (import ./pkgs/scripts/default.nix { pkgs = prev; });
-                      in
-                      {
-                        toggle-scale = scripts.toggle-scale;
-                        get-current-brightness = scripts.get-current-brightness;
-                        update-website-script = scripts.update-website-script;
-                        get-current-io-util = scripts.get-current-io-util;
-                        scrcpy = scripts.scrcpy;
-                      };
-                    cups-brother-hll3290cdw = prev.callPackage ./pkgs/cups-brother-hll3290cdw.nix { };
-                    flat-remix-kde = prev.callPackage ./pkgs/flat-remix-kde.nix { };
-                    django-imagekit = ps: ps.callPackage ./pkgs/django-imagekit.nix { };
-                    django-turnstile = ps: ps.callPackage ./pkgs/django-turnstile.nix { };
-                    profile-sync-daemon = prev.profile-sync-daemon.overrideAttrs (oldAttrs: {
-                      installPhase = oldAttrs.installPhase + ''
-                        mv $out/share/psd/contrib/* $out/share/psd/browsers/
-                      '';
-                    });
-                    unstable = import nixpkgs-unstable {
-                      inherit (final.stdenv.hostPlatform) system;
-                      inherit (final) config;
-                    };
-                    stremio =
-                      (import nixpkgs-old {
-                        inherit (final.stdenv.hostPlatform) system;
-                        inherit (final) config;
-                      }).stremio;
-                    android-udev-rules =
-                      (import nixpkgs-old {
-                        inherit (final.stdenv.hostPlatform) system;
-                        inherit (final) config;
-                      }).android-udev-rules;
-                  })
-                ];
+                nixpkgs.overlays =
+                  let
+                    overrideFromInput =
+                      input: overrideName:
+                      (final: prev: {
+                        "${overrideName}" =
+                          (import input {
+                            inherit (final.stdenv.hostPlatform) system;
+                            inherit (final) config;
+                          });
+                      });
+                  in
+                  [
+                    nix-vscode-extensions.overlays.default
+                    nvibrant.overlays.default
+                    nixd.overlays.default
+                    (import ./pkgs)
+                    (overrideFromInput nixpkgs-old "nixpkgs-old")
+                    (overrideFromInput nixpkgs-unstable "unstable")
+                  ];
                 networking.hostName = name;
                 system.stateVersion = "24.11";
               }

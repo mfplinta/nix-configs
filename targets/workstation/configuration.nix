@@ -17,11 +17,9 @@ in
     (sysImport ./../../common/base.nix)
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
-    (sysImport ./../../common/containers.nix)
     (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
-    (sysImport ./../../modules/services/nvidia_oc.nix)
   ];
 
   myCfg.westonOutput = ''
@@ -194,6 +192,8 @@ in
     ];
   };
 
+  cfg.virtualisation.quadlet.enable = true;
+
   home-manager.users.matheus =
     {
       hmImport,
@@ -212,7 +212,6 @@ in
         (hmImport ./../../common/bundles/office.nix)
 
         (hmImport ./../../common/programs/dolphin.nix)
-        (hmImport ./../../modules/services/jdownloader2.nix)
       ];
 
       myCfg = {
@@ -325,6 +324,8 @@ in
           };
         };
       };
+
+      cfg.services.jdownloader2.enable = true;
 
       home.packages =
         with pkgs;

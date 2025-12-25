@@ -1,13 +1,11 @@
 {
-  lib,
-  pkgs,
-  config,
   sysImport,
+  private,
   ...
 }:
 
 let
-  networkConfig = (import ./../../private/cfg.nix).network;
+  networkConfig = private.network;
   unboundViews =
     { networkConfig }:
     let
@@ -43,7 +41,6 @@ let
 
     in
     map (vlanId: mkView vlanId byVlan.${vlanId}) (attrNames byVlan);
-
 in
 {
   imports = [
@@ -52,7 +49,6 @@ in
 
     (sysImport ../../common/base.nix)
     (sysImport ../../common/server.nix)
-    (sysImport ../../common/containers.nix)
   ];
 
   boot.kernelParams = [ "net.ifnames=0" ];
