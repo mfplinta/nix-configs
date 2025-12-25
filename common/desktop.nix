@@ -11,7 +11,7 @@
       mod = "SUPER";
     in
     {
-      options.myCfg = {
+      options.cfg = {
         hyprland = lib.mkOption {
           type = with lib.types; attrsOf anything;
           description = "Hyprland target-specific configuration";
@@ -27,7 +27,7 @@
       };
 
       config = {
-        myCfg.kdeglobals = {
+        cfg.kdeglobals = {
           UiSettings."ColorScheme" = "Flat-Remix-Red-Darkest";
           Icons."Theme" = "Flat-Remix-Red-Dark";
         };
@@ -170,7 +170,7 @@
                 ecosystem."no_update_news" = true;
                 ecosystem."no_donation_nag" = true;
               }
-              config.myCfg.hyprland
+              config.cfg.hyprland
             ];
 
           package = null;
@@ -198,7 +198,7 @@
               "menus.dashboard.directories.left.directory3.command" = ''bash -c "xdg-open $HOME/Syncthing/BYU/"'';
               "bar.workspaces.show_numbered" = true;
             }
-            config.myCfg.hyprpanel
+            config.cfg.hyprpanel
           ];
         };
 
@@ -273,7 +273,7 @@
 
             input-field = [
               {
-                monitor = config.myCfg.mainMonitor;
+                monitor = config.cfg.mainMonitor;
                 size = "20%, 5%";
                 outline_thickness = 3;
 
@@ -451,7 +451,7 @@
       ...
     }:
     {
-      options.myCfg.westonOutput = lib.mkOption {
+      options.cfg.westonOutput = lib.mkOption {
         type = lib.types.str;
         description = "Weston target-specific configuration";
       };
@@ -522,7 +522,7 @@
             wayland.compositorCommand = "${lib.getExe pkgs.weston} --shell=kiosk -c ${pkgs.writeText "weston.ini" ''
               [core]
               backend=drm
-              ${config.myCfg.westonOutput}
+              ${config.cfg.westonOutput}
             ''}";
             theme = "${
               pkgs.catppuccin-sddm.override {

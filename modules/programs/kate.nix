@@ -25,7 +25,7 @@
               };
             };
 
-        myCfg.kdeglobals = {
+        cfg.kdeglobals = {
           lspclient.InlayHints = true;
         };
 

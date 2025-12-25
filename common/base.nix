@@ -7,7 +7,7 @@
       ...
     }:
     {
-      options.myCfg.kdeglobals = lib.mkOption {
+      options.cfg.kdeglobals = lib.mkOption {
         type = with lib.types; attrsOf anything;
         default = { };
         description = ".kdeglobals configuration";
@@ -17,7 +17,7 @@
         xdg = {
           configFile."kdeglobals".source =
             (pkgs.formats.ini { }).generate "kdeglobals"
-              config.myCfg.kdeglobals;
+              config.cfg.kdeglobals;
           userDirs.enable = true;
           userDirs.createDirectories = true;
           userDirs.extraConfig = {

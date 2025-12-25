@@ -22,7 +22,7 @@ in
     (sysImport ./../../common/bundles/internet.nix)
   ];
 
-  myCfg.westonOutput = ''
+  cfg.westonOutput = ''
     [output]
     name=${leftMonitor}
     mode=off
@@ -197,7 +197,7 @@ in
 
       cfg.programs.dolphin.enable = true;
 
-      myCfg = {
+      cfg = {
         mainMonitor = centerMonitor;
 
         hyprland = with pkgs.lib; {

@@ -11,7 +11,7 @@
       };
 
       config = mkIf cfg.enable {
-        myCfg.kdeglobals = {
+        cfg.kdeglobals = {
           General."TerminalApplication" = "kitty";
           General."TerminalService" = "kitty.desktop";
         };

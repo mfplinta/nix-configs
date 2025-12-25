@@ -44,7 +44,7 @@
       };
 
       config = mkIf cfg.enable {
-        myCfg.kdeglobals = {
+        cfg.kdeglobals = {
           PreviewSettings."EnableRemoteFolderThumbnail" = true;
           PreviewSettings."MaximumRemoteSize" = 52428800;
           PreviewSettings."Plugins" =

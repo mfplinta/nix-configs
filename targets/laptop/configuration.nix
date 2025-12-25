@@ -20,7 +20,7 @@ in
     (sysImport ./../../common/bundles/internet.nix)
   ];
 
-  myCfg.westonOutput = ''
+  cfg.westonOutput = ''
     [output]
     name=${screenName}
     mode=1920x1080@60
@@ -80,7 +80,7 @@ in
 
       cfg.programs.dolphin.enable = true;
 
-      myCfg = {
+      cfg = {
         mainMonitor = screenName;
 
         hyprland = with pkgs.lib; {
