@@ -52,20 +52,17 @@
         };
         "tiny-nix" = {
           modules = [
-            ./private/default.nix
             ./targets/tiny/configuration.nix
           ];
         };
         "cloudy" = {
           arch = "aarch64-linux";
           modules = [
-            ./private/default.nix
             ./targets/cloudy/configuration.nix
           ];
         };
         "gateway" = {
           modules = [
-            ./private/default.nix
             ./targets/gateway/configuration.nix
           ];
         };
@@ -88,6 +85,7 @@
             quadlet-nix.nixosModules.quadlet
             nvibrant.nixosModules.default
             home-manager.nixosModules.default
+            ./private/default.nix
             (
               { config, ... }:
               {

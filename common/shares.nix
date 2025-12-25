@@ -20,18 +20,18 @@
     };
 
   sysModule =
-    { pkgs, lib, ... }:
+    { config, lib, ... }:
     {
       environment.sessionVariables = {
         STNODEFAULTFOLDER = 1;
       };
 
+      sops.secrets.workstation-smb_matheus_pwd = { };
+      sops.secrets.nas-smb_matheus_pwd = { };
+
       fileSystems =
         let
           h = "/home/matheus";
-          smbMountOptions = [
-            "uid=1000,x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,nofail,_netdev,credentials=/root/smb-secrets"
-          ];
         in
         lib.genAttrs
           [
@@ -49,68 +49,42 @@
               "user"
               "mode=1777"
             ];
-          })
-        //
-          lib.genAttrs
-            [
-              "/mnt/smb/mfp_stuff"
-              "/mnt/smb/dap_stuff"
-              "/mnt/smb/public"
-            ]
-            (path: {
-              device = "//samba.arpa/${lib.last (lib.splitString "/" path)}";
-              fsType = "cifs";
-              options = smbMountOptions;
-            });
+          });
 
       systemd.tmpfiles.rules = [
         "d /home/matheus/Shared 0755 matheus users -"
       ];
 
-      services.samba = {
+      cfg.services.samba-host = {
         enable = true;
-        openFirewall = true;
-        settings = {
-          global = {
-            workgroup = "WORKGROUP";
-            security = "user";
-            "acl allow execute always" = true;
-            "hosts allow" = "10.0.1. 127.0.0.1 localhost 192.168.122.";
-            # Symlink support
-            "unix extensions" = "no";
-            "follow symlinks" = "yes";
-            "wide links" = "yes";
-          };
+        shares = {
           shared = {
-            browseable = "yes";
             path = "/home/matheus/Shared";
-            public = "no";
-            "valid users" = [ "matheus" ];
-            "read only" = "no";
-            writable = "yes";
-            printable = "no";
+            validUsers = [ "matheus" ];
+            allowGuests = false;
           };
         };
+        users.matheus.passwordFile = config.sops.secrets.workstation-smb_matheus_pwd.path;
       };
 
-      systemd.services.configure-smb-user = {
-        enable = true;
-        description = "Configure SMB users";
-        after = [ "local-fs.target" ];
-        path = [ pkgs.samba ];
-        script = ''
-          echo -ne "$(cat /root/matheus-smbpasswd)\n$(cat /root/matheus-smbpasswd)\n" | smbpasswd -a -s matheus
-        '';
-        wantedBy = [ "samba.target" ];
+      cfg.services.samba-client = 
+      let
+        username = "matheus";
+        passwordFile = config.sops.secrets.nas-smb_matheus_pwd.path;
+      in
+      {
+        "/mnt/smb/mfp_stuff" = {
+          inherit username passwordFile;
+          remotePath = "//samba.arpa/mfp_stuff";
+        };
+        "/mnt/smb/dap_stuff" = {
+          inherit username passwordFile;
+          remotePath = "//samba.arpa/dap_stuff";
+        };
+        "/mnt/smb/public" = {
+          inherit username passwordFile;
+          remotePath = "//samba.arpa/public";
+        };
       };
-
-      services.samba-wsdd = {
-        enable = true;
-        openFirewall = true;
-      };
-
-      environment.systemPackages = with pkgs; [
-        cifs-utils
-      ];
     };
 }

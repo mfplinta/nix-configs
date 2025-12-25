@@ -445,17 +445,11 @@
   sysModule =
     {
       pkgs,
-      config,
       inputs,
       lib,
       ...
     }:
     {
-      options.cfg.westonOutput = lib.mkOption {
-        type = lib.types.str;
-        description = "Weston target-specific configuration";
-      };
-
       config = {
         boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;
         boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
@@ -514,25 +508,16 @@
           serviceConfig.Type = "oneshot";
         };
 
-        services.displayManager = {
+        services.displayManager.enable = true;
+        cfg.services.displayManager.sddm-weston = {
           enable = true;
-          sddm = {
-            enable = true;
-            wayland.enable = true;
-            wayland.compositorCommand = "${lib.getExe pkgs.weston} --shell=kiosk -c ${pkgs.writeText "weston.ini" ''
-              [core]
-              backend=drm
-              ${config.cfg.westonOutput}
-            ''}";
-            theme = "${
-              pkgs.catppuccin-sddm.override {
-                flavor = "mocha";
-                accent = "mauve";
-                disableBackground = true;
-              }
-            }/share/sddm/themes/catppuccin-mocha-mauve";
-            package = pkgs.kdePackages.sddm;
-          };
+          theme = "${
+            pkgs.catppuccin-sddm.override {
+              flavor = "mocha";
+              accent = "mauve";
+              disableBackground = true;
+            }
+          }/share/sddm/themes/catppuccin-mocha-mauve";
         };
 
         systemd.services.lock-before-suspend = {

@@ -230,16 +230,13 @@ in
         extraModule:
         { ... }@args:
         let
-          # Evaluate extraModule if it's a function
           extra = if lib.isFunction extraModule then extraModule args else extraModule;
         in
         {
-          # Place imports at the top level so they are discoverable by Nix
           imports = (extra.imports or [ ]) ++ [
             (sysImport ../../modules/services/django-website.nix)
           ];
 
-          # Merge the actual configuration definitions
           config = lib.mkMerge [
             commonConfig
             (removeAttrs extra [ "imports" ])

@@ -4,6 +4,7 @@ in
 {
   pkgs,
   sysImport,
+  private,
   ...
 }:
 {
@@ -14,17 +15,18 @@ in
     (sysImport ./../../common/base.nix)
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
-    (sysImport ./../../common/containers.nix)
-    (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
   ];
 
-  cfg.westonOutput = ''
-    [output]
-    name=${screenName}
-    mode=1920x1080@60
-  '';
+  sops.defaultSopsFile = private.secretsFile;
+  sops.age.keyFile = "/root/.config/sops/age/keys.txt";
+
+  cfg.services.displayManager.sddm-weston.outputs = {
+    "${screenName}" = {
+      mode = "1920x1080@60";
+    };
+  };
 
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
@@ -43,11 +45,12 @@ in
 
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
+  cfg.services.printing.enable = true;
 
-  services.logind = {
-    lidSwitch = "suspend";
-    lidSwitchExternalPower = "lock";
-    powerKey = "suspend";
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "lock";
+    HandlePowerKey = "suspend";
   };
 
   users.users.matheus = {

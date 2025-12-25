@@ -7,6 +7,7 @@ in
   pkgs,
   sysImport,
   config,
+  private,
   ...
 }:
 {
@@ -17,24 +18,24 @@ in
     (sysImport ./../../common/base.nix)
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
-    (sysImport ./../../common/printing.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
   ];
 
-  cfg.westonOutput = ''
-    [output]
-    name=${leftMonitor}
-    mode=off
+  sops.defaultSopsFile = private.secretsFile;
+  sops.age.keyFile = "/root/.config/sops/age/keys.txt";
 
-    [output]
-    name=${centerMonitor}
-    mode=3840x2160@60
-
-    [output]
-    name=${rightMonitor}
-    mode=off
-  '';
+  cfg.services.displayManager.sddm-weston.outputs = {
+    "${leftMonitor}" = {
+      mode = "off";
+    };
+    "${centerMonitor}" = {
+      mode = "3840x2160@60";
+    };
+    "${rightMonitor}" = {
+      mode = "off";
+    };
+  };
 
   boot.kernelParams = [
     "video=${centerMonitor}:3840x2160@60"
@@ -174,6 +175,7 @@ in
     ];
   };
 
+  cfg.services.printing.enable = true;
   cfg.virtualisation.quadlet.enable = true;
   cfg.virtualisation.libvirt.enable = true;
 

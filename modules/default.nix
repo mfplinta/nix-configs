@@ -8,8 +8,12 @@
         (sysImport ./programs/localsend.nix)
         (sysImport ./programs/vlc.nix)
 
+        (sysImport ./services/displayManager/sddm-weston.nix)
+        (sysImport ./services/samba/client.nix)
+        (sysImport ./services/samba/host.nix)
         (sysImport ./services/django-website.nix)
         (sysImport ./services/nvidia_oc.nix)
+        (sysImport ./services/printing.nix)
         (sysImport ./services/vmagent.nix)
 
         (sysImport ./virtualisation/quadlet.nix)
