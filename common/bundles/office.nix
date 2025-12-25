@@ -1,11 +1,9 @@
 {
   hmModule =
-    { pkgs, hmImport, ... }:
+    { pkgs, ... }:
     {
-      imports = [
-        (hmImport ./../programs/okular.nix)
-        (hmImport ./../programs/onlyoffice.nix)
-      ];
+      cfg.programs.okular.enable = true;
+      cfg.programs.onlyoffice.enable = true;
 
       home.packages = with pkgs; [
         # Office

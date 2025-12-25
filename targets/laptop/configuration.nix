@@ -76,9 +76,9 @@ in
         (hmImport ./../../common/bundles/internet.nix)
         (hmImport ./../../common/bundles/utilities.nix)
         (hmImport ./../../common/bundles/office.nix)
-
-        (hmImport ./../../common/programs/dolphin.nix)
       ];
+
+      cfg.programs.dolphin.enable = true;
 
       myCfg = {
         mainMonitor = screenName;

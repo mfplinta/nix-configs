@@ -1,12 +1,8 @@
 {
   hmModule =
-    { pkgs, hmImport, ... }:
+    { pkgs, ... }:
     {
-      imports = [
-        (hmImport ./../programs/brave.nix)
-        (hmImport ./../programs/qbittorrent.nix)
-        (hmImport ./../programs/localsend.nix)
-      ];
+      cfg.programs.qbittorrent.enable = true;
       home.packages = with pkgs; [
         # Internet
         anydesk
@@ -15,11 +11,9 @@
     };
 
   sysModule =
-    { sysImport, ... }:
+    { ... }:
     {
-      imports = [
-        (sysImport ./../programs/brave.nix)
-        (sysImport ./../programs/localsend.nix)
-      ];
+      cfg.programs.brave.enable = true;
+      cfg.programs.localsend.enable = true;
     };
 }

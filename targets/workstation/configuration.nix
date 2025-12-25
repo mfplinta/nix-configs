@@ -140,27 +140,9 @@ in
     uinput.enable = true;
   };
 
-  services.nvidia_oc = {
+  cfg.services.nvidia_oc = {
     enable = true;
     powerLimit = 200;
-  };
-
-  programs.virt-manager.enable = true;
-  virtualisation = {
-    libvirtd.enable = true;
-    libvirtd.qemu = {
-      swtpm.enable = true;
-      verbatimConfig = ''
-        cgroup_device_acl = [
-          "/dev/null", "/dev/full", "/dev/zero",
-          "/dev/random", "/dev/urandom",
-          "/dev/ptmx", "/dev/kvm",
-          "/dev/userfaultfd",
-          "/dev/kvmfr0"
-        ]
-      '';
-    };
-    spiceUSBRedirection.enable = true;
   };
 
   environment.sessionVariables = {
@@ -193,6 +175,7 @@ in
   };
 
   cfg.virtualisation.quadlet.enable = true;
+  cfg.virtualisation.libvirt.enable = true;
 
   home-manager.users.matheus =
     {
@@ -210,9 +193,9 @@ in
         (hmImport ./../../common/bundles/internet.nix)
         (hmImport ./../../common/bundles/utilities.nix)
         (hmImport ./../../common/bundles/office.nix)
-
-        (hmImport ./../../common/programs/dolphin.nix)
       ];
+
+      cfg.programs.dolphin.enable = true;
 
       myCfg = {
         mainMonitor = centerMonitor;
@@ -291,13 +274,6 @@ in
               right = [ ];
             };
           };
-        };
-      };
-
-      dconf.settings = {
-        "org/virt-manager/virt-manager/connections" = {
-          autoconnect = [ "qemu:///system" ];
-          uris = [ "qemu:///system" ];
         };
       };
 

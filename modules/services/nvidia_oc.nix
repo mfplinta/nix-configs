@@ -16,10 +16,10 @@
         getExe
         optionalString
         ;
-      cfg = config.services.nvidia_oc;
+      cfg = config.cfg.services.nvidia_oc;
     in
     {
-      options.services.nvidia_oc = {
+      options.cfg.services.nvidia_oc = {
         enable = mkEnableOption "nvidia_oc";
         maxClock = mkOption {
           type = types.nullOr types.int;

@@ -3,14 +3,11 @@
     {
       pkgs,
       lib,
-      hmImport,
       ...
     }:
     {
-      imports = [
-        (hmImport ./../programs/kate.nix)
-        (hmImport ./../programs/vscode.nix)
-      ];
+      cfg.programs.kate.enable = true;
+      cfg.programs.vscode.enable = true;
 
       home.packages = with pkgs; [
         jetbrains.pycharm-professional

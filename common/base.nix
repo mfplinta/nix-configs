@@ -2,19 +2,11 @@
   hmModule =
     {
       pkgs,
-      inputs,
       lib,
       config,
-      hmImport,
       ...
     }:
     {
-      imports = [
-        inputs.nix-index-database.homeModules.nix-index
-        (hmImport ./programs/fish.nix)
-        (hmImport ./programs/gparted.nix)
-      ];
-
       options.myCfg.kdeglobals = lib.mkOption {
         type = with lib.types; attrsOf anything;
         default = { };
@@ -46,14 +38,9 @@
       pkgs,
       config,
       lib,
-      sysImport,
       ...
     }:
     {
-      imports = [
-        (sysImport ./programs/fish.nix)
-      ];
-
       config = {
         boot.loader.systemd-boot.enable = true;
         boot.loader.timeout = 0;
@@ -102,6 +89,8 @@
             submodule.recurse = true;
           };
         };
+
+        cfg.programs.fish.enable = true;
 
         environment.systemPackages = with pkgs; [
           vim

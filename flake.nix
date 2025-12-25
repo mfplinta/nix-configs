@@ -29,6 +29,7 @@
       disko,
       wrapper-manager,
       home-manager,
+      nix-index-database,
       nix-vscode-extensions,
       nixd,
       sops-nix,
@@ -38,39 +39,16 @@
       ...
     }:
     let
-      homeManagerConfig = [
-        home-manager.nixosModules.default
-        (
-          { config, ... }:
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "old-hm";
-            home-manager.sharedModules = [ 
-              inputs.quadlet-nix.homeManagerModules.quadlet
-              (import ./modules).hmModule
-            ];
-            home-manager.extraSpecialArgs = {
-              inherit inputs;
-              sysConfig = config;
-              wrapper-manager = wrapper-manager;
-              hmImport = module: (import module).hmModule;
-            };
-          }
-        )
-      ];
       systems = {
         "mfp-nix-workstation" = {
           modules = [
             ./targets/workstation/configuration.nix
-          ]
-          ++ homeManagerConfig;
+          ];
         };
         "mfp-nix-laptop" = {
           modules = [
             ./targets/laptop/configuration.nix
-          ]
-          ++ homeManagerConfig;
+          ];
         };
         "tiny-nix" = {
           modules = [
@@ -92,6 +70,9 @@
           ];
         };
       };
+      sysImport = module: (import module).sysModule;
+      hmImport = module: (import module).hmModule;
+
     in
     {
       nixosConfigurations = builtins.mapAttrs (
@@ -99,23 +80,23 @@
         nixpkgs.lib.nixosSystem {
           system = value.arch or "x86_64-linux";
           specialArgs = {
-            inherit inputs;
-            sysImport = module: (import module).sysModule;
+            inherit inputs sysImport;
           };
           modules = [
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
             quadlet-nix.nixosModules.quadlet
             nvibrant.nixosModules.default
+            home-manager.nixosModules.default
             (
-              { ... }:
+              { config, ... }:
               {
                 disabledModules = [
                   "services/security/crowdsec.nix"
                 ];
                 imports = [
                   "${nixpkgs-crowdsec}/nixos/modules/services/security/crowdsec.nix"
-                  (import ./modules).sysModule
+                  (sysImport ./modules)
                 ];
                 nix.settings = {
                   substituters = [
@@ -138,10 +119,10 @@
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
                 nixpkgs.overlays =
                   let
-                    overrideFromInput =
-                      input: overrideName:
+                    overlayFromInput =
+                      input: overlayName:
                       (final: prev: {
-                        "${overrideName}" =
+                        "${overlayName}" =
                           (import input {
                             inherit (final.stdenv.hostPlatform) system;
                             inherit (final) config;
@@ -149,15 +130,28 @@
                       });
                   in
                   [
+                    (import ./pkgs)
+                    (overlayFromInput nixpkgs-old "nixpkgs-old")
+                    (overlayFromInput nixpkgs-unstable "unstable")
                     nix-vscode-extensions.overlays.default
                     nvibrant.overlays.default
                     nixd.overlays.default
-                    (import ./pkgs)
-                    (overrideFromInput nixpkgs-old "nixpkgs-old")
-                    (overrideFromInput nixpkgs-unstable "unstable")
                   ];
                 networking.hostName = name;
                 system.stateVersion = "24.11";
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.backupFileExtension = "old-hm";
+                home-manager.sharedModules = [ 
+                  (hmImport ./modules)
+                  quadlet-nix.homeManagerModules.quadlet
+                  nix-index-database.homeModules.nix-index
+                ];
+                home-manager.extraSpecialArgs = {
+                  inherit inputs hmImport;
+                  sysConfig = config;
+                  wrapper-manager = wrapper-manager;
+                };
               }
             )
           ]

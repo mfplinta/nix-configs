@@ -1,0 +1,60 @@
+{
+  hmModule =
+    {
+      sysConfig,
+      pkgs,
+      lib,
+      wrapper-manager,
+      setMimeTypes,
+      ...
+    }:
+    let
+      inherit (lib) mkIf;
+      cfg = sysConfig.cfg.programs.vlc;
+    in
+    {
+      config = mkIf cfg.enable {
+        xdg.mimeApps.defaultApplications = setMimeTypes "vlc.desktop" [
+          "video/mp4"
+          "video/mpeg"
+          "video/quicktime"
+          "video/x-m4v"
+          "video/x-matroska"
+          "video/x-ms-wmv"
+          "video/x-msvideo"
+          "video/webm"
+        ];
+
+        xdg.configFile."vlc/vlcrc".source = (pkgs.formats.ini { }).generate "vlcrc" {
+          qt."qt-recentplay" = 0;
+          qt."qt-privacy-ask" = 0;
+          core."metadata-network-access" = 0;
+          core."loop" = 1;
+          medialib."save-recentplay" = 0;
+        };
+
+        home.packages = [
+          (wrapper-manager.lib.wrapWith pkgs {
+            basePackage = pkgs.vlc;
+            env.DISPLAY.value = null;
+          })
+        ];
+      };
+    };
+
+  sysModule =
+    { config, lib, ... }:
+    let
+      inherit (lib) mkIf mkEnableOption;
+      cfg = config.cfg.programs.vlc;
+    in
+    {
+      options.cfg.programs.vlc = {
+        enable = mkEnableOption "vlc";
+      };
+
+      config = mkIf cfg.enable {
+        networking.firewall.allowedTCPPorts = [ 8010 ]; # Chromecast support
+      };
+    };
+}

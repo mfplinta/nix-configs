@@ -5,17 +5,12 @@
       lib,
       inputs,
       config,
-      hmImport,
       ...
     }:
     let
       mod = "SUPER";
     in
     {
-      imports = [
-        (hmImport ./programs/kitty.nix)
-      ];
-
       options.myCfg = {
         hyprland = lib.mkOption {
           type = with lib.types; attrsOf anything;
@@ -36,6 +31,8 @@
           UiSettings."ColorScheme" = "Flat-Remix-Red-Darkest";
           Icons."Theme" = "Flat-Remix-Red-Dark";
         };
+
+        cfg.programs.kitty.enable = true;
 
         wayland.windowManager.hyprland = {
           enable = true;
@@ -460,7 +457,6 @@
       };
 
       config = {
-        #boot.kernelPackages = pkgs.lib.mkDefault pkgs.linuxPackages_cachyos;
         boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;
         boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
         boot.kernelParams = [

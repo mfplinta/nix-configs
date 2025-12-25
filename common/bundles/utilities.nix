@@ -1,11 +1,10 @@
 {
   hmModule =
-    { pkgs, hmImport, ... }:
+    { pkgs, ... }:
     {
-      imports = [
-        (hmImport ./../programs/veracrypt.nix)
-        (hmImport ./../programs/imhex.nix)
-      ];
+      cfg.programs.veracrypt.enable = true;
+      cfg.programs.imhex.enable = true;
+      cfg.programs.gparted.enable = true;
 
       home.packages = with pkgs; [
         # Utilities
