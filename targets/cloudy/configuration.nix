@@ -200,6 +200,7 @@ in
       ];
   };
 
+  cfg.virtualisation.quadlet.enable = true;
   containers =
     let
       common = {
@@ -826,6 +827,8 @@ in
 
   cfg.services.crowdsec.enable = true;
   cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
+  cfg.services.vmagent.enable = true;
+  cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
 
   services.endlessh = {
     enable = true;
@@ -834,7 +837,4 @@ in
   };
 
   services.openssh.ports = [ 22000 ];
-
-  cfg.services.vmagent.enable = true;
-  cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
 }
