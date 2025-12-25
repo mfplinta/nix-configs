@@ -41,7 +41,7 @@
             "${h}/.local/share/kdenlive"
             "${h}/.local/share/stalefiles"
           ]
-          (path: {
+          (_: {
             device = "none";
             fsType = "ramfs";
             options = [

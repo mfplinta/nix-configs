@@ -11,6 +11,7 @@
         (sysImport ./services/displayManager/sddm-weston.nix)
         (sysImport ./services/samba/client.nix)
         (sysImport ./services/samba/host.nix)
+        (sysImport ./services/crowdsec.nix)
         (sysImport ./services/django-website.nix)
         (sysImport ./services/nvidia_oc.nix)
         (sysImport ./services/printing.nix)

@@ -1,4 +1,3 @@
-# Source: https://gitlab.com/fazzi/nixohess/-/blob/main/modules/services/nvidia_oc.nix?ref_type=heads
 {
   sysModule =
     {

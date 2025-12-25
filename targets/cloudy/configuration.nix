@@ -765,24 +765,11 @@ in
       };
     };
 
-  virtualisation.podman.enable = true;
-  virtualisation.podman.defaultNetwork.settings = {
-    dns_enabled = true;
-  };
-  users.groups.containers = { };
-  users.users.containers = {
-    group = "containers";
-    isSystemUser = true;
-    autoSubUidGidRange = true;
-  };
-
   virtualisation.quadlet =
     let
       inherit (config.virtualisation.quadlet) networks;
     in
     {
-      enable = true;
-      autoUpdate.enable = true;
       networks = {
         net_br0.networkConfig = {
           driver = "macvlan";
@@ -837,39 +824,8 @@ in
       };
     };
 
-  services.crowdsec = {
-    enable = true;
-    settings = {
-      general.api.server.enable = true;
-      general.api.server.listen_uri = "127.0.0.1:30000";
-      general.api.server.online_client.credentials_path = "/var/lib/crowdsec/online_api_credentials.yaml";
-      console.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
-      console.configuration = {
-        share_context = true;
-        share_custom = true;
-        share_manual_decisions = true;
-        share_tainted = false;
-      };
-      acquisitions = [
-        {
-          source = "journalctl";
-          journalctl_filter = [ "_SYSTEMD_UNIT=sshd.service" ];
-          labels = {
-            type = "syslog";
-          };
-        }
-      ];
-    };
-    hub.collections = [
-      "crowdsecurity/linux"
-      "crowdsecurity/sshd"
-    ];
-  };
-
-  services.crowdsec-firewall-bouncer = {
-    enable = true;
-    registerBouncer.enable = true;
-  };
+  cfg.services.crowdsec.enable = true;
+  cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
 
   services.endlessh = {
     enable = true;

@@ -165,7 +165,6 @@ in
 
   users.users.matheus = {
     isNormalUser = true;
-    autoSubUidGidRange = true;
     extraGroups = [
       "wheel"
       "scanner"
