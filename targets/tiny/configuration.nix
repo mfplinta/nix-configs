@@ -138,11 +138,6 @@ in
       networks = {
         net_vlan1.networkConfig = {
           driver = "macvlan";
-          ipRanges = [
-            "${networkConfig.device.tiny-ha.vlan."1".address}-${
-              networkConfig.device.tiny-matterhub.vlan."1".address
-            }"
-          ];
           gateways = [ networkConfig.topology.vlan."1".gateway ];
           subnets = [ networkConfig.topology.vlan."1".subnet ];
           options.parent = "vlan1";
@@ -150,11 +145,6 @@ in
         };
         net_vlan2.networkConfig = {
           driver = "macvlan";
-          ipRanges = [
-            "${networkConfig.device.tiny-ha.vlan."2".address}-${
-              networkConfig.device.tiny-matterhub.vlan."2".address
-            }"
-          ];
           gateways = [ networkConfig.topology.vlan."2".gateway ];
           subnets = [ networkConfig.topology.vlan."2".subnet ];
           options.parent = "vlan2";
@@ -214,6 +204,7 @@ in
 
         # --- Home Assistant ---
         hass.containerConfig = {
+          autoUpdate = "registry";
           image = "ghcr.io/home-assistant/home-assistant:2025.12";
           addCapabilities = [
             "CAP_NET_RAW" # Needed for ping
