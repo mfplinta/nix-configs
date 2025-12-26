@@ -13,6 +13,7 @@
       config = mkIf cfg.enable {
         virtualisation.quadlet.enable = true;
         virtualisation.quadlet.autoUpdate.enable = true;
+        virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 
         # Userns support
         users.groups.containers = { };
