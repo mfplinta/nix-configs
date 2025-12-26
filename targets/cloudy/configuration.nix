@@ -492,6 +492,7 @@ in
                   admin_password = "$__file{${config.sops.secrets.cloudy-grafana_pwd.path}}";
                 };
                 users.allow_sign_up = false;
+                users.home_page = "/d/${(builtins.fromJSON (builtins.readFile ./my_devices.json)).uid}";
                 analytics.enabled = false;
                 analytics.reporting_enabled = false;
                 analytics.feedback_links_enabled = false;
