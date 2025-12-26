@@ -90,10 +90,10 @@
           };
         };
 
+        cfg.programs.vim.enable = true;
         cfg.programs.fish.enable = true;
 
         environment.systemPackages = with pkgs; [
-          vim
           wget
           usbutils
           pciutils

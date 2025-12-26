@@ -432,7 +432,6 @@
           GTK_PATH = "${pkgs.gnome-themes-extra}/lib/gtk-2.0:$GTK_PATH";
           ELECTRON_OZONE_PLATFORM_HINT = "auto";
           NIXOS_OZONE_WL = 1;
-          EDITOR = "vim";
           XCURSOR_THEME = "Bibata-Modern-Ice";
           XCURSOR_SIZE = 32;
           HYPRCURSOR_THEME = XCURSOR_THEME;

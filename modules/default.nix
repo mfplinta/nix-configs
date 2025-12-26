@@ -6,6 +6,7 @@
         (sysImport ./programs/brave.nix)
         (sysImport ./programs/fish.nix)
         (sysImport ./programs/localsend.nix)
+        (sysImport ./programs/vim.nix)
         (sysImport ./programs/vlc.nix)
 
         (sysImport ./services/displayManager/sddm-weston.nix)

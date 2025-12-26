@@ -20,6 +20,8 @@
     nvibrant.url = "github:mfplinta/nix-nvibrant";
     nvibrant.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-crowdsec.url = "github:TornaxO7/nixpkgs/a4ff7e18d1440a41f4b5a75274cfac6c96df558a";
+    nixvim.url = "github:nix-community/nixvim/nixos-25.11";
+    nixvim.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
     inputs@{
@@ -32,6 +34,7 @@
       nix-index-database,
       nix-vscode-extensions,
       nixd,
+      nixvim,
       sops-nix,
       quadlet-nix,
       nvibrant,
@@ -77,7 +80,7 @@
         nixpkgs.lib.nixosSystem {
           system = value.arch or "x86_64-linux";
           specialArgs = {
-            inherit inputs sysImport;
+            inherit inputs sysImport nixvim;
           };
           modules = [
             disko.nixosModules.disko
@@ -146,9 +149,8 @@
                   nix-index-database.homeModules.nix-index
                 ];
                 home-manager.extraSpecialArgs = {
-                  inherit inputs hmImport;
+                  inherit inputs hmImport wrapper-manager;
                   sysConfig = config;
-                  wrapper-manager = wrapper-manager;
                 };
               }
             )
