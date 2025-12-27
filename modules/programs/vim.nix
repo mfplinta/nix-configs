@@ -20,6 +20,20 @@
         (mkIf (!cfg.useBasicVim) (nixvim.legacyPackages."${pkgs.stdenv.hostPlatform.system}".makeNixvim {
           viAlias = true;
           vimAlias = true;
+	  keymaps = [
+	    {
+	      action = "\"+y";
+	      key = "<C-c>";
+	      mode = "v";
+	    }
+	  ];
+	  extraPlugins = with pkgs.vimExtraPlugins; [
+            eagle-nvim
+	  ];
+	  extraConfigLua = ''
+	    vim.o.mousemoveevent = true
+	    require('eagle').setup()
+	  '';
           plugins = {
 	    cmp.enable = true;
 	    cmp.autoEnableSources = true;
@@ -29,8 +43,8 @@
 	      { name = "buffer"; }
 	    ];
 	    cmp.settings.mapping = {
-	      "<C-Space>" = "cmp.mapping.complete()";
-	      "<Esc>" = ''
+	      "<C-Space>" = /*lua*/"cmp.mapping.complete()";
+	      "<Esc>" = /*lua*/''
 	        cmp.mapping(function(fallback)
 		  if cmp.visible() then
 		    cmp.abort()
@@ -39,10 +53,10 @@
 		  end
 		end, {'i', 's'})
 	      '';
-	      "<CR>" = "cmp.mapping.confirm({ select = true })";
-	      "<Tab>" = "cmp.mapping.confirm({ select = true })";
-	      "<Up>" = "cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), {'i', 's'})";
-	      "<Down>" = "cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), {'i', 's'})";
+	      "<CR>" = /*lua*/"cmp.mapping.confirm({ select = true })";
+	      "<Tab>" = /*lua*/"cmp.mapping.confirm({ select = true })";
+	      "<Up>" = /*lua*/"cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), {'i', 's'})";
+	      "<Down>" = /*lua*/"cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), {'i', 's'})";
 	    };
             lsp.enable = true;
             lsp.inlayHints = true;
@@ -52,13 +66,22 @@
               yamlls.enable = true;
             };
 	    treesitter.enable = true;
-	    treesitter.grammarPackages = with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
-	      json
-	      nix
-	      regex
-	      toml
-	      yaml
-	    ];
+            treesitter.grammarPackages = with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
+	      bash
+              json
+              nix
+	      python
+              regex
+              toml
+              yaml
+            ];
+	    treesitter.settings = {
+	      highlight.enable = true;
+	      indent.enable = true;
+	      indent.disable = [ "nix" ];
+	      folding.enable = true;
+	    };
+	    lualine.enable = true;
           };
           colorschemes.catppuccin = {
             enable = true;

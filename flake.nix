@@ -22,6 +22,7 @@
     nixpkgs-crowdsec.url = "github:TornaxO7/nixpkgs/a4ff7e18d1440a41f4b5a75274cfac6c96df558a";
     nixvim.url = "github:nix-community/nixvim/nixos-25.11";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
+    nixneovimplugins.url = "github:NixNeovim/NixNeovimPlugins";
   };
   outputs =
     inputs@{
@@ -39,6 +40,7 @@
       quadlet-nix,
       nvibrant,
       nixpkgs-crowdsec,
+      nixneovimplugins,
       ...
     }:
     let
@@ -135,6 +137,7 @@
                     (overlayFromInput nixpkgs-old "nixpkgs-old")
                     (overlayFromInput nixpkgs-unstable "unstable")
                     nix-vscode-extensions.overlays.default
+		    nixneovimplugins.overlays.default
                     nvibrant.overlays.default
                     nixd.overlays.default
                   ];
