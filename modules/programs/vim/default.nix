@@ -18,6 +18,7 @@
       environment.sessionVariables.EDITOR = "vim";
       environment.systemPackages = [
         (mkIf (!cfg.useBasicVim) (nixvim.legacyPackages."${pkgs.stdenv.hostPlatform.system}".makeNixvim {
+	  enableMan = false;
           viAlias = true;
           vimAlias = true;
 	  keymaps = [
@@ -34,29 +35,16 @@
 	    vim.o.mousemoveevent = true
 	    require('eagle').setup()
 	  '';
+	  extraFiles."queries/yaml/injections.scm".source = ./injections.scm;
           plugins = {
-	    cmp.enable = true;
-	    cmp.autoEnableSources = true;
-	    cmp.settings.sources = [
-	      { name = "nvim_lsp"; }
-	      { name = "path"; }
-	      { name = "buffer"; }
-	    ];
-	    cmp.settings.mapping = {
-	      "<C-Space>" = /*lua*/"cmp.mapping.complete()";
-	      "<Esc>" = /*lua*/''
-	        cmp.mapping(function(fallback)
-		  if cmp.visible() then
-		    cmp.abort()
-		  else
-		    fallback()
-		  end
-		end, {'i', 's'})
-	      '';
-	      "<CR>" = /*lua*/"cmp.mapping.confirm({ select = true })";
-	      "<Tab>" = /*lua*/"cmp.mapping.confirm({ select = true })";
-	      "<Up>" = /*lua*/"cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), {'i', 's'})";
-	      "<Down>" = /*lua*/"cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), {'i', 's'})";
+	    blink-cmp.enable = true;
+	    blink-cmp.settings.keymap = {
+	      "<C-Space>" = [ "show" ];
+	      "<Esc>" = [ "cancel" "fallback" ];
+	      "<Tab>" = [ "select_and_accept" "fallback" ];
+	      "<CR>" = [ "select_and_accept" "fallback" ];
+	      "<Up>" = [ "select_prev" "fallback" ];
+	      "<Down>" = [ "select_next" "fallback" ];
 	    };
             lsp.enable = true;
             lsp.inlayHints = true;
@@ -68,6 +56,8 @@
 	    treesitter.enable = true;
             treesitter.grammarPackages = with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
 	      bash
+	      jinja
+	      jinja_inline
               json
               nix
 	      python
