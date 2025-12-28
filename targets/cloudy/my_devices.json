@@ -20,6 +20,7 @@
   "graphTooltip": 0,
   "id": 1,
   "links": [],
+  "liveNow": true,
   "panels": [
     {
       "collapsed": false,
@@ -68,6 +69,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -84,7 +86,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -97,8 +100,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 5,
+        "h": 5,
+        "w": 24,
         "x": 0,
         "y": 1
       },
@@ -116,7 +119,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.3",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "editorMode": "code",
@@ -163,6 +166,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -178,7 +182,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -191,10 +196,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 5,
-        "y": 1
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 6
       },
       "id": 2,
       "options": {
@@ -210,7 +215,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.3",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -262,12 +267,99 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P4169E866C3094E38"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Unhealthy"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "Healthy"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 7,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "mergeValues": false,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "builder",
+          "expr": "caddy_reverse_proxy_upstreams_healthy{instance=\"cloudy\"}",
+          "legendFormat": "{{upstream}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Reverse Proxy Upstreams",
+      "type": "state-timeline"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 20
       },
       "id": 4,
       "panels": [],
@@ -308,6 +400,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -324,7 +417,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -337,10 +431,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 5,
+        "h": 5,
+        "w": 24,
         "x": 0,
-        "y": 10
+        "y": 21
       },
       "id": 5,
       "options": {
@@ -356,7 +450,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.3",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "editorMode": "code",
@@ -403,6 +497,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -418,7 +513,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -431,10 +527,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 5,
-        "y": 10
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 26
       },
       "id": 6,
       "options": {
@@ -450,7 +546,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.3",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -503,7 +599,8 @@
     }
   ],
   "preload": false,
-  "schemaVersion": 41,
+  "refresh": "auto",
+  "schemaVersion": 42,
   "tags": [],
   "templating": {
     "list": []
