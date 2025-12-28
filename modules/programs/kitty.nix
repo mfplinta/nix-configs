@@ -2,7 +2,7 @@
   hmModule =
     { config, lib, ... }:
     let
-      inherit (lib) mkIf mkEnableOption;
+      inherit (lib) mkIf mkEnableOption mkDefault;
       cfg = config.cfg.programs.kitty;
     in
     {
@@ -25,6 +25,11 @@
             confirm_os_window_close = -1;
           };
         };
+
+        xdg.terminal-exec.enable = mkDefault true;
+        xdg.terminal-exec.settings.default = [
+          "kitty.desktop"
+        ];
       };
     };
 }

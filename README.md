@@ -15,7 +15,7 @@ nixos-install --flake .#hostname --option 'extra-substituters' 'https://hyprland
 
 Upgrading configuration:
 
-```
+```bash
 sudo nixos-rebuild switch --flake .
 ```
 
@@ -23,9 +23,5 @@ sudo nixos-rebuild switch --flake .
 
 **Pre-install**
 
-- /tmp/secret.key
+- /tmp/secret.key (LUKS)
 - /mnt/root/tang.jwe (if enabled)
-
-**Post-install**
-
-- /root/matheus-smbpasswd
