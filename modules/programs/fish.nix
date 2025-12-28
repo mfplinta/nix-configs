@@ -1,6 +1,11 @@
 {
   hmModule =
-    { sysConfig, pkgs, lib, ... }:
+    {
+      sysConfig,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       inherit (lib) mkIf;
       cfg = sysConfig.cfg.programs.fish;
@@ -21,7 +26,12 @@
     };
 
   sysModule =
-    { config, pkgs, lib, ... }:
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       inherit (lib) mkIf mkEnableOption;
       cfg = config.cfg.programs.fish;

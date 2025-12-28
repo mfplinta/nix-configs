@@ -1,6 +1,11 @@
 {
   hmModule =
-    { sysConfig, pkgs, lib, ... }:
+    {
+      sysConfig,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       inherit (lib) mkIf;
       cfg = sysConfig.cfg.programs.localsend;

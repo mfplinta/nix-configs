@@ -1,6 +1,11 @@
 {
   sysModule =
-    { pkgs, lib, config, ... }:
+    {
+      pkgs,
+      lib,
+      config,
+      ...
+    }:
     let
       inherit (lib) mkIf mkEnableOption;
       cfg = config.cfg.programs.brave;

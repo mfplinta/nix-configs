@@ -125,11 +125,12 @@
                     overlayFromInput =
                       input: overlayName:
                       (final: prev: {
-                        "${overlayName}" =
-                          (import input {
+                        "${overlayName}" = (
+                          import input {
                             inherit (final.stdenv.hostPlatform) system;
                             inherit (final) config;
-                          });
+                          }
+                        );
                       });
                   in
                   [
@@ -137,7 +138,7 @@
                     (overlayFromInput nixpkgs-old "nixpkgs-old")
                     (overlayFromInput nixpkgs-unstable "unstable")
                     nix-vscode-extensions.overlays.default
-		    nixneovimplugins.overlays.default
+                    nixneovimplugins.overlays.default
                     nvibrant.overlays.default
                     nixd.overlays.default
                   ];
@@ -146,7 +147,7 @@
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
                 home-manager.backupFileExtension = "old-hm";
-                home-manager.sharedModules = [ 
+                home-manager.sharedModules = [
                   (hmImport ./modules)
                   quadlet-nix.homeManagerModules.quadlet
                   nix-index-database.homeModules.nix-index

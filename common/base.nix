@@ -15,9 +15,7 @@
 
       config = {
         xdg = {
-          configFile."kdeglobals".source =
-            (pkgs.formats.ini { }).generate "kdeglobals"
-              config.cfg.kdeglobals;
+          configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.cfg.kdeglobals;
           userDirs.enable = true;
           userDirs.createDirectories = true;
           userDirs.extraConfig = {
@@ -48,7 +46,7 @@
         boot.tmp.useTmpfs = true;
         boot.tmp.tmpfsSize = "125%";
 
-	documentation.enable = false;
+        documentation.enable = false;
 
         # Zram swap
         zramSwap.enable = true;
@@ -110,6 +108,7 @@
           killall
           lm_sensors
           net-tools
+          nixfmt-rfc-style
         ];
       };
     };

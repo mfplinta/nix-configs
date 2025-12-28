@@ -1,6 +1,11 @@
 {
   hmModule =
-    { sysConfig, config, lib, ... }:
+    {
+      sysConfig,
+      config,
+      lib,
+      ...
+    }:
     let
       inherit (lib) mkEnableOption mkIf;
       cfg = config.cfg.services.jdownloader2;

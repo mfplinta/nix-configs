@@ -236,6 +236,7 @@ in
         {
           imports = (extra.imports or [ ]) ++ [
             (sysImport ../../modules/services/django-website.nix)
+            (sysImport ../../modules/services/caddy.nix)
           ];
 
           config = lib.mkMerge [
@@ -278,194 +279,165 @@ in
               nameservers = [ "10.0.3.2" ];
             };
 
-            services.caddy = {
+            cfg.services.caddy = {
               enable = true;
-              package = pkgs.caddy.withPlugins {
-                plugins = [
-                  "github.com/caddy-dns/cloudflare@v0.2.1"
-                  "github.com/caddyserver/replace-response@v0.0.0-20250618171559-80962887e4c6"
-                ];
-                hash = "sha256-zBhsiXgA4CAJgjgpHpLo27CFO5tF0x8YKbLvnUawmck=";
-              };
               environmentFile = config.sops.templates.env_caddy.path;
-              configFile =
-                let
-                in
-                pkgs.writeText "Caddyfile" ''
-                  (bot_block) {
-                    @botForbidden header_regexp User-Agent "(?i)AdsBot-Google|Amazonbot|anthropic-ai|Applebot|Applebot-Extended|AwarioRssBot|AwarioSmartBot|Bytespider|CCBot|ChatGPT|ChatGPT-User|Claude-Web|ClaudeBot|cohere-ai|DataForSeoBot|Diffbot|FacebookBot|Google-Extended|GPTBot|ImagesiftBot|magpie-crawler|omgili|Omgilibot|peer39_crawler|PerplexityBot|YouBot"
+              config = /* caddy */ ''
+                (cf) {
+                  tls {
+                    dns cloudflare {env.CF_API_KEY}
+                    resolvers 1.1.1.1
+                  }
+                }
 
-                    handle @botForbidden {
-                      respond /* "Access denied" 403 {
-                          close
-                      }
+                http://matheusplinta.com, https://matheusplinta.com {
+                  import cf
+                  redir https://www.matheusplinta.com{uri} permanent
+                }
+
+                *.matheusplinta.com {
+                  import cf
+                  @debug host debug.matheusplinta.com
+                  handle @debug {
+                    import bot_block
+                    basic_auth {
+                      mfplinta {env.HTTP_AUTH_PWD}
                     }
-
-                    respond /robots.txt 200 {
-                      body "User-agent: *
-                      Disallow: /"
+                    reverse_proxy localhost:2019 {
+                      header_up Host {upstream_hostport}
                     }
                   }
 
-                  (cf) {
-                    tls {
-                      dns cloudflare {env.CF_API_KEY}
-                      resolvers 1.1.1.1
+                  @www host www.matheusplinta.com
+                  handle @www {
+                    redir /blog /blog/
+                    handle_path /blog/* {
+                      reverse_proxy ${addresses.quartz.local}:80
+                    }
+                    reverse_proxy ${addresses.ws-blog.local}:8000 {
+                      import tunneled
                     }
                   }
 
-                  (tunneled) {
-                    header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+                  @grafana host grafana.matheusplinta.com
+                  handle @grafana {
+                    import bot_block
+                    reverse_proxy ${addresses.monitoring.local}:3000
                   }
 
-                  http://matheusplinta.com, https://matheusplinta.com {
-                    import cf
-                    redir https://www.matheusplinta.com{uri} permanent
+                  @victoriametrics host victoriametrics.matheusplinta.com
+                  handle @victoriametrics {
+                    import bot_block
+                    basic_auth {
+                      mfplinta {env.HTTP_AUTH_PWD}
+                    }
+                    reverse_proxy ${addresses.monitoring.local}:8428
                   }
 
-                  *.matheusplinta.com {
-                    import cf
-                    @debug host debug.matheusplinta.com
-                    handle @debug {
-                      import bot_block
-                      basic_auth {
-                        mfplinta {env.HTTP_AUTH_PWD}
+                  @gitea host gitea.matheusplinta.com
+                  handle @gitea {
+                    import bot_block
+                    reverse_proxy ${addresses.gitea.local}:3000
+                  }
+
+                  @ha host ha.matheusplinta.com
+                  handle @ha {
+                    import bot_block
+                    reverse_proxy https://ha.matheusplinta.com
+                  }
+
+                  @nextcloud host nextcloud.matheusplinta.com
+                  handle @nextcloud {
+                    import bot_block
+                    reverse_proxy ${addresses.nextcloud.local}:8000
+                  }
+
+                  @nextcloud-ds host nextcloud-ds.matheusplinta.com
+                  handle @nextcloud-ds {
+                    import bot_block
+                    reverse_proxy ${addresses.nextcloud.local}:8001 {
+                      header_up Accept-Encoding identity
+                    }
+
+                    replace stream {
+                      match {
+                        header Content-Type text/javascript*
                       }
-                      reverse_proxy localhost:2019 {
-                        header_up Host {upstream_hostport}
-                      }
-                    }
-
-                    @www host www.matheusplinta.com
-                    handle @www {
-                      redir /blog /blog/
-                      handle_path /blog/* {
-                        reverse_proxy ${addresses.quartz.local}:80
-                      }
-                      reverse_proxy ${addresses.ws-blog.local}:8000 {
-                        import tunneled
-                      }
-                    }
-
-                    @grafana host grafana.matheusplinta.com
-                    handle @grafana {
-                      import bot_block
-                      reverse_proxy ${addresses.monitoring.local}:3000
-                    }
-
-                    @victoriametrics host victoriametrics.matheusplinta.com
-                    handle @victoriametrics {
-                      import bot_block
-                      basic_auth {
-                        mfplinta {env.HTTP_AUTH_PWD}
-                      }
-                      reverse_proxy ${addresses.monitoring.local}:8428
-                    }
-
-                    @gitea host gitea.matheusplinta.com
-                    handle @gitea {
-                      import bot_block
-                      reverse_proxy ${addresses.gitea.local}:3000
-                    }
-
-                    @ha host ha.matheusplinta.com
-                    handle @ha {
-                      import bot_block
-                      reverse_proxy https://ha.matheusplinta.com
-                    }
-
-                    @nextcloud host nextcloud.matheusplinta.com
-                    handle @nextcloud {
-                      import bot_block
-                      reverse_proxy ${addresses.nextcloud.local}:8000
-                    }
-
-                    @nextcloud-ds host nextcloud-ds.matheusplinta.com
-                    handle @nextcloud-ds {
-                      import bot_block
-                      reverse_proxy ${addresses.nextcloud.local}:8001 {
-                        header_up Accept-Encoding identity
-                      }
-
-                      replace stream {
-                        match {
-                          header Content-Type text/javascript*
-                        }
-                        re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
-                      }
-                    }
-
-                    @tmdb host tmdb-addon-stremio.matheusplinta.com
-                    handle @tmdb {
-                      import bot_block
-                      reverse_proxy ${addresses.tmdb-addon.local}:1337
-                    }
-
-                    @pdf host pdf.matheusplinta.com
-                    handle @pdf {
-                      import bot_block
-                      reverse_proxy ${addresses.stirling-pdf.local}:8080
-
-                      # Remove "Upgrade to PRO"
-                      replace stream {
-                        match {
-                          header Content-Type text/html*
-                        }
-                        `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
-                        `</head>` `<meta name="darkreader-lock"></head>`
-                        `pixel.stirlingpdf.com` "{host}"
-                      }
-                    }
-
-                    @vaultwarden host vaultwarden.matheusplinta.com
-                    handle @vaultwarden {
-                      import bot_block
-                      reverse_proxy ${addresses.vaultwarden.local}:8222
-                    }
-
-                    handle {
-                      abort
+                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
                     }
                   }
 
-                  http://optimaltech.us, https://optimaltech.us {
-                    import cf
-                    redir https://www.optimaltech.us{uri} permanent
+                  @tmdb host tmdb-addon-stremio.matheusplinta.com
+                  handle @tmdb {
+                    import bot_block
+                    reverse_proxy ${addresses.tmdb-addon.local}:1337
                   }
 
-                  *.optimaltech.us {
-                    import cf
-                    @www host www.optimaltech.us
-                    handle @www {
-                      reverse_proxy ${addresses.ws-ots.local}:8000 {
-                        import tunneled
+                  @pdf host pdf.matheusplinta.com
+                  handle @pdf {
+                    import bot_block
+                    reverse_proxy ${addresses.stirling-pdf.local}:8080
+
+                    # Remove "Upgrade to PRO"
+                    replace stream {
+                      match {
+                        header Content-Type text/html*
                       }
+                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
+                      `</head>` `<meta name="darkreader-lock"></head>`
+                      `pixel.stirlingpdf.com` "{host}"
                     }
+                  }
 
-                    handle {
-                      abort
+                  @vaultwarden host vaultwarden.matheusplinta.com
+                  handle @vaultwarden {
+                    import bot_block
+                    reverse_proxy ${addresses.vaultwarden.local}:8222
+                  }
+
+                  handle {
+                    abort
+                  }
+                }
+
+                http://optimaltech.us, https://optimaltech.us {
+                  import cf
+                  redir https://www.optimaltech.us{uri} permanent
+                }
+
+                *.optimaltech.us {
+                  import cf
+                  @www host www.optimaltech.us
+                  handle @www {
+                    reverse_proxy ${addresses.ws-ots.local}:8000 {
+                      import tunneled
                     }
                   }
 
-                  http://mastermovement.us, https://mastermovement.us {
-                    import cf
-                    redir https://www.mastermovement.us{uri} permanent
+                  handle {
+                    abort
+                  }
+                }
+
+                http://mastermovement.us, https://mastermovement.us {
+                  import cf
+                  redir https://www.mastermovement.us{uri} permanent
+                }
+
+                *.mastermovement.us {
+                  import cf
+                  @www host www.mastermovement.us
+                  handle @www {
+                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
+                      import tunneled
+                    }
                   }
 
-                  *.mastermovement.us {
-                    import cf
-                    @www host www.mastermovement.us
-                    handle @www {
-                      reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
-                        import tunneled
-                      }
-                    }
-
-                    handle {
-                      abort
-                    }
+                  handle {
+                    abort
                   }
-                '';
+                }
+              '';
             };
           }
         );

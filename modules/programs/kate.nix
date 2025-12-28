@@ -1,6 +1,12 @@
 {
   hmModule =
-    { config, pkgs, lib, setMimeTypes, ... }:
+    {
+      config,
+      pkgs,
+      lib,
+      setMimeTypes,
+      ...
+    }:
     let
       inherit (lib) mkIf mkEnableOption;
       cfg = config.cfg.programs.kate;

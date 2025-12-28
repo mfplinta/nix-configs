@@ -67,24 +67,24 @@
         users.matheus.passwordFile = config.sops.secrets.workstation-smb_matheus_pwd.path;
       };
 
-      cfg.services.samba-client = 
-      let
-        username = "matheus";
-        passwordFile = config.sops.secrets.nas-smb_matheus_pwd.path;
-      in
-      {
-        "/mnt/smb/mfp_stuff" = {
-          inherit username passwordFile;
-          remotePath = "//samba.arpa/mfp_stuff";
+      cfg.services.samba-client =
+        let
+          username = "matheus";
+          passwordFile = config.sops.secrets.nas-smb_matheus_pwd.path;
+        in
+        {
+          "/mnt/smb/mfp_stuff" = {
+            inherit username passwordFile;
+            remotePath = "//samba.arpa/mfp_stuff";
+          };
+          "/mnt/smb/dap_stuff" = {
+            inherit username passwordFile;
+            remotePath = "//samba.arpa/dap_stuff";
+          };
+          "/mnt/smb/public" = {
+            inherit username passwordFile;
+            remotePath = "//samba.arpa/public";
+          };
         };
-        "/mnt/smb/dap_stuff" = {
-          inherit username passwordFile;
-          remotePath = "//samba.arpa/dap_stuff";
-        };
-        "/mnt/smb/public" = {
-          inherit username passwordFile;
-          remotePath = "//samba.arpa/public";
-        };
-      };
     };
 }

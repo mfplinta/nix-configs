@@ -1,6 +1,11 @@
 {
   hmModule =
-    { sysConfig, lib, setMimeTypes, ... }:
+    {
+      sysConfig,
+      lib,
+      setMimeTypes,
+      ...
+    }:
     let
       inherit (lib) mkIf;
       cfg = sysConfig.cfg.programs.brave;
@@ -47,7 +52,12 @@
     };
 
   sysModule =
-    { config, pkgs, lib, ... }:
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       inherit (lib) mkIf mkEnableOption;
       cfg = config.cfg.programs.brave;
