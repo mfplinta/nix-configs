@@ -18,6 +18,10 @@
     {
       options.cfg.services.caddy = {
         enable = mkEnableOption "caddy";
+	enableMetrics = mkOption {
+	  type = types.bool;
+	  default = true;
+	};
         config = mkOption {
           type = types.str;
           default = "";
@@ -56,12 +60,23 @@
               		}
               	      }
 
-
               	      (tunneled) {
               		header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
               	      }
-              	      ''
-            + cfg.config;
+
+		      {
+		        admin off
+			${if cfg.enableMetrics then "metrics" else ""}
+		      }
+
+                      ${if cfg.enableMetrics then ''
+		      :9101 {
+		        metrics
+		      }
+		      '' else ""}
+
+		      ${cfg.config}
+              	      '';
         };
       };
     };

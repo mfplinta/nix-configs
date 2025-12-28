@@ -28,6 +28,11 @@
           type = types.nullOr types.str;
           default = null;
         };
+        extraScrapeConfigs = mkOption {
+          type = types.listOf types.attrs;
+          default = [ ];
+          description = "List of additional prometheus scrape configurations.";
+        };
       };
 
       config = mkIf cfg.enable {
@@ -51,7 +56,7 @@
                   }
                 ];
               }
-            ];
+            ] ++ cfg.extraScrapeConfigs;
           };
         };
 

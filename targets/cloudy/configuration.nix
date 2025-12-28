@@ -802,6 +802,18 @@ in
   cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
   cfg.services.vmagent.enable = true;
   cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
+  cfg.services.vmagent.extraScrapeConfigs = [
+    {
+      job_name = "caddy";
+      scrape_interval = "15s";
+      static_configs = [
+        {
+	  targets = [ "${addresses.reverseProxy.local}:9101" ];
+	  labels.instance = config.networking.hostName;
+        }
+      ];
+    }
+  ];
 
   services.endlessh = {
     enable = true;
