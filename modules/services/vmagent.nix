@@ -17,6 +17,18 @@
     {
       options.cfg.services.vmagent = {
         enable = mkEnableOption "vmagent";
+        logs.enable = mkEnableOption "vlagent";
+        logs.remoteWriteUrl = mkOption {
+          type = types.str;
+        };
+        logs.username = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+        };
+        logs.passwordFile = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+        };
         remoteWriteUrl = mkOption {
           type = types.str;
         };
@@ -56,7 +68,8 @@
                   }
                 ];
               }
-            ] ++ cfg.extraScrapeConfigs;
+            ]
+            ++ cfg.extraScrapeConfigs;
           };
         };
 
@@ -65,6 +78,15 @@
           listenAddress = "127.0.0.1";
           port = 9100;
           enabledCollectors = [ "systemd" ];
+        };
+
+        services.vlagent = {
+          enable = true;
+          remoteWrite = {
+            url = cfg.remoteWriteUrl;
+            basicAuthUsername = cfg.logs.username;
+            basicAuthPasswordFile = cfg.logs.passwordFile;
+          };
         };
       };
     };

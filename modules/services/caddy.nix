@@ -18,10 +18,14 @@
     {
       options.cfg.services.caddy = {
         enable = mkEnableOption "caddy";
-	enableMetrics = mkOption {
-	  type = types.bool;
-	  default = true;
-	};
+        metrics.enable = mkOption {
+          type = types.bool;
+          default = true;
+        };
+        metrics.port = mkOption {
+          type = types.port;
+          default = 9101;
+        };
         config = mkOption {
           type = types.str;
           default = "";
@@ -43,40 +47,57 @@
             hash = "sha256-zBhsiXgA4CAJgjgpHpLo27CFO5tF0x8YKbLvnUawmck=";
           };
           environmentFile = cfg.environmentFile;
-          configFile =
-            pkgs.writeText "Caddyfile" /* caddy */ ''
-              	      (bot_block) {
-              		@botForbidden header_regexp User-Agent "(?i)AdsBot-Google|Amazonbot|anthropic-ai|Applebot|Applebot-Extended|AwarioRssBot|AwarioSmartBot|Bytespider|CCBot|ChatGPT|ChatGPT-User|Claude-Web|ClaudeBot|cohere-ai|DataForSeoBot|Diffbot|FacebookBot|Google-Extended|GPTBot|ImagesiftBot|magpie-crawler|omgili|Omgilibot|peer39_crawler|PerplexityBot|YouBot"
+          configFile = pkgs.writeText "Caddyfile" /* caddy */ ''
+                          	      (bot_block) {
+                          		@botForbidden header_regexp User-Agent "(?i)AdsBot-Google|Amazonbot|anthropic-ai|Applebot|Applebot-Extended|AwarioRssBot|AwarioSmartBot|Bytespider|CCBot|ChatGPT|ChatGPT-User|Claude-Web|ClaudeBot|cohere-ai|DataForSeoBot|Diffbot|FacebookBot|Google-Extended|GPTBot|ImagesiftBot|magpie-crawler|omgili|Omgilibot|peer39_crawler|PerplexityBot|YouBot"
 
-              		handle @botForbidden {
-              		  respond /* "Access denied" 403 {
-              		    close
-              		  }
-              		}
+                          		handle @botForbidden {
+                          		  respond /* "Access denied" 403 {
+                          		    close
+                          		  }
+                          		}
 
-              		respond /robots.txt 200 {
-              		  body "User-agent: *
-              		  Disallow: /"
-              		}
-              	      }
+                          		respond /robots.txt 200 {
+                          		  body "User-agent: *
+                          		  Disallow: /"
+                          		}
+                          	      }
 
-              	      (tunneled) {
-              		header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
-              	      }
+                          	      (tunneled) {
+                          		header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+                          	      }
 
-		      {
-		        admin off
-			${if cfg.enableMetrics then "metrics" else ""}
-		      }
+            		      (log) {
+            		        log {
+            			  output file /var/log/caddy/caddy-{args[0]}.log {
+            			    roll_size 100MiB
+            			    roll_keep 5
+            			    roll_keep_for 100d
+				    mode 644
+            			  }
+            			  format json
+            			  level INFO
+            			}
+            		      }
 
-                      ${if cfg.enableMetrics then ''
-		      :9101 {
-		        metrics
-		      }
-		      '' else ""}
+            		      {
+            		        admin off
+            			${if cfg.metrics.enable then "metrics" else ""}
+            		      }
 
-		      ${cfg.config}
-              	      '';
+                                  ${
+                                    if cfg.metrics.enable then
+                                      ''
+                                        		      :${toString cfg.metrics.port} {
+                                        		        metrics
+                                        		      }
+                                        		      ''
+                                    else
+                                      ""
+                                  }
+
+            		      ${cfg.config}
+                          	      '';
         };
       };
     };
