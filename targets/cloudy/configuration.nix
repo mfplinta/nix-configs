@@ -334,11 +334,12 @@ in
 
                 forward_to = [loki.write.default.receiver]
               }
-                            	      loki.write "default" {
-                            	        endpoint {
-                            		  url = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push"
-                            		}
-                            	      }
+
+              loki.write "default" {
+                endpoint {
+                  url = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push"
+                }
+              }
             '';
 
             cfg.services.caddy = {
@@ -357,9 +358,9 @@ in
                   redir https://www.plinta.dev{uri} permanent
                 }
 
-		*.plinta.dev {
-		  import cf
-		  import log "plinta.dev"
+                *.plinta.dev {
+                  import cf
+                  import log "plinta.dev"
                   @www host www.plinta.dev
                   handle @www {
                     redir /blog /blog/
@@ -459,7 +460,7 @@ in
 
                 *.optimaltech.us {
                   import cf
-		  import log "optimaltech.us"
+		              import log "optimaltech.us"
                   @www host www.optimaltech.us
                   handle @www {
                     reverse_proxy ${addresses.ws-ots.local}:8000 {
@@ -479,7 +480,7 @@ in
 
                 *.mastermovement.us {
                   import cf
-		  import log "mastermovement.us"
+		              import log "mastermovement.us"
                   @www host www.mastermovement.us
                   handle @www {
                     reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
