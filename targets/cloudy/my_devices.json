@@ -350,8 +350,49 @@
           "refId": "A"
         }
       ],
-      "title": "Reverse Proxy Upstreams",
+      "title": "Reverse proxy upstreams",
       "type": "state-timeline"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "PD775F2863313E6C7"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 8,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "PD775F2863313E6C7"
+          },
+          "editorMode": "code",
+          "expr": "request.host:\"$request_host\"",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Request logs",
+      "type": "logs"
     },
     {
       "collapsed": false,
@@ -359,7 +400,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 36
       },
       "id": 4,
       "panels": [],
@@ -434,7 +475,7 @@
         "h": 5,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 37
       },
       "id": 5,
       "options": {
@@ -530,7 +571,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 42
       },
       "id": 6,
       "options": {
@@ -599,11 +640,36 @@
     }
   ],
   "preload": false,
-  "refresh": "auto",
+  "refresh": "",
   "schemaVersion": 42,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "grafana.matheusplinta.com",
+          "value": "grafana.matheusplinta.com"
+        },
+        "datasource": {
+          "type": "victoriametrics-logs-datasource",
+          "uid": "PD775F2863313E6C7"
+        },
+        "definition": "",
+        "label": "Filter by host",
+        "name": "request_host",
+        "options": [],
+        "query": {
+          "field": "request.host",
+          "limit": 0,
+          "query": "",
+          "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+          "type": "fieldValue"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
