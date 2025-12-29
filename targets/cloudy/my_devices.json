@@ -371,12 +371,16 @@
       "id": 8,
       "options": {
         "dedupStrategy": "none",
+        "detailsMode": "inline",
         "enableInfiniteScrolling": false,
         "enableLogDetails": true,
+        "fontSize": "small",
         "showControls": false,
-        "showTime": false,
+        "showLabels": false,
+        "showTime": true,
         "sortOrder": "Descending",
-        "wrapLogMessage": false
+        "timestampResolution": "ms",
+        "wrapLogMessage": true
       },
       "pluginVersion": "12.3.0",
       "targets": [
