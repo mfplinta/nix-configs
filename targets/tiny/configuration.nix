@@ -141,7 +141,7 @@ in
           volumes = [
             "${paths.source.caddy-data}:/data:U"
             "${pkgs.writeText "Caddyfile" ''
-              *.matheusplinta.com {
+              *.plinta.dev {
                 tls {
                   issuer acme {
                     dns cloudflare {env.CF_API_KEY}
@@ -149,22 +149,22 @@ in
                   }
                 }
                 
-                @hass host ha.matheusplinta.com
+                @hass host ha.plinta.dev
                 handle @hass {
                   reverse_proxy hass:8123
                 }
 
-                @zwavejs host zwavejs.matheusplinta.com
+                @zwavejs host zwavejs.plinta.dev
                 handle @zwavejs {
                   reverse_proxy zwavejs:8091
                 }
 
-                @esphome host esphome.matheusplinta.com
+                @esphome host esphome.plinta.dev
                 handle @esphome {
                   reverse_proxy esphome:6052
                 }
 
-                @matterhub host matterhub.matheusplinta.com
+                @matterhub host matterhub.plinta.dev
                 handle @matterhub {
                   reverse_proxy matterhub:8482
                 }
@@ -200,8 +200,9 @@ in
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
           autoUpdate = "registry";
-          image = "docker.io/zwavejs/zwave-js-ui:latest";
+          image = "docker.io/zwavejs/zwave-js-ui:11.8";
           userns = "auto";
+	  # exec = "/usr/bin/env node --prof server/bin/www";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
           devices = [
             "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"
@@ -265,7 +266,7 @@ in
 
   cfg.services.vmagent = {
     enable = true;
-    remoteWriteUrl = "https://victoriametrics.matheusplinta.com/api/v1/write";
+    remoteWriteUrl = "https://victoriametrics.plinta.dev/api/v1/write";
     username = "mfplinta";
     passwordFile = config.sops.secrets.cloudy-http_auth_plain.path;
   };
