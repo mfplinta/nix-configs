@@ -306,6 +306,11 @@ loki.process "add_clf_msg" {
     }
   }
 
+  stage.timestamp {
+    source   = "ts"
+    format   = "Unix"
+  }
+
   stage.template {
     source   = "remote_ip"
     template = "{{ if .remote_ip }}{{ .remote_ip }}{{ else }}-{{ end }}"
@@ -318,7 +323,7 @@ loki.process "add_clf_msg" {
 
   stage.template {
     source   = "clf_message"
-    template = `({{ .host }}) - - [{{ .ts }}] "{{ .method }} {{ .uri }} {{ .proto }}" {{ .status }} {{ .size }} - -`
+    template = `({{ .host }}) {{ .remote_ip }} "{{ .method }} {{ .uri }} {{ .proto }}" {{ .status }} {{ .size }}`
   }
 
   stage.labels {
