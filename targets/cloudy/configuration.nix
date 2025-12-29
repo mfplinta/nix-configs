@@ -47,6 +47,12 @@ in
   sops.secrets.cloudy-crowdsec_token = {
     mode = "0444";
   };
+  sops.secrets.cloudy-crowdsec_caddy_bouncer_key = {
+    mode = "0444";
+  };
+  sops.secrets.cloudy-crowdsec_firewall_bouncer_key = {
+    mode = "0444";
+  };
   sops.secrets.cloudy-http_auth_bcrypt = { };
   sops.secrets.cloudy-grafana_pwd = {
     mode = "0444";
@@ -86,6 +92,12 @@ in
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
       HTTP_AUTH_PWD=${config.sops.placeholder.cloudy-http_auth_bcrypt}
+    '';
+  };
+  sops.templates.env_caddy_crowdsec = {
+    mode = "0444";
+    content = ''
+      CROWDSEC_API_KEY=${config.sops.placeholder.cloudy-crowdsec_caddy_bouncer_key}
     '';
   };
   sops.templates.env_blog = {
@@ -170,11 +182,13 @@ in
       ];
     };
     firewall.enable = true;
+    firewall.trustedInterfaces = [ "br0" ];
   };
 
   systemd.tmpfiles.rules = [
     # NixOS containers
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
+    "d /persist/containers/reverseProxy/log 0600 root root -"
     "d /persist/containers/ws-blog/app 0600 root root -"
     "d /persist/containers/ws-ots 0600 root root -"
     "d /persist/containers/ws-mastermovement 0600 root root -"
@@ -251,14 +265,27 @@ in
 
         bindMounts."${config.sops.secrets.cloudy-private_wg.path}".isReadOnly = true;
         bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
+        bindMounts."${config.sops.templates.env_caddy_crowdsec.path}".isReadOnly = true;
         bindMounts."/var/lib/caddy:idmap" = {
           hostPath = "/persist/containers/reverseProxy/caddy";
+          isReadOnly = false;
+        };
+        bindMounts."/var/log/caddy:idmap" = {
+          hostPath = "/persist/containers/reverseProxy/log";
           isReadOnly = false;
         };
 
         config = commonConfigWith (
           { ... }:
           {
+            users.groups.caddy = {};
+            users.users.caddy = {
+              group = "caddy";
+            };
+            systemd.tmpfiles.rules = [
+              "d /var/log/caddy 0644 caddy caddy -"
+            ];
+
             networking = {
               wireguard.enable = true;
               wireguard.interfaces.wg0 = {
@@ -345,6 +372,9 @@ in
             cfg.services.caddy = {
               enable = true;
               environmentFile = config.sops.templates.env_caddy.path;
+              crowdsec.enable = true;
+              crowdsec.apiKeyEnv = config.sops.templates.env_caddy_crowdsec.path;
+              crowdsec.api_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.port}";
               config = /* caddy */ ''
                 (cf) {
                   tls {
@@ -360,7 +390,8 @@ in
 
                 *.plinta.dev {
                   import cf
-                  import log "plinta.dev"
+                  crowdsec
+                  log
                   @www host www.plinta.dev
                   handle @www {
                     redir /blog /blog/
@@ -460,7 +491,7 @@ in
 
                 *.optimaltech.us {
                   import cf
-		              import log "optimaltech.us"
+                  log
                   @www host www.optimaltech.us
                   handle @www {
                     reverse_proxy ${addresses.ws-ots.local}:8000 {
@@ -480,7 +511,8 @@ in
 
                 *.mastermovement.us {
                   import cf
-		              import log "mastermovement.us"
+                  crowdsec
+                  log
                   @www host www.mastermovement.us
                   handle @www {
                     reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
@@ -869,7 +901,17 @@ in
 
   cfg.services.crowdsec.enable = true;
   cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
+  cfg.services.crowdsec.modules.caddy = {
+    enable = true;
+    logfile = "/persist/containers/reverseProxy/log/access.log";
+    apiKeyFile = config.sops.secrets.cloudy-crowdsec_caddy_bouncer_key.path;
+  };
+  cfg.services.crowdsec.modules.sshd = {
+    enable = true;
+    apiKeyFile = config.sops.secrets.cloudy-crowdsec_firewall_bouncer_key.path;
+  };
   cfg.services.vmagent.enable = true;
+  cfg.services.vmagent.logs.enable = true;
   cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
   cfg.services.vmagent.extraScrapeConfigs = [
     {
@@ -883,7 +925,6 @@ in
       ];
     }
   ];
-  cfg.services.vmagent.logs.enable = true;
 
   services.endlessh = {
     enable = true;

@@ -82,6 +82,7 @@
 
         services.vlagent = {
           enable = true;
+          extraArgs = [ "-httpListenAddr='127.0.0.1:9429'" ];
           remoteWrite = {
             url = cfg.remoteWriteUrl;
             basicAuthUsername = cfg.logs.username;
