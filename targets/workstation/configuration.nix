@@ -70,7 +70,7 @@ in
   };
   boot.initrd.clevis.enable = true;
   boot.initrd.clevis.useTang = true;
-  boot.initrd.clevis.devices."crypted".secretFile = /root/tang.jwe;
+  boot.initrd.clevis.devices."crypted".secretFile = "/root/tang.jwe";
 
   services.scx.enable = true;
   services.scx.scheduler = "scx_bpfland";

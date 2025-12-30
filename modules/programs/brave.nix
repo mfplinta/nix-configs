@@ -3,6 +3,7 @@
     {
       sysConfig,
       lib,
+      pkgs,
       setMimeTypes,
       ...
     }:
@@ -27,6 +28,7 @@
 
         programs.brave = {
           enable = true;
+          package = pkgs.unstable.brave;
           extensions = [
             { id = "cjpalhdlnbpafiamejdnhcphjbkeiagm"; } # uBlock Origin
             { id = "eimadpbcbfnmbkopoojfekhnkhdbieeh"; } # Dark Reader
