@@ -306,76 +306,17 @@ in
               nameservers = [ "10.0.3.2" ];
             };
 
-            services.alloy.enable = true;
-            services.alloy.configPath = pkgs.writeText "config.alloy" ''
-              local.file_match "caddy_logs" {
-                path_targets = [{
-                  __path__ = "/var/log/caddy/*.log",
-                }]
-              }
-
-              loki.source.file "caddy_logs" {
-                targets    = local.file_match.caddy_logs.targets
-                forward_to = [loki.process.add_clf_msg.receiver]
-              }
-
-              loki.process "add_clf_msg" {
-                stage.json {
-                  expressions = {
-                    host        = "request.host",
-                    ts          = "ts",
-                    client_ip   = "request.client_ip",
-                    method      = "request.method",
-                    proto       = "request.proto",
-                    uri         = "request.uri",
-                    status      = "status",
-                    size        = "size",
-                  }
-                }
-
-                stage.timestamp {
-                  source   = "ts"
-                  format   = "Unix"
-                }
-
-                stage.template {
-                  source   = "client_ip"
-                  template = "{{ if .client_ip }}{{ .client_ip }}{{ else }}-{{ end }}"
-                }
-
-                stage.template {
-                  source   = "size"
-                  template = "{{ if .size }}{{ .size }}{{ else }}0{{ end }}"
-                }
-
-                stage.template {
-                  source   = "clf_message"
-                  template = `({{ .host }}) {{ .client_ip }} "{{ .method }} {{ .uri }} {{ .proto }}" {{ .status }} {{ .size }}`
-                }
-
-                stage.labels {
-                  values = {
-                    "_msg" = "clf_message",
-                  }
-                }
-
-                forward_to = [loki.write.default.receiver]
-              }
-
-              loki.write "default" {
-                endpoint {
-                  url = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push"
-                }
-              }
-            '';
-
             cfg.services.caddy = {
               enable = true;
               environmentFile = config.sops.templates.env_caddy.path;
+              metrics.enable = true;
+              metrics.loki.enable = true;
+              metrics.loki.endpoint = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push";
               crowdsec.enable = true;
               crowdsec.apiKeyEnv = config.sops.templates.env_caddy_crowdsec.path;
               crowdsec.api_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.port}";
-              crowdsec.appsec_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.modules.caddy.appsecPort}";
+              crowdsec.appsec.enable = true;
+              crowdsec.appsec.url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.modules.caddy.appsecPort}";
               config = /* caddy */ ''
                                 (cf) {
                                   tls {
@@ -852,10 +793,11 @@ in
     {
       networks = {
         net_br0.networkConfig = {
-          driver = "macvlan";
-          gateways = [ "192.168.100.1" ];
+          driver = "bridge";
+          gateways = [ bridgeAddress ];
           subnets = [ "192.168.100.0/24" ];
-          options.parent = "br0";
+          options.mode = "unmanaged";
+          podmanArgs = [ "--interface-name=br0" ];
         };
       };
       containers = {
