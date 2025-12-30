@@ -13,7 +13,7 @@
     hyprland.url = "github:hyprwm/Hyprland";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
-    nixd.url = "github:mfplinta/nixd";
+    nixd.url = "github:nix-community/nixd";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
