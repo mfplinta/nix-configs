@@ -37,6 +37,10 @@
         modules.caddy.apiKeyFile = mkOption {
           type = types.path;
         };
+        modules.caddy.appsecPort = mkOption {
+          type = types.nullOr types.port;
+          default = null;
+        };
       };
 
       config = mkIf cfg.enable {
@@ -67,6 +71,14 @@
                   type = "caddy";
                 };
               })
+              (mkIf (cfg.modules.caddy.appsecPort != null) {
+                source = "appsec";
+                appsec_config = "crowdsecurity/appsec-default";
+                listen_addr = "0.0.0.0:${toString cfg.modules.caddy.appsecPort}";
+                labels = {
+                  type = "appsec";
+                };
+              })
             ];
           };
           hub.collections = [
@@ -75,12 +87,14 @@
           ]
           ++ lib.optionals cfg.modules.caddy.enable [
             "crowdsecurity/caddy"
+          ]
+          ++ lib.optionals (cfg.modules.caddy.appsecPort != null) [
             "crowdsecurity/appsec-virtual-patching"
             "crowdsecurity/appsec-generic-rules"
           ];
         };
 
-        services.crowdsec-firewall-bouncer = rec {
+        services.crowdsec-firewall-bouncer = {
           enable = cfg.modules.sshd.enable;
           registerBouncer.enable = false;
           secrets.apiKeyPath = cfg.modules.sshd.apiKeyFile;

@@ -278,7 +278,7 @@ in
         config = commonConfigWith (
           { ... }:
           {
-            users.groups.caddy = {};
+            users.groups.caddy = { };
             users.users.caddy = {
               group = "caddy";
             };
@@ -375,155 +375,160 @@ in
               crowdsec.enable = true;
               crowdsec.apiKeyEnv = config.sops.templates.env_caddy_crowdsec.path;
               crowdsec.api_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.port}";
+              crowdsec.appsec_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.modules.caddy.appsecPort}";
               config = /* caddy */ ''
-                (cf) {
-                  tls {
-                    dns cloudflare {env.CF_API_KEY}
-                    resolvers 1.1.1.1
-                  }
-                }
+                                (cf) {
+                                  tls {
+                                    dns cloudflare {env.CF_API_KEY}
+                                    resolvers 1.1.1.1
+                                  }
+                                }
 
-                http://plinta.dev, https://plinta.dev {
-                  import cf
-                  redir https://www.plinta.dev{uri} permanent
-                }
+                                http://plinta.dev, https://plinta.dev {
+                                  import cf
+                                  redir https://www.plinta.dev{uri} permanent
+                                }
 
-                *.plinta.dev {
-                  import cf
-                  crowdsec
-                  log
-                  @www host www.plinta.dev
-                  handle @www {
-                    redir /blog /blog/
-                    handle_path /blog/* {
-                      reverse_proxy ${addresses.quartz.local}:80
-                    }
-                    reverse_proxy ${addresses.ws-blog.local}:8000 {
-                      import tunneled
-                    }
-                  }
+                                *.plinta.dev {
+                                  import cf
+                                  crowdsec
+                		  appsec
+                                  log
+                                  @www host www.plinta.dev
+                                  handle @www {
+                                    redir /blog /blog/
+                                    handle_path /blog/* {
+                                      reverse_proxy ${addresses.quartz.local}:80
+                                    }
+                                    reverse_proxy ${addresses.ws-blog.local}:8000 {
+                                      import tunneled
+                                    }
+                                  }
 
-                  @grafana host grafana.plinta.dev
-                  handle @grafana {
-                    import bot_block
-                    reverse_proxy ${addresses.monitoring.local}:3000
-                  }
+                                  @grafana host grafana.plinta.dev
+                                  handle @grafana {
+                                    import bot_block
+                                    reverse_proxy ${addresses.monitoring.local}:3000
+                                  }
 
-                  @victoriametrics host victoriametrics.plinta.dev
-                  handle @victoriametrics {
-                    import bot_block
-                    basic_auth {
-                      mfplinta {env.HTTP_AUTH_PWD}
-                    }
-                    reverse_proxy ${addresses.monitoring.local}:8428
-                  }
+                                  @victoriametrics host victoriametrics.plinta.dev
+                                  handle @victoriametrics {
+                                    import bot_block
+                                    basic_auth {
+                                      mfplinta {env.HTTP_AUTH_PWD}
+                                    }
+                                    reverse_proxy ${addresses.monitoring.local}:8428
+                                  }
 
-                  @gitea host gitea.plinta.dev
-                  handle @gitea {
-                    import bot_block
-                    reverse_proxy ${addresses.gitea.local}:3000
-                  }
+                                  @gitea host gitea.plinta.dev
+                                  handle @gitea {
+                                    import bot_block
+                                    reverse_proxy ${addresses.gitea.local}:3000
+                                  }
 
-                  @ha host ha.plinta.dev
-                  handle @ha {
-                    import bot_block
-                    reverse_proxy https://ha.plinta.dev
-                  }
+                                  @ha host ha.plinta.dev
+                                  handle @ha {
+                                    import bot_block
+                                    reverse_proxy https://ha.plinta.dev
+                                  }
 
-                  @nextcloud host nextcloud.plinta.dev
-                  handle @nextcloud {
-                    import bot_block
-                    reverse_proxy ${addresses.nextcloud.local}:8000
-                  }
+                                  @nextcloud host nextcloud.plinta.dev
+                                  handle @nextcloud {
+                                    import bot_block
+                                    reverse_proxy ${addresses.nextcloud.local}:8000
+                                  }
 
-                  @nextcloud-ds host nextcloud-ds.plinta.dev
-                  handle @nextcloud-ds {
-                    import bot_block
-                    reverse_proxy ${addresses.nextcloud.local}:8001 {
-                      header_up Accept-Encoding identity
-                    }
+                                  @nextcloud-ds host nextcloud-ds.plinta.dev
+                                  handle @nextcloud-ds {
+                                    import bot_block
+                                    reverse_proxy ${addresses.nextcloud.local}:8001 {
+                                      header_up Accept-Encoding identity
+                                    }
 
-                    replace stream {
-                      match {
-                        header Content-Type text/javascript*
-                      }
-                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
-                    }
-                  }
+                                    replace stream {
+                                      match {
+                                        header Content-Type text/javascript*
+                                      }
+                                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
+                                    }
+                                  }
 
-                  @tmdb host tmdb-addon-stremio.plinta.dev
-                  handle @tmdb {
-                    import bot_block
-                    reverse_proxy ${addresses.tmdb-addon.local}:1337
-                  }
+                                  @tmdb host tmdb-addon-stremio.plinta.dev
+                                  handle @tmdb {
+                                    import bot_block
+                                    reverse_proxy ${addresses.tmdb-addon.local}:1337
+                                  }
 
-                  @pdf host pdf.plinta.dev
-                  handle @pdf {
-                    import bot_block
-                    reverse_proxy ${addresses.stirling-pdf.local}:8080
+                                  @pdf host pdf.plinta.dev
+                                  handle @pdf {
+                                    import bot_block
+                                    reverse_proxy ${addresses.stirling-pdf.local}:8080
 
-                    # Remove "Upgrade to PRO"
-                    replace stream {
-                      match {
-                        header Content-Type text/html*
-                      }
-                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
-                      `</head>` `<meta name="darkreader-lock"></head>`
-                      `pixel.stirlingpdf.com` "{host}"
-                    }
-                  }
+                                    # Remove "Upgrade to PRO"
+                                    replace stream {
+                                      match {
+                                        header Content-Type text/html*
+                                      }
+                                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
+                                      `</head>` `<meta name="darkreader-lock"></head>`
+                                      `pixel.stirlingpdf.com` "{host}"
+                                    }
+                                  }
 
-                  @vaultwarden host vaultwarden.plinta.dev
-                  handle @vaultwarden {
-                    import bot_block
-                    reverse_proxy ${addresses.vaultwarden.local}:8222
-                  }
+                                  @vaultwarden host vaultwarden.plinta.dev
+                                  handle @vaultwarden {
+                                    import bot_block
+                                    reverse_proxy ${addresses.vaultwarden.local}:8222
+                                  }
 
-                  handle {
-                    abort
-                  }
-                }
+                                  handle {
+                                    abort
+                                  }
+                                }
 
-                http://optimaltech.us, https://optimaltech.us {
-                  import cf
-                  redir https://www.optimaltech.us{uri} permanent
-                }
+                                http://optimaltech.us, https://optimaltech.us {
+                                  import cf
+                                  redir https://www.optimaltech.us{uri} permanent
+                                }
 
-                *.optimaltech.us {
-                  import cf
-                  log
-                  @www host www.optimaltech.us
-                  handle @www {
-                    reverse_proxy ${addresses.ws-ots.local}:8000 {
-                      import tunneled
-                    }
-                  }
+                                *.optimaltech.us {
+                                  import cf
+                		  crowdsec
+                		  appsec
+                                  log
+                                  @www host www.optimaltech.us
+                                  handle @www {
+                                    reverse_proxy ${addresses.ws-ots.local}:8000 {
+                                      import tunneled
+                                    }
+                                  }
 
-                  handle {
-                    abort
-                  }
-                }
+                                  handle {
+                                    abort
+                                  }
+                                }
 
-                http://mastermovement.us, https://mastermovement.us {
-                  import cf
-                  redir https://www.mastermovement.us{uri} permanent
-                }
+                                http://mastermovement.us, https://mastermovement.us {
+                                  import cf
+                                  redir https://www.mastermovement.us{uri} permanent
+                                }
 
-                *.mastermovement.us {
-                  import cf
-                  crowdsec
-                  log
-                  @www host www.mastermovement.us
-                  handle @www {
-                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
-                      import tunneled
-                    }
-                  }
+                                *.mastermovement.us {
+                                  import cf
+                                  crowdsec
+                		  appsec
+                                  log
+                                  @www host www.mastermovement.us
+                                  handle @www {
+                                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
+                                      import tunneled
+                                    }
+                                  }
 
-                  handle {
-                    abort
-                  }
-                }
+                                  handle {
+                                    abort
+                                  }
+                                }
               '';
             };
           }
@@ -900,9 +905,11 @@ in
     };
 
   cfg.services.crowdsec.enable = true;
+  cfg.services.crowdsec.port = 30000;
   cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
   cfg.services.crowdsec.modules.caddy = {
     enable = true;
+    appsecPort = 7422;
     logfile = "/persist/containers/reverseProxy/log/access.log";
     apiKeyFile = config.sops.secrets.cloudy-crowdsec_caddy_bouncer_key.path;
   };

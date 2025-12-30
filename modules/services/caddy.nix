@@ -36,20 +36,24 @@
         crowdsec.api_url = mkOption {
           type = types.str;
         };
+        crowdsec.appsec_url = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+        };
         environmentFile = mkOption {
           type = types.nullOr types.path;
           default = null;
         };
         environmentFiles = mkOption {
           type = types.listOf types.path;
-          default = [];
+          default = [ ];
         };
       };
 
       config = mkIf cfg.enable {
         assertions = [
           {
-            assertion = !(cfg.environmentFile != null && cfg.environmentFiles != []);
+            assertion = !(cfg.environmentFile != null && cfg.environmentFiles != [ ]);
             message = "Options environmentFile and environmentFiles are mutually exclusive.";
           }
         ];
@@ -109,14 +113,28 @@
                 format json
                 level INFO
               }
-              ${if cfg.crowdsec.enable then ''
-                order crowdsec first
-                crowdsec {
-                  api_url ${cfg.crowdsec.api_url}
-                  api_key {env.CROWDSEC_API_KEY}
-                  ticker_interval 15s
-                }
-              '' else ""}
+              ${
+                if cfg.crowdsec.enable then
+                  ''
+                                    order crowdsec first
+                                    crowdsec {
+                                      api_url ${cfg.crowdsec.api_url}
+                                      api_key {env.CROWDSEC_API_KEY}
+                                      ticker_interval 15s
+                    		${
+                        if (cfg.crowdsec.appsec_url != null) then
+                          ''
+                            		  appsec_url ${cfg.crowdsec.appsec_url}
+                            		}
+                            		order appsec after crowdsec
+                            	        ''
+                        else
+                          "}"
+                      }
+                  ''
+                else
+                  ""
+              }
             }
 
             ${

@@ -202,7 +202,7 @@ in
           autoUpdate = "registry";
           image = "docker.io/zwavejs/zwave-js-ui:11.8";
           userns = "auto";
-	  # exec = "/usr/bin/env node --prof server/bin/www";
+          # exec = "/usr/bin/env node --prof server/bin/www";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
           devices = [
             "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"

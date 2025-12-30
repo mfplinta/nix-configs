@@ -23,9 +23,12 @@
     nixvim.url = "github:nix-community/nixvim/nixos-25.11";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nixneovimplugins.url = "github:NixNeovim/NixNeovimPlugins";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    systems.url = "github:nix-systems/default";
   };
   outputs =
     inputs@{
+      self,
       nixpkgs,
       nixpkgs-unstable,
       nixpkgs-old,
@@ -41,10 +44,14 @@
       nvibrant,
       nixpkgs-crowdsec,
       nixneovimplugins,
+      treefmt-nix,
+      systems,
       ...
     }:
     let
-      systems = {
+      eachSystem = f: nixpkgs.lib.genAttrs (import systems) (system: f nixpkgs.legacyPackages.${system});
+      treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./treefmt.nix);
+      targets = {
         "mfp-nix-workstation" = {
           modules = [
             ./targets/workstation/configuration.nix
@@ -74,9 +81,12 @@
       };
       sysImport = module: (import module).sysModule;
       hmImport = module: (import module).hmModule;
-
     in
     {
+      formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
+      checks = eachSystem (pkgs: {
+        formatting = treefmtEval.${pkgs.system}.config.build.check self;
+      });
       nixosConfigurations = builtins.mapAttrs (
         name: value:
         nixpkgs.lib.nixosSystem {
@@ -120,28 +130,17 @@
                   android_sdk.accept_license = true;
                 };
                 nixpkgs.hostPlatform = value.arch or "x86_64-linux";
-                nixpkgs.overlays =
-                  let
-                    overlayFromInput =
-                      input: overlayName:
-                      (final: prev: {
-                        "${overlayName}" = (
-                          import input {
-                            inherit (final.stdenv.hostPlatform) system;
-                            inherit (final) config;
-                          }
-                        );
-                      });
-                  in
-                  [
-                    (import ./pkgs)
-                    (overlayFromInput nixpkgs-old "nixpkgs-old")
-                    (overlayFromInput nixpkgs-unstable "unstable")
-                    nix-vscode-extensions.overlays.default
-                    nixneovimplugins.overlays.default
-                    nvibrant.overlays.default
-                    nixd.overlays.default
-                  ];
+                nixpkgs.overlays = [
+                  (import ./pkgs)
+                  (final: prev: {
+                    unstable = import nixpkgs-old { inherit (final) system config; };
+                    old = import nixpkgs-unstable { inherit (final) system config; };
+                  })
+                  nix-vscode-extensions.overlays.default
+                  nixneovimplugins.overlays.default
+                  nvibrant.overlays.default
+                  nixd.overlays.default
+                ];
                 networking.hostName = name;
                 system.stateVersion = "24.11";
                 home-manager.useGlobalPkgs = true;
@@ -161,6 +160,6 @@
           ]
           ++ value.modules;
         }
-      ) systems;
+      ) targets;
     };
 }
