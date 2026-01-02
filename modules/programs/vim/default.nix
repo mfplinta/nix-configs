@@ -74,6 +74,9 @@
                 lsp.servers = {
                   jsonls.enable = true;
                   nixd.enable = true;
+                  rust_analyzer.enable = true;
+                  rust_analyzer.installRustc = true;
+                  rust_analyzer.installCargo = true;
                   yamlls.enable = true;
                 };
                 treesitter.enable = true;
@@ -86,6 +89,7 @@
                   nix
                   python
                   regex
+                  rust
                   toml
                   yaml
                 ];

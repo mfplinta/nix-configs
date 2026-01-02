@@ -46,8 +46,6 @@
         boot.tmp.useTmpfs = true;
         boot.tmp.tmpfsSize = "125%";
 
-        documentation.enable = false;
-
         # Zram swap
         zramSwap.enable = true;
         zramSwap.memoryPercent = 100;

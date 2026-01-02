@@ -53,30 +53,20 @@
       treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./treefmt.nix);
       targets = {
         "mfp-nix-workstation" = {
-          modules = [
-            ./targets/workstation/configuration.nix
-          ];
+          configModule = ./targets/workstation/configuration.nix;
         };
         "mfp-nix-laptop" = {
-          modules = [
-            ./targets/laptop/configuration.nix
-          ];
+          configModule = ./targets/laptop/configuration.nix;
         };
         "tiny-nix" = {
-          modules = [
-            ./targets/tiny/configuration.nix
-          ];
+          configModule = ./targets/tiny/configuration.nix;
         };
         "cloudy" = {
           arch = "aarch64-linux";
-          modules = [
-            ./targets/cloudy/configuration.nix
-          ];
+          configModule = ./targets/cloudy/configuration.nix;
         };
         "gateway" = {
-          modules = [
-            ./targets/gateway/configuration.nix
-          ];
+          configModule = ./targets/gateway/configuration.nix;
         };
       };
       sysImport = module: (import module).sysModule;
@@ -85,7 +75,7 @@
     {
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
       checks = eachSystem (pkgs: {
-        formatting = treefmtEval.${pkgs.system}.config.build.check self;
+        formatting = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
       });
       nixosConfigurations = builtins.mapAttrs (
         name: value:
@@ -133,8 +123,8 @@
                 nixpkgs.overlays = [
                   (import ./pkgs)
                   (final: prev: {
-                    unstable = import nixpkgs-old { inherit (final) system config; };
-                    old = import nixpkgs-unstable { inherit (final) system config; };
+                    old = import nixpkgs-old { inherit (final) system config; };
+                    unstable = import nixpkgs-unstable { inherit (final) system config; };
                   })
                   nix-vscode-extensions.overlays.default
                   nixneovimplugins.overlays.default
@@ -157,8 +147,8 @@
                 };
               }
             )
-          ]
-          ++ value.modules;
+            value.configModule
+          ];
         }
       ) targets;
     };

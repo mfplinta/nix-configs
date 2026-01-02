@@ -15,6 +15,7 @@
         (sysImport ./services/caddy.nix)
         (sysImport ./services/crowdsec.nix)
         (sysImport ./services/django-website.nix)
+        (sysImport ./services/nextcloud.nix)
         (sysImport ./services/nvidia_oc.nix)
         (sysImport ./services/printing.nix)
         (sysImport ./services/vmagent.nix)

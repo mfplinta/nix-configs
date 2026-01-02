@@ -251,6 +251,7 @@ in
           imports = (extra.imports or [ ]) ++ [
             (sysImport ../../modules/services/django-website.nix)
             (sysImport ../../modules/services/caddy.nix)
+            (sysImport ../../modules/services/nextcloud.nix)
           ];
 
           config = lib.mkMerge [
@@ -687,100 +688,19 @@ in
         };
 
         config = commonConfigWith (
-          { config, ... }:
+          { ... }:
           {
-            environment.systemPackages = with pkgs; [
-              config.services.nextcloud.occ
-              cron
-              ghostscript
-              exiftool
-            ];
-
-            services.onlyoffice = {
+            cfg.services.nextcloud = {
               enable = true;
-              hostname = "onlyoffice";
-              port = 10000;
-              jwtSecretFile = "${hostConfig.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path}";
-              securityNonceFile = "${hostConfig.sops.templates.nextcloud_nonce.path}";
+              adminPasswordFile = hostConfig.sops.secrets.cloudy-nextcloud_admin.path;
+              trustedDomains = [ "nextcloud.plinta.dev" ];
+              trustedProxies = [ addresses.reverseProxy.local ];
+              onlyoffice = {
+                enable = true;
+                jwtSecretFile = hostConfig.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path;
+                securityNonceFile = hostConfig.sops.templates.nextcloud_nonce.path;
+              };
             };
-            services.nginx.virtualHosts."${config.services.onlyoffice.hostname}".listen = [
-              {
-                addr = "0.0.0.0";
-                port = 8001;
-              }
-            ];
-
-            services.nextcloud = {
-              enable = true;
-              package = pkgs.nextcloud32;
-              extraAppsEnable = true;
-              extraApps = {
-                inherit (pkgs.nextcloud32.packages.apps)
-                  bookmarks
-                  end_to_end_encryption
-                  memories
-                  previewgenerator
-                  onlyoffice
-                  ;
-              };
-              hostName = "nextcloud";
-              https = true;
-              configureRedis = true;
-              maxUploadSize = "20G";
-              database.createLocally = true;
-              phpOptions = {
-                "opcache.interned_strings_buffer" = "32";
-              };
-              caching = {
-                redis = true;
-                memcached = true;
-              };
-              config = {
-                dbtype = "pgsql";
-                adminuser = "admin";
-                adminpassFile = "${hostConfig.sops.secrets.cloudy-nextcloud_admin.path}";
-              };
-              settings.maintenance_window_start = 9; # 2 AM MST
-              settings.default_phone_region = "US";
-              settings.trusted_domains = [
-                "nextcloud.plinta.dev"
-              ];
-              settings.trusted_proxies = [
-                "127.0.0.1"
-                addresses.reverseProxy.local
-              ];
-              settings.filelocking.enabled = true;
-              settings.log_type = "file";
-              settings."overwriteprotocol" = "https"; # Fix redirect after login
-              settings."preview_ffmpeg_path" = "${pkgs.ffmpeg}/bin/ffmpeg";
-              settings.enabledPreviewProviders = map (type: "OC\\Preview\\${type}") [
-                "BMP"
-                "GIF"
-                "JPEG"
-                "Krita"
-                "MarkDown"
-                "MP3"
-                "OpenDocument"
-                "PNG"
-                "TXT"
-                "XBitmap"
-                "Movie"
-                "MSOffice2003"
-                "MSOffice2007"
-                "MSOfficeDoc"
-                "PDF"
-                "Photoshop"
-                "SVG"
-                "TIFF"
-                "HEIC"
-              ];
-            };
-            services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
-              {
-                addr = "0.0.0.0";
-                port = 8000;
-              }
-            ];
           }
         );
       };
