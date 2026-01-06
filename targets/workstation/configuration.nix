@@ -177,6 +177,7 @@ in
   cfg.services.printing.enable = true;
   cfg.virtualisation.quadlet.enable = true;
   cfg.virtualisation.libvirt.enable = true;
+  cfg.virtualisation.distrobox.enable = true;
 
   home-manager.users.matheus =
     {

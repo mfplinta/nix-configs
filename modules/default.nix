@@ -20,6 +20,7 @@
         (sysImport ./services/printing.nix)
         (sysImport ./services/vmagent.nix)
 
+        (sysImport ./virtualisation/distrobox.nix)
         (sysImport ./virtualisation/quadlet.nix)
         (sysImport ./virtualisation/libvirt.nix)
       ];
