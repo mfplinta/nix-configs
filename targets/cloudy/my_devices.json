@@ -621,7 +621,7 @@
           "placement": "bottom",
           "showLegend": false
         },
-        "mergeValues": true,
+        "mergeValues": false,
         "rowHeight": 0.9,
         "showValue": "never",
         "tooltip": {

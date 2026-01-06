@@ -381,7 +381,10 @@ in
                                                                   @ha host ha.plinta.dev
                                                                   handle @ha {
                                                                     import bot_block
-                                                                    import rp https://ha.plinta.dev
+                                                                    reverse_proxy https://ha.plinta.dev {
+								      health_uri /
+								      health_timeout 10s
+								    }
                                                                   }
 
                                                                   @nextcloud host nextcloud.plinta.dev
