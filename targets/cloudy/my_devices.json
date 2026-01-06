@@ -216,6 +216,21 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Buffers"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -266,7 +281,20 @@
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
-          "expr": "node_memory_Cached_bytes{instance=\"cloudy\"}",
+          "expr": "node_memory_Buffers_bytes{instance=\"cloudy\"}",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Buffers",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P4169E866C3094E38"
+          },
+          "editorMode": "code",
+          "expr": "node_memory_Cached_bytes{instance=\"cloudy\"} +\nnode_memory_SReclaimable_bytes{instance=\"cloudy\"} -\nnode_memory_Shmem_bytes{instance=\"cloudy\"}",
           "hide": false,
           "legendFormat": "Cache",
           "range": true,
@@ -590,7 +618,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Active + Cache"
+              "options": "Cache"
             },
             "properties": [
               {
@@ -605,13 +633,28 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Active"
+              "options": "Used"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
                   "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Buffers"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
                   "mode": "fixed"
                 }
               }
@@ -666,7 +709,20 @@
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
-          "expr": "node_memory_Cached_bytes{instance=\"tiny-nix\"}",
+          "expr": "node_memory_Buffers_bytes{instance=\"tiny-nix\"}",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Buffers",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P4169E866C3094E38"
+          },
+          "editorMode": "code",
+          "expr": "node_memory_Cached_bytes{instance=\"tiny-nix\"} +\nnode_memory_SReclaimable_bytes{instance=\"tiny-nix\"} -\nnode_memory_Shmem_bytes{instance=\"tiny-nix\"}",
           "hide": false,
           "legendFormat": "Cache",
           "range": true,
