@@ -68,40 +68,44 @@
                   }
                 ];
               }
-	      {
-	        job_name = "process-exporter";
-		static_configs = [
-		  {
-		    targets = [ "127.0.0.1:9101" ];
-		    labels.instance = config.networking.hostName;
-		  }
-		];
-	      }
+              {
+                job_name = "process-exporter";
+                static_configs = [
+                  {
+                    targets = [ "127.0.0.1:9101" ];
+                    labels.instance = config.networking.hostName;
+                  }
+                ];
+              }
             ]
             ++ cfg.extraScrapeConfigs;
           };
         };
 
         services.prometheus.exporters = {
-	  node = {
+          node = {
             enable = true;
             listenAddress = "127.0.0.1";
             port = 9100;
             enabledCollectors = [ "systemd" ];
           };
-	  process = {
-	    enable = true;
-	    port = 9101;
-	    settings = {
-	      process_names = [
-	        # Remove nix store path from process 
-	        #{ name = "{{.Matches.Wrapped}} {{ .Matches.Args }}"; cmdline = [ "^/nix/store[^ ]*/(?P<Wrapped>[^ /]*) (?P<Args>.*)" ]; }
-		{ name = "{{.ExeBase}}"; cmdline = [ ".+" ]; }
+          process = {
+            enable = true;
+            listenAddress = "127.0.0.1";
+            port = 9101;
+            settings = {
+              process_names = [
+                # Remove nix store path from process
+                #{ name = "{{.Matches.Wrapped}} {{ .Matches.Args }}"; cmdline = [ "^/nix/store[^ ]*/(?P<Wrapped>[^ /]*) (?P<Args>.*)" ]; }
+                {
+                  name = "{{.ExeBase}}";
+                  cmdline = [ ".+" ];
+                }
 
-	      ];
-	    };
-	  };
-	};
+              ];
+            };
+          };
+        };
 
         services.vlagent = {
           enable = true;

@@ -321,164 +321,172 @@ in
               crowdsec.appsec.enable = true;
               crowdsec.appsec.url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.modules.caddy.appsecPort}";
               config = /* caddy */ ''
-                                                (cf) {
-                                                  tls {
-                                                    dns cloudflare {env.CF_API_KEY}
-                                                    resolvers 1.1.1.1
-                                                  }
-                                                }
+                                                                (cf) {
+                                                                  tls {
+                                                                    dns cloudflare {env.CF_API_KEY}
+                                                                    resolvers 1.1.1.1
+                                                                  }
+                                                                }
 
-                                                http://plinta.dev, https://plinta.dev {
-                                                  import cf
-                                                  redir https://www.plinta.dev{uri} permanent
-                                                }
+                						(rp) {
+                						  reverse_proxy {args[0]} {
+                						    fail_duration 30s
+                						    unhealthy_status 5xx
+                						    unhealthy_latency 10s
+                						  }
+                						}
 
-                                                *.plinta.dev {
-                                                  import cf
-                                                  crowdsec
-                                		  appsec
-                                                  log
-                                                  @www host www.plinta.dev
-                                                  handle @www {
-                                                    redir /blog /blog/
-                                                    handle_path /blog/* {
-                                                      reverse_proxy ${addresses.quartz.local}:80
-                                                    }
-                                                    reverse_proxy ${addresses.ws-blog.local}:8000 {
-                                                      import tunneled
-                                                    }
-                                                  }
+                                                                http://plinta.dev, https://plinta.dev {
+                                                                  import cf
+                                                                  redir https://www.plinta.dev{uri} permanent
+                                                                }
 
-                                                  @grafana host grafana.plinta.dev
-                                                  handle @grafana {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.monitoring.local}:3000
-                                                  }
+                                                                *.plinta.dev {
+                                                                  import cf
+                                                                  crowdsec
+                                                		  appsec
+                                                                  log
+                                                                  @www host www.plinta.dev
+                                                                  handle @www {
+                                                                    redir /blog /blog/
+                                                                    handle_path /blog/* {
+                                                                      import rp ${addresses.quartz.local}:80
+                                                                    }
+                                                                    reverse_proxy ${addresses.ws-blog.local}:8000 {
+                                                                      import tunneled
+                                                                    }
+                                                                  }
 
-                                                  @victoriametrics host victoriametrics.plinta.dev
-                                                  handle @victoriametrics {
-                                                    import bot_block
-                                                    basic_auth {
-                                                      mfplinta {env.HTTP_AUTH_PWD}
-                                                    }
-                                                    reverse_proxy ${addresses.monitoring.local}:8428
-                                                  }
+                                                                  @grafana host grafana.plinta.dev
+                                                                  handle @grafana {
+                                                                    import bot_block
+                                                                    import rp ${addresses.monitoring.local}:3000
+                                                                  }
 
-                                                  @gitea host gitea.plinta.dev
-                                                  handle @gitea {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.gitea.local}:3000
-                                                  }
+                                                                  @victoriametrics host victoriametrics.plinta.dev
+                                                                  handle @victoriametrics {
+                                                                    import bot_block
+                                                                    basic_auth {
+                                                                      mfplinta {env.HTTP_AUTH_PWD}
+                                                                    }
+                                                                    import rp ${addresses.monitoring.local}:8428
+                                                                  }
 
-                                                  @ha host ha.plinta.dev
-                                                  handle @ha {
-                                                    import bot_block
-                                                    reverse_proxy https://ha.plinta.dev
-                                                  }
+                                                                  @gitea host gitea.plinta.dev
+                                                                  handle @gitea {
+                                                                    import bot_block
+                                                                    import rp ${addresses.gitea.local}:3000
+                                                                  }
 
-                                                  @nextcloud host nextcloud.plinta.dev
-                                                  handle @nextcloud {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.nextcloud.local}:8000
-                                                  }
+                                                                  @ha host ha.plinta.dev
+                                                                  handle @ha {
+                                                                    import bot_block
+                                                                    import rp https://ha.plinta.dev
+                                                                  }
 
-                                                  @nextcloud-ds host nextcloud-ds.plinta.dev
-                                                  handle @nextcloud-ds {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.nextcloud.local}:8001 {
-                                                      header_up Accept-Encoding identity
-                                                    }
+                                                                  @nextcloud host nextcloud.plinta.dev
+                                                                  handle @nextcloud {
+                                                                    import bot_block
+                                                                    import rp ${addresses.nextcloud.local}:8000
+                                                                  }
 
-                                                    replace stream {
-                                                      match {
-                                                        header Content-Type text/javascript*
-                                                      }
-                                                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
-                                                    }
-                                                  }
+                                                                  @nextcloud-ds host nextcloud-ds.plinta.dev
+                                                                  handle @nextcloud-ds {
+                                                                    import bot_block
+                                                                    import rp ${addresses.nextcloud.local}:8001 {
+                                                                      header_up Accept-Encoding identity
+                                                                    }
 
-                                                  @tmdb host tmdb-addon-stremio.plinta.dev
-                                                  handle @tmdb {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.tmdb-addon.local}:1337
-                                                  }
+                                                                    replace stream {
+                                                                      match {
+                                                                        header Content-Type text/javascript*
+                                                                      }
+                                                                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
+                                                                    }
+                                                                  }
 
-                                                  @pdf host pdf.plinta.dev
-                                                  handle @pdf {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.stirling-pdf.local}:8080
+                                                                  @tmdb host tmdb-addon-stremio.plinta.dev
+                                                                  handle @tmdb {
+                                                                    import bot_block
+                                                                    import rp ${addresses.tmdb-addon.local}:1337
+                                                                  }
 
-                                                    # Remove "Upgrade to PRO"
-                                                    replace stream {
-                                                      match {
-                                                        header Content-Type text/html*
-                                                      }
-                                                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
-                                                      `</head>` `<meta name="darkreader-lock"></head>`
-                                                      `pixel.stirlingpdf.com` "{host}"
-                                                    }
-                                                  }
+                                                                  @pdf host pdf.plinta.dev
+                                                                  handle @pdf {
+                                                                    import bot_block
+                                                                    import rp ${addresses.stirling-pdf.local}:8080
 
-                                                  @vaultwarden host vaultwarden.plinta.dev
-                                                  handle @vaultwarden {
-                                                    import bot_block
-                                                    reverse_proxy ${addresses.vaultwarden.local}:8222
-                                                  }
+                                                                    # Remove "Upgrade to PRO"
+                                                                    replace stream {
+                                                                      match {
+                                                                        header Content-Type text/html*
+                                                                      }
+                                                                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
+                                                                      `</head>` `<meta name="darkreader-lock"></head>`
+                                                                      `pixel.stirlingpdf.com` "{host}"
+                                                                    }
+                                                                  }
 
-                				  @audiobookshelf host audiobooks.plinta.dev
-                				  handle @audiobookshelf {
-                				    import bot_block
-                				    reverse_proxy ${addresses.audiobookshelf.local}:8000
-                				  }
+                                                                  @vaultwarden host vaultwarden.plinta.dev
+                                                                  handle @vaultwarden {
+                                                                    import bot_block
+                                                                    import rp ${addresses.vaultwarden.local}:8222
+                                                                  }
 
-                                                  handle {
-                                                    abort
-                                                  }
-                                                }
+                                				  @audiobookshelf host audiobooks.plinta.dev
+                                				  handle @audiobookshelf {
+                                				    import bot_block
+                                				    import rp ${addresses.audiobookshelf.local}:8000
+                                				  }
 
-                                                http://optimaltech.us, https://optimaltech.us {
-                                                  import cf
-                                                  redir https://www.optimaltech.us{uri} permanent
-                                                }
+                                                                  handle {
+                                                                    abort
+                                                                  }
+                                                                }
 
-                                                *.optimaltech.us {
-                                                  import cf
-                                		  crowdsec
-                                		  appsec
-                                                  log
-                                                  @www host www.optimaltech.us
-                                                  handle @www {
-                                                    reverse_proxy ${addresses.ws-ots.local}:8000 {
-                                                      import tunneled
-                                                    }
-                                                  }
+                                                                http://optimaltech.us, https://optimaltech.us {
+                                                                  import cf
+                                                                  redir https://www.optimaltech.us{uri} permanent
+                                                                }
 
-                                                  handle {
-                                                    abort
-                                                  }
-                                                }
+                                                                *.optimaltech.us {
+                                                                  import cf
+                                                		  crowdsec
+                                                		  appsec
+                                                                  log
+                                                                  @www host www.optimaltech.us
+                                                                  handle @www {
+                                                                    reverse_proxy ${addresses.ws-ots.local}:8000 {
+                                                                      import tunneled
+                                                                    }
+                                                                  }
 
-                                                http://mastermovement.us, https://mastermovement.us {
-                                                  import cf
-                                                  redir https://www.mastermovement.us{uri} permanent
-                                                }
+                                                                  handle {
+                                                                    abort
+                                                                  }
+                                                                }
 
-                                                *.mastermovement.us {
-                                                  import cf
-                                                  crowdsec
-                                		  appsec
-                                                  log
-                                                  @www host www.mastermovement.us
-                                                  handle @www {
-                                                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
-                                                      import tunneled
-                                                    }
-                                                  }
+                                                                http://mastermovement.us, https://mastermovement.us {
+                                                                  import cf
+                                                                  redir https://www.mastermovement.us{uri} permanent
+                                                                }
 
-                                                  handle {
-                                                    abort
-                                                  }
-                                                }
+                                                                *.mastermovement.us {
+                                                                  import cf
+                                                                  crowdsec
+                                                		  appsec
+                                                                  log
+                                                                  @www host www.mastermovement.us
+                                                                  handle @www {
+                                                                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
+                                                                      import tunneled
+                                                                    }
+                                                                  }
+
+                                                                  handle {
+                                                                    abort
+                                                                  }
+                                                                }
               '';
             };
           }
