@@ -57,10 +57,12 @@
         "enableInfiniteScrolling": false,
         "enableLogDetails": true,
         "fontSize": "small",
+        "prettifyLogMessage": false,
         "showControls": false,
         "showLabels": false,
         "showTime": true,
         "sortOrder": "Descending",
+        "syntaxHighlighting": true,
         "timestampResolution": "ms",
         "wrapLogMessage": true
       },
@@ -72,7 +74,8 @@
             "uid": "PD775F2863313E6C7"
           },
           "editorMode": "code",
-          "expr": "request.host:\"$request_host\"",
+          "expr": "request.host:~\"$request_host\" AND request.headers.User-Agent:$hide_uptime_requests",
+          "hide": false,
           "queryType": "instant",
           "refId": "A"
         }
@@ -576,7 +579,7 @@
             },
             "insertNulls": false,
             "lineWidth": 0,
-            "spanNulls": false
+            "spanNulls": true
           },
           "mappings": [
             {
@@ -622,7 +625,7 @@
           "showLegend": false
         },
         "mergeValues": false,
-        "rowHeight": 0.9,
+        "rowHeight": 0.52,
         "showValue": "never",
         "tooltip": {
           "hideZeros": false,
@@ -1139,16 +1142,24 @@
   "templating": {
     "list": [
       {
+        "allValue": ".*",
+        "allowCustomValue": false,
         "current": {
-          "text": "grafana.matheusplinta.com",
-          "value": "grafana.matheusplinta.com"
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": {
           "type": "victoriametrics-logs-datasource",
           "uid": "PD775F2863313E6C7"
         },
         "definition": "",
+        "includeAll": true,
         "label": "Filter by host",
+        "multi": true,
         "name": "request_host",
         "options": [],
         "query": {
@@ -1161,6 +1172,26 @@
         "refresh": 1,
         "regex": "",
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "!~\"UptimeRobot\"",
+          "value": "!~\"UptimeRobot\""
+        },
+        "description": "",
+        "label": "Hide uptime requests",
+        "name": "hide_uptime_requests",
+        "options": [
+          {
+            "text": "!~\"UptimeRobot\"",
+            "value": "!~\"UptimeRobot\""
+          },
+          {
+            "text": "~\".*\"",
+            "value": "~\".*\""
+          }
+        ],
+        "type": "switch"
       }
     ]
   },
