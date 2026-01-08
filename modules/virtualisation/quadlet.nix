@@ -20,7 +20,18 @@
         users.users.containers = {
           group = "containers";
           isSystemUser = true;
-          autoSubUidGidRange = true;
+          subGidRanges = [
+            {
+              count = 16777216;
+              startGid = 100000;
+            }
+          ];
+          subUidRanges = [
+            {
+              count = 16777216;
+              startUid = 100000;
+            }
+          ];
         };
       };
     };

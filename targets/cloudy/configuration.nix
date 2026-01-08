@@ -77,6 +77,7 @@ in
   sops.secrets.cloudy-tmdb_api = { };
   sops.secrets.cloudy-fanart_api = { };
   sops.secrets.cloudy-tmdb_mongodb_uri = { };
+  sops.secrets.cloudy-coturn_pwd = { };
   sops.templates.env_tmdb = {
     mode = "0444";
     content = ''
@@ -128,6 +129,12 @@ in
       set $secure_link_secret "${config.sops.placeholder.cloudy-nextcloud_onlyoffice_nonce}";
     '';
   };
+  sops.templates.env_coturn = {
+    mode = "0444";
+    content = ''
+      user=ha:${config.sops.placeholder.cloudy-coturn_pwd}
+    '';
+  };
 
   networking = {
     ### Basic network config ###
@@ -171,13 +178,23 @@ in
         }
         {
           destination = "${addresses.reverseProxy.local}:51820";
-          proto = "tcp";
+          proto = "udp";
           sourcePort = 51820;
         }
         {
-          destination = "${addresses.reverseProxy.local}:51820";
+          destination = "${addresses.coturn.local}:3478";
+          proto = "tcp";
+          sourcePort = 3478;
+        }
+        {
+          destination = "${addresses.coturn.local}:3478";
           proto = "udp";
-          sourcePort = 51820;
+          sourcePort = 3478;
+        }
+        {
+          destination = "${addresses.coturn.local}:10000-20000";
+          proto = "udp";
+          sourcePort = "10000:20000";
         }
       ];
     };
@@ -315,181 +332,181 @@ in
               metrics.enable = true;
               metrics.loki.enable = true;
               metrics.loki.endpoint = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push";
-              crowdsec.enable = true;
+              crowdsec.enable = false;
               crowdsec.apiKeyEnv = config.sops.templates.env_caddy_crowdsec.path;
               crowdsec.api_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.port}";
-              crowdsec.appsec.enable = true;
+              crowdsec.appsec.enable = false;
               crowdsec.appsec.url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.modules.caddy.appsecPort}";
               config = /* caddy */ ''
-                                                                (cf) {
-                                                                  tls {
-                                                                    dns cloudflare {env.CF_API_KEY}
-                                                                    resolvers 1.1.1.1
-                                                                  }
-                                                                }
+                                                                                (cf) {
+                                                                                  tls {
+                                                                                    dns cloudflare {env.CF_API_KEY}
+                                                                                    resolvers 1.1.1.1
+                                                                                  }
+                                                                                }
 
-                						(rp) {
-                						  reverse_proxy {args[0]} {
-                						    fail_duration 30s
-                						    unhealthy_status 5xx
-                						    unhealthy_latency 10s
-                						  }
-                						}
+                                						(rp) {
+                                						  reverse_proxy {args[0]} {
+                                						    fail_duration 30s
+                                						    unhealthy_status 5xx
+                                						    unhealthy_latency 10s
+                                						  }
+                                						}
 
-                                                                http://plinta.dev, https://plinta.dev {
-                                                                  import cf
-                                                                  redir https://www.plinta.dev{uri} permanent
-                                                                }
+                                                                                http://plinta.dev, https://plinta.dev {
+                                                                                  import cf
+                                                                                  redir https://www.plinta.dev{uri} permanent
+                                                                                }
 
-                                                                *.plinta.dev {
-                                                                  import cf
-                                                                  crowdsec
-                                                		  appsec
-                                                                  log
-                                                                  @www host www.plinta.dev
-                                                                  handle @www {
-                                                                    redir /blog /blog/
-                                                                    handle_path /blog/* {
-                                                                      import rp ${addresses.quartz.local}:80
-                                                                    }
-                                                                    reverse_proxy ${addresses.ws-blog.local}:8000 {
-                                                                      import tunneled
-                                                                    }
-                                                                  }
+                                                                                *.plinta.dev {
+                                                                                  import cf
+                                                                                  #crowdsec
+                                                                		  #appsec
+                                                                                  log
+                                                                                  @www host www.plinta.dev
+                                                                                  handle @www {
+                                                                                    redir /blog /blog/
+                                                                                    handle_path /blog/* {
+                                                                                      import rp ${addresses.quartz.local}:80
+                                                                                    }
+                                                                                    reverse_proxy ${addresses.ws-blog.local}:8000 {
+                                                                                      import tunneled
+                                                                                    }
+                                                                                  }
 
-                                                                  @grafana host grafana.plinta.dev
-                                                                  handle @grafana {
-                                                                    import bot_block
-                                                                    import rp ${addresses.monitoring.local}:3000
-                                                                  }
+                                                                                  @grafana host grafana.plinta.dev
+                                                                                  handle @grafana {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.monitoring.local}:3000
+                                                                                  }
 
-                                                                  @victoriametrics host victoriametrics.plinta.dev
-                                                                  handle @victoriametrics {
-                                                                    import bot_block
-                                                                    basic_auth {
-                                                                      mfplinta {env.HTTP_AUTH_PWD}
-                                                                    }
-                                                                    import rp ${addresses.monitoring.local}:8428
-                                                                  }
+                                                                                  @victoriametrics host victoriametrics.plinta.dev
+                                                                                  handle @victoriametrics {
+                                                                                    import bot_block
+                                                                                    basic_auth {
+                                                                                      mfplinta {env.HTTP_AUTH_PWD}
+                                                                                    }
+                                                                                    import rp ${addresses.monitoring.local}:8428
+                                                                                  }
 
-                                                                  @gitea host gitea.plinta.dev
-                                                                  handle @gitea {
-                                                                    import bot_block
-                                                                    import rp ${addresses.gitea.local}:3000
-                                                                  }
+                                                                                  @gitea host gitea.plinta.dev
+                                                                                  handle @gitea {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.gitea.local}:3000
+                                                                                  }
 
-                                                                  @ha host ha.plinta.dev
-                                                                  handle @ha {
-                                                                    import bot_block
-                                                                    reverse_proxy https://ha.plinta.dev {
-								      health_uri /
-								      health_timeout 10s
-								    }
-                                                                  }
+                                                                                  @ha host ha.plinta.dev
+                                                                                  handle @ha {
+                                                                                    import bot_block
+                                                                                    reverse_proxy https://ha.plinta.dev {
+                								      #health_uri /
+                								      #health_timeout 10s
+                								    }
+                                                                                  }
 
-                                                                  @nextcloud host nextcloud.plinta.dev
-                                                                  handle @nextcloud {
-                                                                    import bot_block
-                                                                    import rp ${addresses.nextcloud.local}:8000
-                                                                  }
+                                                                                  @nextcloud host nextcloud.plinta.dev
+                                                                                  handle @nextcloud {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.nextcloud.local}:8000
+                                                                                  }
 
-                                                                  @nextcloud-ds host nextcloud-ds.plinta.dev
-                                                                  handle @nextcloud-ds {
-                                                                    import bot_block
-                                                                    import rp ${addresses.nextcloud.local}:8001 {
-                                                                      header_up Accept-Encoding identity
-                                                                    }
+                                                                                  @nextcloud-ds host nextcloud-ds.plinta.dev
+                                                                                  handle @nextcloud-ds {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.nextcloud.local}:8001 {
+                                                                                      header_up Accept-Encoding identity
+                                                                                    }
 
-                                                                    replace stream {
-                                                                      match {
-                                                                        header Content-Type text/javascript*
-                                                                      }
-                                                                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
-                                                                    }
-                                                                  }
+                                                                                    replace stream {
+                                                                                      match {
+                                                                                        header Content-Type text/javascript*
+                                                                                      }
+                                                                                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
+                                                                                    }
+                                                                                  }
 
-                                                                  @tmdb host tmdb-addon-stremio.plinta.dev
-                                                                  handle @tmdb {
-                                                                    import bot_block
-                                                                    import rp ${addresses.tmdb-addon.local}:1337
-                                                                  }
+                                                                                  @tmdb host tmdb-addon-stremio.plinta.dev
+                                                                                  handle @tmdb {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.tmdb-addon.local}:1337
+                                                                                  }
 
-                                                                  @pdf host pdf.plinta.dev
-                                                                  handle @pdf {
-                                                                    import bot_block
-                                                                    import rp ${addresses.stirling-pdf.local}:8080
+                                                                                  @pdf host pdf.plinta.dev
+                                                                                  handle @pdf {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.stirling-pdf.local}:8080
 
-                                                                    # Remove "Upgrade to PRO"
-                                                                    replace stream {
-                                                                      match {
-                                                                        header Content-Type text/html*
-                                                                      }
-                                                                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
-                                                                      `</head>` `<meta name="darkreader-lock"></head>`
-                                                                      `pixel.stirlingpdf.com` "{host}"
-                                                                    }
-                                                                  }
+                                                                                    # Remove "Upgrade to PRO"
+                                                                                    replace stream {
+                                                                                      match {
+                                                                                        header Content-Type text/html*
+                                                                                      }
+                                                                                      `</body>` `<script>jQuery('#footer, .go-pro-badge, .lead.fs-4').remove();$('a.nav-link.go-pro-link').closest('li').remove();</script></body>`
+                                                                                      `</head>` `<meta name="darkreader-lock"></head>`
+                                                                                      `pixel.stirlingpdf.com` "{host}"
+                                                                                    }
+                                                                                  }
 
-                                                                  @vaultwarden host vaultwarden.plinta.dev
-                                                                  handle @vaultwarden {
-                                                                    import bot_block
-                                                                    import rp ${addresses.vaultwarden.local}:8222
-                                                                  }
+                                                                                  @vaultwarden host vaultwarden.plinta.dev
+                                                                                  handle @vaultwarden {
+                                                                                    import bot_block
+                                                                                    import rp ${addresses.vaultwarden.local}:8222
+                                                                                  }
 
-                                				  @audiobookshelf host audiobooks.plinta.dev
-                                				  handle @audiobookshelf {
-                                				    import bot_block
-                                				    import rp ${addresses.audiobookshelf.local}:8000
-                                				  }
+                                                				  @audiobookshelf host audiobooks.plinta.dev
+                                                				  handle @audiobookshelf {
+                                                				    import bot_block
+                                                				    import rp ${addresses.audiobookshelf.local}:8000
+                                                				  }
 
-                                                                  handle {
-                                                                    abort
-                                                                  }
-                                                                }
+                                                                                  handle {
+                                                                                    abort
+                                                                                  }
+                                                                                }
 
-                                                                http://optimaltech.us, https://optimaltech.us {
-                                                                  import cf
-                                                                  redir https://www.optimaltech.us{uri} permanent
-                                                                }
+                                                                                http://optimaltech.us, https://optimaltech.us {
+                                                                                  import cf
+                                                                                  redir https://www.optimaltech.us{uri} permanent
+                                                                                }
 
-                                                                *.optimaltech.us {
-                                                                  import cf
-                                                		  crowdsec
-                                                		  appsec
-                                                                  log
-                                                                  @www host www.optimaltech.us
-                                                                  handle @www {
-                                                                    reverse_proxy ${addresses.ws-ots.local}:8000 {
-                                                                      import tunneled
-                                                                    }
-                                                                  }
+                                                                                *.optimaltech.us {
+                                                                                  import cf
+                                                                		  #crowdsec
+                                                                		  #appsec
+                                                                                  log
+                                                                                  @www host www.optimaltech.us
+                                                                                  handle @www {
+                                                                                    reverse_proxy ${addresses.ws-ots.local}:8000 {
+                                                                                      import tunneled
+                                                                                    }
+                                                                                  }
 
-                                                                  handle {
-                                                                    abort
-                                                                  }
-                                                                }
+                                                                                  handle {
+                                                                                    abort
+                                                                                  }
+                                                                                }
 
-                                                                http://mastermovement.us, https://mastermovement.us {
-                                                                  import cf
-                                                                  redir https://www.mastermovement.us{uri} permanent
-                                                                }
+                                                                                http://mastermovement.us, https://mastermovement.us {
+                                                                                  import cf
+                                                                                  redir https://www.mastermovement.us{uri} permanent
+                                                                                }
 
-                                                                *.mastermovement.us {
-                                                                  import cf
-                                                                  crowdsec
-                                                		  appsec
-                                                                  log
-                                                                  @www host www.mastermovement.us
-                                                                  handle @www {
-                                                                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
-                                                                      import tunneled
-                                                                    }
-                                                                  }
+                                                                                *.mastermovement.us {
+                                                                                  import cf
+                                                                                  #crowdsec
+                                                                		  #appsec
+                                                                                  log
+                                                                                  @www host www.mastermovement.us
+                                                                                  handle @www {
+                                                                                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
+                                                                                      import tunneled
+                                                                                    }
+                                                                                  }
 
-                                                                  handle {
-                                                                    abort
-                                                                  }
-                                                                }
+                                                                                  handle {
+                                                                                    abort
+                                                                                  }
+                                                                                }
               '';
             };
           }
@@ -757,6 +774,7 @@ in
       inherit (config.virtualisation.quadlet) networks;
     in
     {
+      autoEscape = true;
       networks = {
         net_br0.networkConfig = {
           driver = "bridge";
@@ -809,10 +827,36 @@ in
             LANGS = "en_US";
           };
         };
+
+        # --- Coturn ---
+        coturn.containerConfig = {
+          autoUpdate = "registry";
+          image = "docker.io/coturn/coturn:latest";
+          userns = "auto";
+          networks = [ "${networks.net_br0.ref}:ip=${addresses.coturn.local}" ];
+          environments = {
+            #DETECT_EXTERNAL_IP = "yes";
+          };
+          volumes = [
+            "${config.sops.templates.env_coturn.path}:/etc/turnserver.conf"
+          ];
+          exec = [
+	    "--external-ip=161.153.3.153"
+            "--log-file=stdout"
+            "--verbose"
+            "--realm=plinta.dev"
+            "--min-port=10000"
+            "--max-port=20000"
+            "--fingerprint"
+            "--lt-cred-mech"
+            "--listening-ip=0.0.0.0"
+            "--listening-port=3478"
+          ];
+        };
       };
     };
 
-  cfg.services.crowdsec.enable = true;
+  cfg.services.crowdsec.enable = false;
   cfg.services.crowdsec.port = 30000;
   cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
   cfg.services.crowdsec.modules.caddy = {
@@ -847,5 +891,6 @@ in
     openFirewall = true;
   };
 
+  services.fail2ban.enable = true;
   services.openssh.ports = [ 22000 ];
 }
