@@ -53,12 +53,13 @@
                 activated = "󰒳";
                 deactivated = "󰒲";
               };
-              network.interval = 1;
+              network.interval = 2;
               network.format-ethernet = "󰈀 ( {bandwidthUpBytes}) ( {bandwidthDownBytes})";
-              network.format-wifi = "󰖩  {bandwidthUpBytes}  {bandwidthDownBytes}";
+              network.format-wifi = "{icon}  {bandwidthUpBytes}  {bandwidthDownBytes}";
+              network.format-icons = [ "󰤯" "󰤟" "󰤢" "󰤥" "󰤨" ];
               network.format-disconnected = "󰌙";
               network.tooltip-format-ethernet = "IP: {ipaddr}";
-              network.tooltip.format-wifi = "IP: {ipaddr}\nSSID: {essid}\nStrength: {signalStrength}";
+              network.tooltip-format-wifi = "IP: {ipaddr}\nSSID: {essid}\nStrength: {signalStrength}";
               clock = {
                 format = " {:%a, %d %b %H:%M}";
                 tooltip-format = "<tt><small>{calendar}</small></tt>";
