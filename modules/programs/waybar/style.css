@@ -33,6 +33,7 @@
     color: @pink;
 }
 
+#battery,
 #cpu,
 #memory,
 #disk,
@@ -51,6 +52,10 @@
     padding: 6px 12px;
     border-radius: 8px;
     color: @text;
+}
+
+#battery {
+    color: @green;
 }
 
 #cpu {

@@ -30,11 +30,17 @@
             common = {
               layer = "top";
               "hyprland/workspaces".persistent-only = true;
+              battery.interval = 3;
+              battery.format = "{icon}󱐥 {capacity}%";
+              battery.format-charging = "󱐋{icon} {capacity}%";
+              battery.format-discharging = "{icon} {capacity}%";
+              battery.format-icons = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
               bluetooth = {
-                format-on = " On";
-                format-off = " Off";
-                "format-connected" = " On ({device_alias})";
-	              "format-connected-battery" = " ({device_alias}, {device_battery_percentage}%)";
+                format-on = "󰂯 On";
+                format-off = "󰂯 Off";
+                format-disabled = "󰂲";
+                format-connected = " On ({device_alias})";
+	              format-connected-battery = " ({device_alias}, {device_battery_percentage}%)";
               };
               cpu.format = " {usage}%";
               memory.format = " {percentage}%";
