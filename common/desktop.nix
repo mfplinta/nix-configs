@@ -49,6 +49,7 @@
               wtype = getExe pkgs.wtype;
               cliphist = getExe pkgs.cliphist;
               toggle-scale = getExe (pkgs.myScripts.toggle-scale);
+              wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
               cmdHelp = ''
                 \U2756 + E -- Show emoji picker
                 \U2756 + X -- Show power menu
@@ -100,9 +101,6 @@
                     "match:title ^(Picture in picture),keep_aspect_ratio 1"
                   ];
                 bind =
-                  let
-                    wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
-                  in
                   [
                     # Command binds
                     "${mod}, Q, killactive"
@@ -308,6 +306,24 @@
           Service = {
             Type = "oneshot";
             ExecStart = "${pkgs.kdePackages.kwallet-pam}/libexec/pam_kwallet_init";
+          };
+
+          Install = {
+            WantedBy = [ "graphical-session.target" ];
+          };
+        };
+
+        systemd.user.services.syshud = {
+          Unit = {
+            Description = "Syshud OSD";
+            After = [ "graphical-session.target" ];
+            ConditionEnvironment = [ "WAYLAND_DISPLAY" ];
+            PartOf = [ "graphical-session.target" ];
+          };
+
+          Service = {
+            Type = "oneshot";
+            ExecStart = lib.getExe pkgs.syshud;
           };
 
           Install = {
