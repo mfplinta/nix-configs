@@ -1,0 +1,110 @@
+* {
+    font-family: DejaVu Sans, DroidSansM Nerd Font Propo;
+    font-weight: bold;
+    font-size: 16px;
+    min-height: 0;
+}
+
+#waybar {
+    background: transparent;
+}
+
+#workspaces {
+    background: @surface0;
+    margin: 6px 3px;
+    padding: 4px;
+    border-radius: 8px;
+}
+
+#workspaces button {
+    background: transparent;
+    color: @subtext1;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+#workspaces button.visible, #workspaces button.visible:hover {
+    background: @pink;
+    color: @mantle;
+}
+
+#workspaces button:hover {
+    background: @surface1;
+    color: @pink;
+}
+
+#cpu,
+#memory,
+#disk,
+#custom-ioperc,
+#language,
+#mpd,
+#idle_inhibitor,
+#custom-brightness,
+#wireplumber,
+#network,
+#bluetooth,
+#clock,
+#tray {
+    background: @surface0;
+    margin: 6px 3px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: @text;
+}
+
+#cpu {
+    color: @maroon;
+}
+
+#memory {
+    color: @yellow;
+}
+
+#disk {
+    color: @pink;
+}
+
+#language {
+    color: @teal;
+}
+
+#mpd {
+    background: @surface1;
+    color: @lavender;
+    margin: 6px 1rem;
+}
+
+#mpd.playing {
+    background: @green;
+    color: @mantle;
+}
+
+#mpd.paused {
+    background: @overlay1;
+    color: @crust;
+}
+
+#idle_inhibitor {
+    color: @lavender;
+}
+
+#wireplumber {
+    color: @maroon;
+}
+
+#network {
+    color: @mauve;
+}
+
+#bluetooth {
+    color: @sky;
+}
+
+#clock {
+    color: @text;
+}
+
+#tray menu label, tooltip label {
+    font-weight: normal;
+}

@@ -16,10 +16,6 @@
           type = with lib.types; attrsOf anything;
           description = "Hyprland target-specific configuration";
         };
-        hyprpanel = lib.mkOption {
-          type = with lib.types; attrsOf anything;
-          description = "Hyprpanel target-specific configuration";
-        };
         mainMonitor = lib.mkOption {
           type = lib.types.str;
           description = "Main monitor";
@@ -158,7 +154,7 @@
                 };
                 general = {
                   gaps_in = lib.mkDefault 5;
-                  gaps_out = lib.mkDefault 20;
+                  gaps_out = lib.mkDefault 5;
                   border_size = lib.mkDefault 2;
                   "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
                   "col.inactive_border" = "rgba(595959aa)";
@@ -185,21 +181,11 @@
           };
         };
 
-        programs.hyprpanel = {
-          enable = true;
-
-          settings = lib.mkMerge [
-            {
-              "theme.osd.location" = "bottom";
-              "theme.osd.orientation" = "horizontal";
-              "theme.osd.margins" = "7px 7px 150px 7px";
-              "menus.clock.weather.enabled" = false;
-              "menus.dashboard.directories.left.directory3.label" = "󰚝 BYU";
-              "menus.dashboard.directories.left.directory3.command" = ''bash -c "xdg-open $HOME/Syncthing/BYU/"'';
-              "bar.workspaces.show_numbered" = true;
-            }
-            config.cfg.hyprpanel
-          ];
+        catppuccin = {
+          flavor = "mocha";
+          fish.enable = true;
+          waybar.enable = true;
+          kitty.enable = true;
         };
 
         xdg.configFile."hypr/xdph.conf".source = (
@@ -216,44 +202,6 @@
               cmd = "bash -c 'uwsm stop'"
           ''
         );
-
-        xdg.configFile."hyprpanel/modules.json".source =
-          (pkgs.formats.json { }).generate "hyprpanel-modules"
-            {
-              "custom/brightness" = {
-                icon = [
-                  "󰃞"
-                  "󰃟"
-                  "󰃠"
-                ];
-                label = "{percentage}%";
-                tooltip = "{tooltip}";
-                truncationSize = -1;
-                execute = "${lib.getExe pkgs.myScripts.get-current-brightness}";
-                executeOnAction = "";
-                interval = 1000;
-                hideOnEmpty = true;
-                scrollThreshold = 1;
-                actions = {
-                  onLeftClick = "";
-                  onRightClick = "";
-                  onMiddleClick = "";
-                  onScrollUp = "brillo -e -S $(($(printf '%.0f\n' $(brillo))+5))";
-                  onScrollDown = "brillo -e -S $(($(printf '%.0f\n' $(brillo))-5))";
-                };
-              };
-              "custom/ioperc" = {
-                icon = [ "󰒋" ];
-                label = "{percentage}%";
-                tooltip = "{tooltip}";
-                truncationSize = -1;
-                execute = "${lib.getExe pkgs.myScripts.get-current-io-util}";
-                executeOnAction = "";
-                interval = 1000;
-                hideOnEmpty = true;
-                scrollThreshold = 1;
-              };
-            };
 
         programs.hyprlock = {
           enable = true;
@@ -341,6 +289,7 @@
         services.network-manager-applet.enable = true;
         services.blueman-applet.enable = true;
         services.udiskie.enable = true;
+        services.udiskie.tray = "always";
         services.easyeffects.enable = true;
         services.psd.enable = true;
         services.kdeconnect = {

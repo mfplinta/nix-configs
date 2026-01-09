@@ -18,6 +18,7 @@ in
     (sysImport ./../../common/base.nix)
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
+    (sysImport ./../../common/containers.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
   ];
@@ -216,7 +217,7 @@ in
               },persistent:true${if i == 1 then ",default:true" else ""}"
             ) (range 1 9)
             ++ [
-              "name:win,monitor:${centerMonitor},persistent:true"
+              "name:win,monitor:${centerMonitor},persistent:false"
             ];
           windowrule =
             let
@@ -237,47 +238,25 @@ in
           experimental."xx_color_management_v4" = true;
           render."cm_fs_passthrough" = 2;
         };
-
-        hyprpanel = {
-          "bar.layouts" = {
-            "${leftMonitor}" = {
-              left = [ ];
-              middle = [ "workspaces" ];
-              right = [ ];
-            };
-            "${centerMonitor}" = {
-              left = [
-                "workspaces"
-                "cpu"
-                "ram"
-                "storage"
-                "custom/ioperc"
-                "kbinput"
-              ];
-              middle = [
-                "media"
-                "netstat"
-              ];
-              right = [
-                "hypridle"
-                "hyprsunset"
-                "custom/brightness"
-                "volume"
-                "network"
-                "bluetooth"
-                "systray"
-                "clock"
-                "notifications"
-              ];
-            };
-            "${rightMonitor}" = {
-              left = [ ];
-              middle = [ "workspaces" ];
-              right = [ ];
-            };
-          };
-        };
       };
+
+      cfg.programs.waybar.enable = true;
+      cfg.programs.waybar.settings = [
+        {
+          output = leftMonitor;
+          modules-center = [ "hyprland/workspaces" ];
+        }
+        {
+          output = centerMonitor;
+          modules-left = [ "hyprland/workspaces" "cpu" "memory" "disk" "custom/ioperc" "network" ];
+          modules-center = [ "mpris" ];
+          modules-right = [ "hyprland/language" "idle_inhibitor" "custom/brightness" "wireplumber" "bluetooth" "clock" "tray" ];
+        }
+        {
+          output = rightMonitor;
+          modules-center = [ "hyprland/workspaces" ];
+        }
+      ];
 
       programs.looking-glass-client.enable = true;
 

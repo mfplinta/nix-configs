@@ -9,6 +9,7 @@
       update-website-script = scripts.update-website-script;
       get-current-io-util = scripts.get-current-io-util;
       scrcpy = scripts.scrcpy;
+      rebuild = scripts.rebuild;
     };
   cups-brother-hll3290cdw = prev.callPackage ./cups-brother-hll3290cdw.nix { };
   flat-remix-kde = prev.callPackage ./flat-remix-kde.nix { };

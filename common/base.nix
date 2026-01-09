@@ -107,6 +107,7 @@
           lm_sensors
           net-tools
           nixfmt-rfc-style
+          myScripts.rebuild
         ];
       };
     };

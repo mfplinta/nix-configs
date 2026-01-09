@@ -45,8 +45,9 @@
         (hmImport ./programs/onlyoffice.nix)
         (hmImport ./programs/qbittorrent.nix)
         (hmImport ./programs/veracrypt.nix)
-        (hmImport ./programs/vscode.nix)
         (hmImport ./programs/vlc.nix)
+        (hmImport ./programs/vscode.nix)
+        (hmImport ./programs/waybar)
 
         (hmImport ./services/containerized/jdownloader2.nix)
 

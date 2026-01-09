@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import argparse
+import shlex
+import subprocess
+import sys
+import signal
+import os
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run nixos-rebuild on a remote host"
+    )
+
+    parser.add_argument(
+        "flake",
+        help="Path to flake location (e.g. ~/nix-configs/?submodules=1#)"
+    )
+    parser.add_argument(
+        "host",
+        nargs="?",
+        help="Target host (e.g. ssh.plinta.dev)"
+    )
+    parser.add_argument(
+        "-i", "--identity",
+        help="Path to SSH identity file (optional)"
+    )
+    parser.add_argument(
+        "-p", "--port",
+        type=int,
+        default=22,
+        help="SSH port (default: 22)"
+    )
+
+    args = parser.parse_args()
+
+    ssh_opts = []
+    if args.identity:
+        ssh_opts.append(f"-i {shlex.quote(args.identity)}")
+    if args.port:
+        ssh_opts.append(f"-p {args.port}")
+
+    nix_ssh_opts = (
+        f'NIX_SSHOPTS="{" ".join(ssh_opts)}"'
+        if ssh_opts else ""
+    )
+
+    command = " ".join(filter(None, [
+        f'HOST="{shlex.quote(args.host)}";' if args.host else '',
+        nix_ssh_opts,
+        "nixos-rebuild switch",
+        f"--flake {shlex.quote(args.flake)}",
+        "--show-trace",
+        "--sudo",
+        "--build-host root@$HOST" if args.host else '',
+        "--target-host root@$HOST" if args.host else '',
+    ]))
+
+    proc = subprocess.Popen(
+        ["bash", "-c", command],
+        preexec_fn=os.setsid if args.host else None
+    )
+
+    try:
+        returncode = proc.wait()
+    except KeyboardInterrupt:
+        os.killpg(proc.pid, signal.SIGINT)
+        returncode = proc.wait()
+
+    sys.exit(returncode)
+
+if __name__ == "__main__":
+    main()

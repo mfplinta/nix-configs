@@ -45,4 +45,14 @@ with pkgs;
       adb devices | awk 'NR>1 && $2=="device" {print $1}' | ${lib.getExe launcherPackage} --dmenu -p "Select device" | xargs -r -I{} scrcpy -s {} -SwK --render-driver=opengl
     '';
   };
+  rebuild = writeShellApplication {
+    name = "rebuild";
+    runtimeInputs = [
+      python3
+      bash
+    ];
+    text = ''
+      exec python3 ${./rebuild} "$@"
+    '';
+  };
 }

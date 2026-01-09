@@ -2,12 +2,15 @@
   inputs = {
     nixpkgs-old.url = "github:NixOS/nixpkgs/nixos-25.05";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    catppuccin.url = "github:catppuccin/nix/release-25.11";
+    home-manager.url = "github:nix-community/home-manager/release-25.11";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    nixvim.url = "github:nix-community/nixvim/nixos-25.11";
+    nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
-    home-manager.url = "github:nix-community/home-manager/release-25.11";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     hyprland.url = "github:hyprwm/Hyprland";
@@ -20,8 +23,6 @@
     nvibrant.url = "github:mfplinta/nix-nvibrant";
     nvibrant.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-crowdsec.url = "github:TornaxO7/nixpkgs/a4ff7e18d1440a41f4b5a75274cfac6c96df558a";
-    nixvim.url = "github:nix-community/nixvim/nixos-25.11";
-    nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nixneovimplugins.url = "github:NixNeovim/NixNeovimPlugins";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     systems.url = "github:nix-systems/default";
@@ -46,6 +47,7 @@
       nixneovimplugins,
       treefmt-nix,
       systems,
+      catppuccin,
       ...
     }:
     let
@@ -140,6 +142,7 @@
                   (hmImport ./modules)
                   quadlet-nix.homeManagerModules.quadlet
                   nix-index-database.homeModules.nix-index
+                  catppuccin.homeModules.catppuccin
                 ];
                 home-manager.extraSpecialArgs = {
                   inherit inputs hmImport wrapper-manager;

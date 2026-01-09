@@ -93,49 +93,25 @@ in
           workspace = map (i: "1,monitor:${screenName},persistent:true") (range 1 9);
           general = {
             gaps_in = 5;
-            gaps_out = 5;
+            gaps_out = 2;
             border_size = 2;
           };
           misc.vfr = true; # Power-saving
           misc.middle_click_paste = false;
         };
-
-        hyprpanel = {
-          "bar.launcher.icon" = "";
-          "bar.clock.format" = "%a %b %d  %I:%M %p";
-          "bar.layouts" = {
-            "0" = {
-              left = [
-                "battery"
-                "cpu"
-                "ram"
-                "storage"
-                "custom/ioperc"
-                "kbinput"
-                "media"
-              ];
-              middle = [
-                "workspaces"
-              ];
-              right = [
-                "hypridle"
-                "hyprsunset"
-                "volume"
-                "bluetooth"
-                "systray"
-                "clock"
-                "notifications"
-              ];
-            };
-          };
-          "theme.font.size" = "1rem";
-        };
       };
 
+      cfg.programs.waybar.enable = true;
+      cfg.programs.waybar.settings = [
+        {
+          modules-left = [ "battery" "cpu" "memory" "disk" "custom/ioperc" "mpris" "network" ];
+          modules-center = [ "hyprland/workspaces" ];
+          modules-right = [ "hyprland/language" "network" "idle_inhibitor" "custom/brightness" "wireplumber" "bluetooth" "clock" "tray" ];
+        }
+      ];
+
       dconf.settings = {
-        "org/gnome/desktop/interface" = {
-          "gtk-enable-primary-paste" = false;
-        };
+        "org/gnome/desktop/interface".gtk-enable-primary-paste = false;
       };
     };
 }
