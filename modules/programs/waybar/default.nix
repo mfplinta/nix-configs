@@ -7,14 +7,18 @@
       ...
     }:
     let
-      inherit (lib) mkIf mkEnableOption mkOption;
+      inherit (lib) mkIf mkEnableOption mkOption types;
       cfg = config.cfg.programs.waybar;
     in
     {
       options.cfg.programs.waybar = {
         enable = mkEnableOption "waybar";
+        fontSize = mkOption {
+          type = types.str;
+          default = "16px";
+        };
         settings = mkOption {
-          type = with lib.types; listOf anything;
+          type = types.listOf types.anything;
         };
       };
 
@@ -25,7 +29,11 @@
         programs.waybar = {
           enable = true;
           systemd.enable = true;
-          style = builtins.readFile ./style.css;
+          style = builtins.readFile ./style.css + ''
+            * {
+              font-size: ${cfg.fontSize};
+            }
+          '';
           settings = let
             common = {
               layer = "top";

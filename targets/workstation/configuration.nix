@@ -224,7 +224,8 @@ in
               moonlight = "match:initial_title ^(.*)(- Moonlight)";
             in
             [
-              "match:class (flameshot),monitor ${leftMonitor}" # Flameshot 0x0 on left monitor
+              "match:title (flameshot),monitor ${leftMonitor}" # Flameshot 0x0 on left monitor
+              "match:title (flameshot),size 6000 2160"
 
               "${moonlight},workspace name:win"
               "${moonlight},fullscreen 1"

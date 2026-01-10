@@ -43,7 +43,7 @@
               wofi-power-menu = getExe pkgs.wofi-power-menu;
               galaxy-buds-client = getExe pkgs.galaxy-buds-client;
               kwallet = "${pkgs.kdePackages.kwallet}/bin/kwalletd6";
-              flameshot = getExe (pkgs.flameshot.override { enableWlrSupport = true; });
+              flameshot = getExe (pkgs.unstable.flameshot.override { enableWlrSupport = true; });
               wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
               wl-paste = "${pkgs.wl-clipboard}/bin/wl-paste";
               wtype = getExe pkgs.wtype;
@@ -83,15 +83,10 @@
                     "${floatInCursorMatcher},opaque 1"
                     "${floatInCursorMatcher},border_size 0"
 
-                    "match:title (flameshot),move -1080 0"
-                    "match:title (flameshot),size 6000 2160"
                     "match:title (flameshot),pin 1"
-                    "match:title (flameshot),border_size 0"
                     "match:title (flameshot),float 1"
-                    "match:title (flameshot),opaque 1"
                     "match:title (flameshot),no_anim 1"
-                    #"match:title (flameshot),no_initial_focus 1"
-                    "match:title (flameshot),no_max_size 1"
+                    "match:title (flameshot),move 0 0"
 
                     "match:class (ONLYOFFICE),match:float 1,no_anim 1"
                     "match:class (ONLYOFFICE),match:float 1,border_size 0"
@@ -184,6 +179,7 @@
           fish.enable = true;
           waybar.enable = true;
           kitty.enable = true;
+          mako.enable = true;
         };
 
         xdg.configFile."hypr/xdph.conf".source = (
@@ -247,6 +243,17 @@
 
         services.hyprsunset.enable = true;
         services.hyprpolkitagent.enable = true;
+        services.mako.enable = true;
+        services.mako.settings.default-timeout = 5000;
+        services.flameshot.enable = true;
+        services.flameshot.settings.General = {
+          useGrimAdapter = true;
+          useJpgForClipboard = true;
+          disabledGrimWarning = true;
+          disabledTrayIcon = true;
+          showStartupLaunchMessage = false;
+          showAbortNotification = false;
+        };
 
         services.hyprpaper = {
           enable = true;

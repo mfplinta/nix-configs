@@ -101,14 +101,17 @@ in
         };
       };
 
-      cfg.programs.waybar.enable = true;
-      cfg.programs.waybar.settings = [
-        {
-          modules-left = [ "battery" "cpu" "memory" "disk" "custom/ioperc" "mpris" "network" ];
-          modules-center = [ "hyprland/workspaces" ];
-          modules-right = [ "hyprland/language" "idle_inhibitor" "custom/brightness" "wireplumber" "bluetooth" "clock" "tray" ];
-        }
-      ];
+      cfg.programs.waybar = {
+        enable = true;
+        fontSize = "14px";
+        settings = [
+          {
+            modules-left = [ "battery" "cpu" "memory" "disk" "custom/ioperc" "mpris" "network" ];
+            modules-center = [ "hyprland/workspaces" ];
+            modules-right = [ "hyprland/language" "idle_inhibitor" "custom/brightness" "wireplumber" "bluetooth" "clock" "tray" ];
+          }
+        ];
+      };
 
       dconf.settings = {
         "org/gnome/desktop/interface".gtk-enable-primary-paste = false;
