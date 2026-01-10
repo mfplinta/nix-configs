@@ -91,6 +91,10 @@ in
             "${screenName},1920x1080@60,0x0,1"
           ];
           workspace = map (i: "${toString i},monitor:${screenName},persistent:true") (range 1 9);
+          windowrule =
+            [
+              "match:title (flameshot),size 1920 1080"
+            ];
           general = {
             gaps_in = 5;
             gaps_out = 2;

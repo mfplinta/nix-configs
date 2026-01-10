@@ -36,7 +36,7 @@
           '';
           settings = let
             common = {
-              layer = "top";
+              layer = "bottom";
               "hyprland/workspaces".persistent-only = true;
               battery.interval = 3;
               battery.format = "{icon}󱐥 {capacity}%";
