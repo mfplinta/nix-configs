@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode=${1:-sink}
+
+case "$mode" in
+  sink|sinks|output)
+    subsection="Sinks"
+    exclude_regex='Easy Effects Sink'
+    ;;
+  source|sources|input)
+    subsection="Sources"
+    exclude_regex='Easy Effects Source'
+    ;;
+  *)
+    echo "Usage: $0 [sink|source]" >&2
+    exit 2
+    ;;
+esac
+
+status=$(wpctl status)
+
+audio_section=$(
+  printf '%s\n' "$status" |
+    sed -n '/^Audio$/,/^Video$/p'
+)
+
+mapfile -t ids < <(
+  printf '%s\n' "$audio_section" |
+    sed -n "/├─ $subsection:/,/^[[:space:]]*[├└]─ /p" |
+    grep -E '^[[:space:]│ ]*\*?[[:space:]]*[0-9]+\.' |
+    grep -vE "$exclude_regex" |
+    sed -E 's/[^0-9]*([0-9]+)\..*/\1/'
+)
+
+current=$(
+  printf '%s\n' "$audio_section" |
+    sed -n "/├─ $subsection:/,/^[[:space:]]*[├└]─ /p" |
+    grep '\*' |
+    sed -E 's/[^0-9]*([0-9]+)\..*/\1/'
+)
+
+(( ${#ids[@]} > 0 )) || exit 1
+
+found=false
+for i in "${!ids[@]}"; do
+  if [[ ${ids[i]} == "$current" ]]; then
+    next=$(( (i + 1) % ${#ids[@]} ))
+    wpctl set-default "${ids[next]}"
+    found=true
+    break
+  fi
+done
+
+if [[ $found == false ]]; then
+  wpctl set-default "${ids[0]}"
+fi

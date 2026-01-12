@@ -55,4 +55,11 @@ with pkgs;
       exec python3 ${./rebuild} "$@"
     '';
   };
+  wpctl-cycle = writeShellApplication {
+    name = "next-sink";
+    runtimeInputs = [
+      wireplumber
+    ];
+    text = builtins.readFile ./wpctl-cycle;
+  };
 }

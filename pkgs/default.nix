@@ -1,16 +1,5 @@
 (final: prev: {
-  myScripts =
-    let
-      scripts = (import ./scripts/default.nix { pkgs = prev; });
-    in
-    {
-      toggle-scale = scripts.toggle-scale;
-      get-current-brightness = scripts.get-current-brightness;
-      update-website-script = scripts.update-website-script;
-      get-current-io-util = scripts.get-current-io-util;
-      scrcpy = scripts.scrcpy;
-      rebuild = scripts.rebuild;
-    };
+  myScripts = (import ./scripts/default.nix { pkgs = prev; });
   cups-brother-hll3290cdw = prev.callPackage ./cups-brother-hll3290cdw.nix { };
   flat-remix-kde = prev.callPackage ./flat-remix-kde.nix { };
   django-imagekit = ps: ps.callPackage ./django-imagekit.nix { };

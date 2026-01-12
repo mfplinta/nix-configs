@@ -91,10 +91,9 @@ in
             "${screenName},1920x1080@60,0x0,1"
           ];
           workspace = map (i: "${toString i},monitor:${screenName},persistent:true") (range 1 9);
-          windowrule =
-            [
-              "match:title (flameshot),size 1920 1080"
-            ];
+          windowrule = [
+            "match:title (flameshot),size 1920 1080"
+          ];
           general = {
             gaps_in = 5;
             gaps_out = 2;
@@ -110,9 +109,26 @@ in
         fontSize = "14px";
         settings = [
           {
-            modules-left = [ "battery" "cpu" "memory" "disk" "custom/ioperc" "mpris" "network" ];
+            modules-left = [
+              "battery"
+              "cpu"
+              "memory"
+              "disk"
+              "custom/ioperc"
+              "mpris"
+              "network"
+            ];
             modules-center = [ "hyprland/workspaces" ];
-            modules-right = [ "hyprland/language" "idle_inhibitor" "custom/brightness" "wireplumber" "bluetooth" "clock" "tray" ];
+            modules-right = [
+              "hyprland/language"
+              "idle_inhibitor"
+              "custom/brightness"
+              "wireplumber#sink"
+              "wireplumber#source"
+              "bluetooth"
+              "clock"
+              "tray"
+            ];
           }
         ];
       };

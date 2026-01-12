@@ -249,9 +249,25 @@ in
         }
         {
           output = centerMonitor;
-          modules-left = [ "hyprland/workspaces" "cpu" "memory" "disk" "custom/ioperc" "network" ];
+          modules-left = [
+            "hyprland/workspaces"
+            "cpu"
+            "memory"
+            "disk"
+            "custom/ioperc"
+            "network"
+          ];
           modules-center = [ "mpris" ];
-          modules-right = [ "hyprland/language" "idle_inhibitor" "custom/brightness" "wireplumber" "bluetooth" "clock" "tray" ];
+          modules-right = [
+            "hyprland/language"
+            "idle_inhibitor"
+            "custom/brightness"
+            "wireplumber#sink"
+            "wireplumber#source"
+            "bluetooth"
+            "clock"
+            "tray"
+          ];
         }
         {
           output = rightMonitor;
