@@ -198,49 +198,45 @@ in
         (hmImport ./../../common/bundles/office.nix)
       ];
 
-      cfg.programs.dolphin.enable = true;
-
-      cfg = {
-        mainMonitor = centerMonitor;
-
-        hyprland = with pkgs.lib; {
-          monitor = [
-            "${centerMonitor},3840x2160@60,0x0,1"
-            "${leftMonitor},1920x1080@74.97,auto-left,1,transform,3"
-            "${rightMonitor},1920x1080@74.97,auto-right,1,transform,1"
+      cfg.hyprland = with pkgs.lib; {
+        monitor = [
+          "${centerMonitor},3840x2160@60,0x0,1"
+          "${leftMonitor},1920x1080@74.97,auto-left,1,transform,3"
+          "${rightMonitor},1920x1080@74.97,auto-right,1,transform,1"
+        ];
+        workspace =
+          map (
+            i:
+            "${toString i},monitor:${
+              elemAt [ "${centerMonitor}" "${leftMonitor}" "${rightMonitor}" ] ((i - 1) / 3)
+            },persistent:true${if i == 1 then ",default:true" else ""}"
+          ) (range 1 9)
+          ++ [
+            "name:win,monitor:${centerMonitor},persistent:false"
           ];
-          workspace =
-            map (
-              i:
-              "${toString i},monitor:${
-                elemAt [ "${centerMonitor}" "${leftMonitor}" "${rightMonitor}" ] ((i - 1) / 3)
-              },persistent:true${if i == 1 then ",default:true" else ""}"
-            ) (range 1 9)
-            ++ [
-              "name:win,monitor:${centerMonitor},persistent:false"
-            ];
-          windowrule =
-            let
-              moonlight = "match:initial_title ^(.*)(- Moonlight)";
-            in
-            [
-              "match:title (flameshot),monitor ${leftMonitor}" # Flameshot 0x0 on left monitor
-              "match:title (flameshot),size 6000 2160"
+        windowrule =
+          let
+            moonlight = "match:initial_title ^(.*)(- Moonlight)";
+          in
+          [
+            "match:title (flameshot),monitor ${leftMonitor}" # Flameshot 0x0 on left monitor
+            "match:title (flameshot),size 6000 2160"
 
-              "${moonlight},workspace name:win"
-              "${moonlight},fullscreen 1"
-              "${moonlight},idle_inhibit focus"
-            ];
-          bind = [
-            "SUPER, W, workspace, name:win"
-            ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
+            "${moonlight},workspace name:win"
+            "${moonlight},fullscreen 1"
+            "${moonlight},idle_inhibit focus"
           ];
-          cursor."no_hardware_cursors" = 1;
-          experimental."xx_color_management_v4" = true;
-          render."cm_fs_passthrough" = 2;
-        };
+        bind = [
+          "SUPER, W, workspace, name:win"
+          ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
+        ];
+        cursor."no_hardware_cursors" = 1;
+        experimental."xx_color_management_v4" = true;
+        render."cm_fs_passthrough" = 2;
       };
 
+      cfg.programs.dolphin.enable = true;
+      cfg.programs.hyprlock.monitor = centerMonitor;
       cfg.programs.waybar.enable = true;
       cfg.programs.waybar.settings = [
         {

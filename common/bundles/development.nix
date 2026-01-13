@@ -9,6 +9,8 @@
       cfg.programs.kate.enable = true;
       cfg.programs.vscode.enable = true;
 
+      programs.direnv.enable = true;
+
       home.packages = with pkgs; [
         jetbrains.pycharm-professional
         inkscape

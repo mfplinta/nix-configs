@@ -35,6 +35,7 @@
         (hmImport ./programs/evince.nix)
         (hmImport ./programs/fish.nix)
         (hmImport ./programs/gparted.nix)
+        (hmImport ./programs/hyprlock.nix)
         (hmImport ./programs/imhex.nix)
         (hmImport ./programs/kate.nix)
         (hmImport ./programs/kitty.nix)
@@ -50,6 +51,7 @@
         (hmImport ./programs/waybar)
 
         (hmImport ./services/containerized/jdownloader2.nix)
+        (hmImport ./services/hypridle.nix)
 
         (hmImport ./virtualisation/libvirt.nix)
       ];

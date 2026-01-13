@@ -16,10 +16,6 @@
           type = with lib.types; attrsOf anything;
           description = "Hyprland target-specific configuration";
         };
-        mainMonitor = lib.mkOption {
-          type = lib.types.str;
-          description = "Main monitor";
-        };
       };
 
       config = {
@@ -196,49 +192,7 @@
           ''
         );
 
-        programs.hyprlock = {
-          enable = true;
-          settings = {
-            "$font" = "Monospace";
-            general = {
-              hide_cursor = true;
-            };
-
-            background = [
-              {
-                monitor = "";
-                path = "screenshot";
-                blur_passes = 6;
-              }
-            ];
-
-            input-field = [
-              {
-                monitor = config.cfg.mainMonitor;
-                size = "20%, 5%";
-                outline_thickness = 3;
-
-                inner_color = "rgba(0, 0, 0, 0.0)";
-                outer_color = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-                check_color = "rgba(00ff99ee) rgba(ff6633ee) 120deg";
-                fail_color = "rgba(ff6633ee) rgba(ff0066ee) 40deg";
-                font_color = "rgb(143, 143, 143)";
-
-                fade_on_empty = false;
-                rounding = 15;
-                dots_spacing = "0.3";
-
-                font_family = "$font";
-                placeholder_text = "Input password...";
-                fail_text = "$PAMFAIL";
-
-                position = "0, -80";
-                halign = "center";
-                valign = "center";
-              }
-            ];
-          };
-        };
+        cfg.programs.hyprlock.enable = true;
 
         services.hyprsunset.enable = true;
         services.hyprpolkitagent.enable = true;
@@ -261,34 +215,7 @@
           };
         };
 
-        services.hypridle = {
-          enable = true;
-          settings = {
-            general = {
-              before_sleep_cmd = "loginctl lock-session";
-              after_sleep_cmd = "hyprctl dispatch dpms on";
-              ignore_dbus_inhibit = false;
-              lock_cmd = "pidof hyprlock || hyprlock";
-            };
-
-            listener = [
-              {
-                timeout = 30;
-                on-timeout = "pidof hyprlock && hyprctl dispatch dpms off";
-                on-resume = "hyprctl dispatch dpms on";
-              }
-              {
-                timeout = 300;
-                on-timeout = "loginctl lock-session";
-              }
-              {
-                timeout = 330;
-                on-timeout = "hyprctl dispatch dpms off";
-                on-resume = "hyprctl dispatch dpms on";
-              }
-            ];
-          };
-        };
+        cfg.services.hypridle.enable = true;
 
         services.network-manager-applet.enable = true;
         services.blueman-applet.enable = true;
@@ -367,7 +294,7 @@
 
         xdg.desktopEntries.scrcpy = {
           name = "Scrcpy";
-          exec = "${lib.getExe pkgs.myScripts.scrcpy}";
+          exec = lib.getExe pkgs.myScripts.scrcpy;
           terminal = false;
           type = "Application";
           categories = [ "Utility" ];

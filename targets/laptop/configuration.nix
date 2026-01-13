@@ -83,27 +83,24 @@ in
 
       cfg.programs.dolphin.enable = true;
 
-      cfg = {
-        mainMonitor = screenName;
-
-        hyprland = with pkgs.lib; {
-          monitor = [
-            "${screenName},1920x1080@60,0x0,1"
-          ];
-          workspace = map (i: "${toString i},monitor:${screenName},persistent:true") (range 1 9);
-          windowrule = [
-            "match:title (flameshot),size 1920 1080"
-          ];
-          general = {
-            gaps_in = 5;
-            gaps_out = 2;
-            border_size = 2;
-          };
-          misc.vfr = true; # Power-saving
-          misc.middle_click_paste = false;
+      cfg.hyprland = with pkgs.lib; {
+        monitor = [
+          "${screenName},1920x1080@60,0x0,1"
+        ];
+        workspace = map (i: "${toString i},monitor:${screenName},persistent:true") (range 1 9);
+        windowrule = [
+          "match:title (flameshot),size 1920 1080"
+        ];
+        general = {
+          gaps_in = 5;
+          gaps_out = 2;
+          border_size = 2;
         };
+        misc.vfr = true; # Power-saving
+        misc.middle_click_paste = false;
       };
 
+      cfg.programs.hyprlock.monitor = screenName;
       cfg.programs.waybar = {
         enable = true;
         fontSize = "14px";

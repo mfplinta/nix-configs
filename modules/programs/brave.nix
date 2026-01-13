@@ -39,6 +39,8 @@
             { id = "gebbhagfogifgggkldgodflihgfeippi"; } # Return YouTube Dislike
             { id = "ghbmnnjooekpmoecnnnilnnbdlolhkhi"; } # Google Docs Offline
             { id = "bcjindcccaagfpapjjmafapmmgkkhgoa"; } # JSON Formatter
+            { id = "fmkadmapgofadopljbjfkapdkoienihi"; } # React DevTools
+            { id = "cclelndahbckbenkjhflpdbgdldlbecc"; } # Get cookies.txt
           ];
           commandLineArgs = [
             "--disable-features=AutofillSavePaymentMethods"

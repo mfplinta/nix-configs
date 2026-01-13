@@ -97,6 +97,7 @@
                 davidanson.vscode-markdownlint
                 vscjava.vscode-gradle
                 hashicorp.terraform
+                mkhl.direnv
                 # Visual
                 catppuccin.catppuccin-vsc
                 pkief.material-icon-theme
@@ -116,6 +117,11 @@
                 christian-kohler.npm-intellisense
                 esbenp.prettier-vscode
                 orta.vscode-jest
+                dbaeumer.vscode-eslint
+                # Android
+                diemasmichiels.emulate
+                # Golang
+                golang.go
               ];
           };
         };
