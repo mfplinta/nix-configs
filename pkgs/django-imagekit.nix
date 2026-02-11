@@ -21,7 +21,7 @@ buildPythonPackage rec {
     owner = "matthewwithanm";
     repo = pname;
     rev = "master";
-    hash = "sha256-OESWH2Gw2HdubfxWocG1Os3grN4IdbbJKW1n6fl94Dc=";
+    hash = "sha256-WW74CjAooj0dB9bE6XSE0VwlvmUbEWW2PxPJLscssQI=";
   };
 
   nativeBuildInputs = [ setuptools ];

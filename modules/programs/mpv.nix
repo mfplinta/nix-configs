@@ -43,7 +43,7 @@
             gpu-context = "auto";
             gpu-api = "vulkan";
             force-window = "yes";
-            loop-file = "inf";
+            #loop-file = "inf";
             save-position-on-quit = "yes";
             keep-open = "yes";
 

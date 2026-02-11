@@ -11,6 +11,7 @@
         handbrake
         darktable
         kdePackages.kdenlive
+        audacity
       ];
     };
 }

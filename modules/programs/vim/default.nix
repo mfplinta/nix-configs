@@ -37,7 +37,7 @@
                 }
               ];
               extraPlugins = with pkgs.vimExtraPlugins; [
-                eagle-nvim
+                eagle-nvim-soulis-1256
               ];
               extraConfigLua = ''
                 	    vim.o.mousemoveevent = true

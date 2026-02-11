@@ -34,7 +34,7 @@
 
         programs.vscode = with pkgs; {
           enable = true;
-          package = vscode.override { commandLineArgs = "--password-store=kwallet6"; };
+          package = (unstable.vscode.override { commandLineArgs = "--password-store=kwallet6"; }).fhs;
           profiles.default = {
             userSettings = {
               # General
@@ -46,11 +46,12 @@
               "telemetry.telemetryLevel" = "off";
               "editor.selectionClipboard" = false;
               "editor.fontFamily" = "'DroidSansM Nerd Font', monospace";
+              "cSpell.diagnosticLevel" = "Hint";
               # Containers
-              "containers.containerClient" = "com.microsoft.visualstudio.containers.podman";
-              "dev.containers.dockerPath" = getExe podman;
-              "containers.containerCommand" = getExe podman;
-              "containers.composeCommand" = getExe podman-compose;
+              "containers.containerClient" = "com.microsoft.visualstudio.containers.docker";
+              "dev.containers.dockerPath" = getExe docker;
+              "containers.containerCommand" = getExe docker;
+              "containers.composeCommand" = getExe docker-compose;
               # Visual
               "workbench.colorTheme" = "Catppuccin Mocha";
               "workbench.iconTheme" = "material-icon-theme";
@@ -78,13 +79,17 @@
               "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
               # Python
               "python.analysis.typeCheckingMode" = "basic";
+              # Typescript
+              "[typescript][typescriptreact][json]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
+              # Embedded
+              "idf.hasWalkthroughBeenShown" = true;
             };
 
             extensions =
               let
-                ext = (forVSCodeVersion config.programs.vscode.package.version);
+                ext = (forVSCodeVersion config.programs.vscode.package.version).vscode-marketplace;
               in
-              with ext.vscode-marketplace;
+              with unstable.vscode-extensions;
               [
                 # General
                 github.copilot
@@ -98,6 +103,9 @@
                 vscjava.vscode-gradle
                 hashicorp.terraform
                 mkhl.direnv
+                ext.vstirbu.vscode-mermaid-preview
+                bierner.markdown-mermaid
+                streetsidesoftware.code-spell-checker
                 # Visual
                 catppuccin.catppuccin-vsc
                 pkief.material-icon-theme
@@ -106,7 +114,8 @@
                 # C/C++
                 ms-vscode.cpptools
                 ms-vscode.cmake-tools
-                ms-vscode.cpptools-themes
+                ms-vscode.makefile-tools
+                ext.ms-vscode.cpptools-themes
                 # Python
                 ms-python.python
                 ms-python.vscode-pylance
@@ -116,12 +125,15 @@
                 dbaeumer.vscode-eslint
                 christian-kohler.npm-intellisense
                 esbenp.prettier-vscode
-                orta.vscode-jest
+                ext.orta.vscode-jest
                 dbaeumer.vscode-eslint
                 # Android
-                diemasmichiels.emulate
+                ext.diemasmichiels.emulate
                 # Golang
                 golang.go
+                # Embedded
+                ext.espressif.esp-idf-extension
+                ext.paulober.pico-w-go
               ];
           };
         };

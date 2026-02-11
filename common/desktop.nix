@@ -348,7 +348,7 @@
     }:
     {
       config = {
-        boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;
+        boot.kernelPackages = pkgs.unstable.linuxPackages_xanmod_latest;
         boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
         boot.kernelParams = [
           "quiet"
@@ -375,7 +375,11 @@
           graphics.enable = true;
           bluetooth.enable = true;
           bluetooth.powerOnBoot = false;
-          bluetooth.settings.General.ControllerMode = "bredr";
+          bluetooth.settings.General = {
+            ControllerMode = "bredr";
+            Experimental = true;
+            FastConnectable = true;
+          };
           brillo.enable = true;
         };
 
@@ -384,8 +388,10 @@
           binfmt = true;
         };
 
-        # Reduce RAM cache for ejectable devices
+        # Android MTP/ADB
         services.udev.packages = [ pkgs.old.android-udev-rules ];
+        users.groups.adbusers = {};
+
         services.usbmuxd.enable = true;
         services.udev.extraRules = ''
           SUBSYSTEM=="block", ACTION=="add",\
@@ -394,12 +400,13 @@
             ENV{ID_USB_TYPE}=="disk",\
             ENV{SYSTEMD_WANTS}+="usb-dirty-pages-fix@$kernel.service"
         '';
+        # Reduce RAM cache for ejectable devices
         systemd.services."usb-dirty-pages-fix@" = {
           scriptArgs = "%i";
           script = ''
             if [ -z "$(df --output=source '/' | grep $1)" ]; then
                 echo 1 > /sys/block/$1/bdi/strict_limit
-                echo 16777216 > /sys/block/$1/bdi/max_bytes
+                echo 33554432 > /sys/block/$1/bdi/max_bytes
             fi
           '';
           serviceConfig.Type = "oneshot";

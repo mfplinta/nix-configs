@@ -1,10 +1,11 @@
 let
-  leftMonitor = "DP-3";
+  leftMonitor = "DP-1";
   centerMonitor = "DP-2";
-  rightMonitor = "DP-1";
+  rightMonitor = "DP-3";
 in
 {
   pkgs,
+  lib,
   sysImport,
   config,
   private,
@@ -47,7 +48,11 @@ in
   boot.initrd.kernelModules = [
     "e1000e"
   ];
-  boot.kernelModules = [
+  boot.kernelModules =  lib.mkBefore [
+    "vfio"
+    "vfio_iommu_type1"
+    "vfio_pci"
+    "vfio_virqfd"
     "ddcci-backlight"
     "kvmfr"
     "uinput"
@@ -136,6 +141,7 @@ in
       modesetting.enable = true;
       nvidiaSettings = true;
       open = true;
+      package = config.boot.kernelPackages.nvidiaPackages.latest;
     };
     i2c.enable = true;
     opentabletdriver.enable = true;
@@ -155,6 +161,37 @@ in
     WLR_NO_HARDWARE_CURSORS = "1";
   };
 
+  environment.etc."nvidia/nvidia-application-profiles-rc.d/50-limit-free-buffer-pool-in-wayland-compositors.json".text =
+    builtins.toJSON {
+      rules = [
+        {
+          pattern = {
+            feature = "procname";
+            matches = ".Hyprland-wrapped";
+          };
+          profile = "Limit Free Buffer Pool On Wayland Compositors";
+        }
+        {
+          pattern = {
+            feature = "procname";
+            matches = "Hyprland";
+          };
+          profile = "Limit Free Buffer Pool On Wayland Compositors";
+        }
+      ];
+      profiles = [
+        {
+          name = "Limit Free Buffer Pool On Wayland Compositors";
+          settings = [
+            {
+              key = "GLVidHeapReuseRatio";
+              value = 0;
+            }
+          ];
+        }
+      ];
+    };
+
   networking.firewall.allowedTCPPorts = [
     8000 # Dev
   ];
@@ -172,6 +209,9 @@ in
       "lp"
       "video"
       "libvirtd"
+      "dialout"
+      "kvm"
+      "adbusers"
     ];
   };
 
@@ -231,8 +271,6 @@ in
           ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
         ];
         cursor."no_hardware_cursors" = 1;
-        experimental."xx_color_management_v4" = true;
-        render."cm_fs_passthrough" = 2;
       };
 
       cfg.programs.dolphin.enable = true;
@@ -304,6 +342,7 @@ in
           moonlight-qt
           blender
           soundwireserver
+          unstable.android-studio-full
         ];
     };
 }

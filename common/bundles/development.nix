@@ -12,7 +12,7 @@
       programs.direnv.enable = true;
 
       home.packages = with pkgs; [
-        jetbrains.pycharm-professional
+        jetbrains.pycharm
         inkscape
         devenv
       ];

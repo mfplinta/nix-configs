@@ -60,6 +60,7 @@ in
       "scanner"
       "lp"
       "video"
+      "adbusers"
     ];
   };
 
