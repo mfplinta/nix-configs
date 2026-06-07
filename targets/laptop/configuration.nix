@@ -54,6 +54,8 @@ in
     HandlePowerKey = "suspend";
   };
 
+  users.extraGroups.vboxusers.members = [ "user-with-access-to-virtualbox" ];
+
   users.users.matheus = {
     isNormalUser = true;
     shell = pkgs.fish;
@@ -63,6 +65,8 @@ in
       "lp"
       "video"
       "adbusers"
+      "dialout"
+      "vboxusers"
     ];
   };
 
