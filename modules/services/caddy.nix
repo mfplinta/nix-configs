@@ -77,11 +77,11 @@
               "github.com/caddy-dns/cloudflare@v0.2.1"
               "github.com/caddyserver/replace-response@v0.0.0-20250618171559-80962887e4c6"
               "github.com/WeidiDeng/caddy-cloudflare-ip@v0.0.0-20231130002422-f53b62aa13cb"
-              "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.9.2"
-              "github.com/hslatman/caddy-crowdsec-bouncer/appsec@v0.9.2"
-              "github.com/hslatman/caddy-crowdsec-bouncer/layer4@v0.9.2"
+              "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.12.1"
+              "github.com/hslatman/caddy-crowdsec-bouncer/appsec@v0.12.1"
+              "github.com/hslatman/caddy-crowdsec-bouncer/layer4@v0.12.1"
             ];
-            hash = "sha256-hK2SaUmy1xRwyLt0lybpoJ8h6FV9xbXc7qS8Qug/PEg=";
+            hash = "sha256-fMDqzqWz6eo31sXkEI1dvFLivERPjrp6W7LOZSWnzB4=";
             doInstallCheck = false;
           };
           configFile =

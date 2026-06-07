@@ -9,5 +9,5 @@
       mv $out/share/psd/contrib/* $out/share/psd/browsers/
     '';
   });
-  slskd = prev.callPackage ./slskd/package.nix { };
+  docker = final.unstable.docker;
 })

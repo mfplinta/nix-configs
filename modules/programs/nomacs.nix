@@ -22,8 +22,10 @@
           "image/gif"
           "image/jpeg"
           "image/png"
+          "image/heif"
           "image/vnd.adobe.photoshop"
           "image/tiff"
+          "image/svg+xml"
           "image/webp"
         ];
 

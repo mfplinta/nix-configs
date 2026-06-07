@@ -24,17 +24,19 @@
             kio-admin
             ffmpegthumbs
             kdegraphics-thumbnailers
+            kdesdk-thumbnailers
             qtimageformats
             phonon-vlc
+            #libheif # Not working
           ];
           wrapperType = "shell";
           wrapFlags = [
             "--prefix"
             "XDG_CONFIG_DIRS"
             ":"
-            "${libsForQt5.kservice}/etc/xdg"
+            "${kdePackages.kservice}/etc/xdg"
             "--run"
-            "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${libsForQt5.kservice}/etc/xdg/menus/applications.menu"
+            "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${kdePackages.kservice}/etc/xdg/menus/applications.menu"
           ];
         };
     in
@@ -47,9 +49,6 @@
         cfg.kdeglobals = {
           PreviewSettings."EnableRemoteFolderThumbnail" = true;
           PreviewSettings."MaximumRemoteSize" = 52428800;
-          PreviewSettings."Plugins" =
-            "appimagethumbnail,audiothumbnail,comicbookthumbnail,cursorthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,directorythumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,opendocumentthumbnail,gsthumbnail,svgthumbnail,ffmpegthumbs";
-          VersionControl."enabledPlugins" = "Git";
         };
 
         xdg = {
@@ -67,6 +66,10 @@
               movetonewfolderitemaction = true;
               tagsfileitemaction = false;
             };
+          };
+          configFile."dolphinrc".source = (pkgs.formats.ini { }).generate "dolphinrc" {
+            PreviewSettings."Plugins" = "appimagethumbnail,audiothumbnail,blenderthumbnail,comicbookthumbnail,cursorthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,directorythumbnail,pothumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,mltpreview,mobithumbnail,opendocumentthumbnail,gsthumbnail,rawthumbnail,svgthumbnail,textthumbnail,ffmpegthumbs";
+            VersionControl."enabledPlugins" = "Git";
           };
         };
 

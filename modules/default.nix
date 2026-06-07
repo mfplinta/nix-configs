@@ -31,6 +31,7 @@
     {
       imports = [
         (hmImport ./programs/brave.nix)
+        (hmImport ./programs/calibre.nix)
         (hmImport ./programs/dolphin.nix)
         (hmImport ./programs/evince.nix)
         (hmImport ./programs/fish.nix)

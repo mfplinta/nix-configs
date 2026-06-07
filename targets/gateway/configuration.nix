@@ -115,6 +115,8 @@ in
         hide-identity = true;
         module-config = "iterator";
       };
+      
+      remote-control.control-enable = true;
 
       forward-zone = [
         {
@@ -127,9 +129,15 @@ in
           forward-tls-upstream = true;
           forward-addr = networkConfig.topology.forward-dnses;
         }
+        {
+          name = "trycloudflare.com.";
+          forward-tls-upstream = true;
+          forward-addr = "1.1.1.1@853#cloudflare-dns.com";
+        }
       ];
 
       view = (unboundViews { inherit networkConfig; });
     };
   };
+  cfg.programs.vim.useBasicVim = true;
 }

@@ -18,8 +18,9 @@
           configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.cfg.kdeglobals;
           userDirs.enable = true;
           userDirs.createDirectories = true;
+          userDirs.setSessionVariables = true;
           userDirs.extraConfig = {
-            XDG_PROJECTS_DIR = "Projects";
+            PROJECTS = "Projects";
           };
           mimeApps.enable = true;
         };
@@ -45,6 +46,18 @@
         boot.loader.efi.canTouchEfiVariables = true;
         boot.tmp.useTmpfs = true;
         boot.tmp.tmpfsSize = "125%";
+
+        # TODO: Temp dirty frag fix
+        boot.extraModprobeConfig = ''
+          install esp4 ${pkgs.coreutils}/bin/false
+          install esp6 ${pkgs.coreutils}/bin/false
+          install rxrpc ${pkgs.coreutils}/bin/false
+        '';
+        boot.blacklistedKernelModules = [
+          "esp4"
+          "esp6"
+          "rxrpc"
+        ];
 
         # Zram swap
         zramSwap.enable = true;
@@ -98,6 +111,7 @@
           p7zip
           unzip
           unrar
+          zip
           bind
           jq
           smartmontools
@@ -106,7 +120,11 @@
           killall
           lm_sensors
           net-tools
-          nixfmt-rfc-style
+          lsof
+          strace
+          tcpdump
+          screen
+          nixfmt
           myScripts.rebuild
         ];
       };

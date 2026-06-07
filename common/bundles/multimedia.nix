@@ -7,7 +7,7 @@
 
       home.packages = with pkgs; [
         # Media
-        old.stremio
+        stremio-linux-shell
         handbrake
         darktable
         kdePackages.kdenlive

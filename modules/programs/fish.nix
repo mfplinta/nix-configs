@@ -1,3 +1,16 @@
+let
+  common = pkgs: {
+    enable = true;
+    shellAliases = {
+      ls = "${pkgs.lsd}/bin/lsd";
+      tree = "${pkgs.lsd}/bin/lsd --tree";
+    };
+    interactiveShellInit = ''
+      set fish_greeting
+      set -q DIRENV_DIR; and direnv reload
+    '';
+  };
+in
 {
   hmModule =
     {
@@ -12,17 +25,9 @@
     in
     {
       config = mkIf cfg.enable {
-        home.shell.enableFishIntegration = true;
-        programs.fish = {
-          enable = true;
-          functions = {
-            fish_greeting.body = "";
-          };
-          shellAliases = {
-            ls = "${pkgs.lsd}/bin/lsd";
-            tree = "${pkgs.lsd}/bin/lsd --tree";
-          };
-        };
+        programs.fish = lib.mkMerge [
+          (common pkgs)
+        ];
       };
     };
 
@@ -43,21 +48,9 @@
       };
 
       config = mkIf cfg.enable {
-        programs.fish.enable = true;
-        programs.fish.shellAliases = {
-          ls = "${pkgs.lsd}/bin/lsd";
-          tree = "${pkgs.lsd}/bin/lsd --tree";
-        };
-        programs.fish.interactiveShellInit = ''
-          set fish_greeting
-        '';
-        programs.bash.interactiveShellInit = ''
-          if [[ $(${pkgs.procps}/bin/ps --no-header --pid=$PPID --format=comm) != "fish" && -z ''${BASH_EXECUTION_STRING} ]]
-          then
-          shopt -q login_shell && LOGIN_OPTION='--login' || LOGIN_OPTION=""
-          exec ${pkgs.fish}/bin/fish $LOGIN_OPTION
-          fi
-        '';
+        programs.fish = lib.mkMerge [
+          (common pkgs)
+        ];
       };
     };
 }

@@ -48,12 +48,12 @@ in
   boot.initrd.kernelModules = [
     "e1000e"
   ];
-  boot.kernelModules =  lib.mkBefore [
+  boot.kernelModules = lib.mkBefore [
     "vfio"
     "vfio_iommu_type1"
     "vfio_pci"
     "vfio_virqfd"
-    "ddcci-backlight"
+    "ddcci_backlight"
     "kvmfr"
     "uinput"
   ];
@@ -78,6 +78,7 @@ in
   boot.initrd.clevis.useTang = true;
   boot.initrd.clevis.devices."crypted".secretFile = "/root/tang.jwe";
 
+  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-x86_64-v3;
   services.scx.enable = true;
   services.scx.scheduler = "scx_bpfland";
 
@@ -90,7 +91,7 @@ in
       TAG+="ddcci",\
       TAG+="systemd",\
       ENV{SYSTEMD_WANTS}+="ddcci@$kernel.service"
-    SUBSYSTEM=="kvmfr", OWNER="matheus", GROUP="kvm", MODE="0660"
+    SUBSYSTEM=="kvmfr", GROUP="kvm", MODE="0660"
   '';
   systemd.services."ddcci@" = {
     scriptArgs = "%i";
@@ -148,6 +149,39 @@ in
     uinput.enable = true;
   };
 
+  # services.comfyui = 
+  # {
+  #   enable = true;
+  #   gpuSupport = "cuda";
+  #   cudaCapabilities = [ "7.5" ];
+  #   dataDir = "/home/matheus/comfyui-data";
+  #   user = "matheus";
+  #   group = "users";
+  #   createUser = false;
+  #   enableManager = true;
+  #   extraArgs = [ "--lowvram" ];
+  #   customNodes = {
+  #     ComfyUI-SeedVR2_VideoUpscaler = pkgs.fetchFromGitHub {
+  #       owner = "numz";
+  #       repo = "ComfyUI-SeedVR2_VideoUpscaler";
+  #       rev = "4490bd1";
+  #       hash = "sha256-6nsqFflLw9vYH/du35ET46fdAm1NMjjTe2bA8JmaBE4=";
+  #     };
+  #     comfyui-seedvr2-tilingupscaler = pkgs.fetchFromGitHub {
+  #       owner = "moonwhaler";
+  #       repo = "comfyui-seedvr2-tilingupscaler";
+  #       rev = "595df01";
+  #       hash = "sha256-bv6jpshAon77t/P3XlBslCqQcqSzXT9aqiu8zZP8sGY=";
+  #     };
+  #     comfyui-moonpack = pkgs.fetchFromGitHub {
+  #       owner = "moonwhaler";
+  #       repo = "comfyui-moonpack";
+  #       rev = "7c28182";
+  #       hash = "sha256-2YKqUIrPHk3S/8LEhuzZ2y/TELI+8xuniIwRB7IGTWw=";
+  #     };
+  #   };
+  # };
+
   cfg.services.nvidia_oc = {
     enable = true;
     powerLimit = 200;
@@ -158,7 +192,7 @@ in
     LIBVA_DRIVER_NAME = "nvidia";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     NVD_BACKEND = "direct";
-    WLR_NO_HARDWARE_CURSORS = "1";
+    #WLR_NO_HARDWARE_CURSORS = "1";
   };
 
   environment.etc."nvidia/nvidia-application-profiles-rc.d/50-limit-free-buffer-pool-in-wayland-compositors.json".text =
@@ -203,6 +237,7 @@ in
 
   users.users.matheus = {
     isNormalUser = true;
+    shell = pkgs.fish;
     extraGroups = [
       "wheel"
       "scanner"
@@ -220,6 +255,14 @@ in
   cfg.virtualisation.libvirt.enable = true;
   cfg.virtualisation.distrobox.enable = true;
 
+  services.mullvad-vpn.enable = true;
+  services.resolved.enable = false;
+  networking.networkmanager = {
+    enable = true;
+    dns = "default";
+    settings.main.rc-manager = "symlink";
+  };
+
   home-manager.users.matheus =
     {
       hmImport,
@@ -236,13 +279,15 @@ in
         (hmImport ./../../common/bundles/internet.nix)
         (hmImport ./../../common/bundles/utilities.nix)
         (hmImport ./../../common/bundles/office.nix)
+
+        (hmImport ./../../common/ai-agents.nix)
       ];
 
       cfg.hyprland = with pkgs.lib; {
         monitor = [
-          "${centerMonitor},3840x2160@60,0x0,1"
-          "${leftMonitor},1920x1080@74.97,auto-left,1,transform,3"
-          "${rightMonitor},1920x1080@74.97,auto-right,1,transform,1"
+          "${centerMonitor},3840x2160@60,1080x0,1"
+          "${leftMonitor},1920x1080@74.97,0x0,1,transform,3"
+          "${rightMonitor},1920x1080@74.97,4920x0,1,transform,1"
         ];
         workspace =
           map (
@@ -270,7 +315,7 @@ in
           "SUPER, W, workspace, name:win"
           ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
         ];
-        cursor."no_hardware_cursors" = 1;
+        #cursor."no_hardware_cursors" = 1;
       };
 
       cfg.programs.dolphin.enable = true;
@@ -342,7 +387,7 @@ in
           moonlight-qt
           blender
           soundwireserver
-          unstable.android-studio-full
+          unstable.android-studio
         ];
     };
 }

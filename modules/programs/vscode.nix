@@ -47,6 +47,20 @@
               "editor.selectionClipboard" = false;
               "editor.fontFamily" = "'DroidSansM Nerd Font', monospace";
               "cSpell.diagnosticLevel" = "Hint";
+              # Terminal
+              "terminal.integrated.defaultProfile.linux" = "fish";
+              "terminal.integrated.profiles.linux" = {
+                fish = {
+                  path = getExe fish;
+                  args = [ "--login" ];
+                };
+                bash = {
+                  path = getExe bashInteractive;
+                };
+              };
+              "terminal.integrated.env.linux" = {
+                fish_features = "no-query-term";
+              };
               # Containers
               "containers.containerClient" = "com.microsoft.visualstudio.containers.docker";
               "dev.containers.dockerPath" = getExe docker;
@@ -59,7 +73,7 @@
               "nix.enableLanguageServer" = true;
               "nix.serverPath" = getExe nixd;
               "nix.serverSettings"."nixd" = {
-                "formatting.command" = [ (getExe nixfmt-rfc-style) ];
+                "formatting.command" = [ (getExe nixfmt) ];
                 "options" = {
                   "nixos.expr" =
                     "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options";
@@ -92,8 +106,8 @@
               with unstable.vscode-extensions;
               [
                 # General
-                github.copilot
-                github.copilot-chat
+                # github.copilot
+                # github.copilot-chat
                 github.vscode-pull-request-github
                 ms-vscode.remote-explorer
                 ms-vscode-remote.remote-ssh
@@ -120,6 +134,7 @@
                 ms-python.python
                 ms-python.vscode-pylance
                 ms-python.debugpy
+                ms-python.black-formatter
                 # Web
                 ritwickdey.liveserver
                 dbaeumer.vscode-eslint
@@ -128,11 +143,11 @@
                 ext.orta.vscode-jest
                 dbaeumer.vscode-eslint
                 # Android
-                ext.diemasmichiels.emulate
+                # ext.diemasmichiels.emulate
                 # Golang
                 golang.go
                 # Embedded
-                ext.espressif.esp-idf-extension
+                # ext.espressif.esp-idf-extension
                 ext.paulober.pico-w-go
               ];
           };

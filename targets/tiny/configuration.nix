@@ -180,7 +180,7 @@ in
         # --- Home Assistant ---
         hass.containerConfig = {
           autoUpdate = "registry";
-          image = "ghcr.io/home-assistant/home-assistant:2025.12";
+          image = "ghcr.io/home-assistant/home-assistant:2026.4";
           addCapabilities = [
             "CAP_NET_RAW" # Needed for ping
           ];
@@ -200,7 +200,7 @@ in
         # --- Z-Wave JS UI ---
         zwavejs.containerConfig = {
           autoUpdate = "registry";
-          image = "docker.io/zwavejs/zwave-js-ui:11.8";
+          image = "docker.io/zwavejs/zwave-js-ui:11.16";
           userns = "auto";
           # exec = "/usr/bin/env node --prof server/bin/www";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
@@ -224,7 +224,7 @@ in
         # --- ring-mqtt ---
         ring-mqtt.containerConfig = {
           autoUpdate = "registry";
-          image = "docker.io/tsightler/ring-mqtt";
+          image = "docker.io/tsightler/ring-mqtt:5.9.3";
           userns = "auto";
           volumes = [ "${paths.source.ring-mqtt}:/data:U" ];
         };
@@ -244,7 +244,7 @@ in
 
         # --- Matterhub ---
         matterhub.containerConfig = {
-          image = "ghcr.io/t0bst4r/home-assistant-matter-hub:latest";
+          image = "ghcr.io/riddix/home-assistant-matter-hub:latest";
           userns = "auto";
           networks = [
             "podman"

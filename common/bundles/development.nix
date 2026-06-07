@@ -12,9 +12,11 @@
       programs.direnv.enable = true;
 
       home.packages = with pkgs; [
-        jetbrains.pycharm
+        unstable.jetbrains.pycharm
         inkscape
-        devenv
+        unstable.devenv
+        sqlitebrowser
+        postman
       ];
 
       home.activation.createCopilotSymlink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

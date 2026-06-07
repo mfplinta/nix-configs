@@ -78,12 +78,6 @@ in
   sops.secrets.cloudy-fanart_api = { };
   sops.secrets.cloudy-tmdb_mongodb_uri = { };
   sops.secrets.cloudy-coturn_pwd = { };
-  sops.secrets.cloudy-slskd_username = { };
-  sops.secrets.cloudy-slskd_pwd = { };
-  sops.secrets.cloudy-soulseek_username = { };
-  sops.secrets.cloudy-soulseek_pwd = { };
-  sops.secrets.cloudy-lidarr_api = { };
-  sops.secrets.cloudy-slskd_api = { };
   sops.templates.env_tmdb = {
     mode = "0444";
     content = ''
@@ -139,36 +133,6 @@ in
     mode = "0444";
     content = ''
       user=ha:${config.sops.placeholder.cloudy-coturn_pwd}
-    '';
-  };
-  sops.templates.env_slskd = {
-    mode = "0444";
-    content = ''
-      SLSKD_USERNAME=${config.sops.placeholder.cloudy-slskd_username}
-      SLSKD_PASSWORD=${config.sops.placeholder.cloudy-slskd_pwd}
-      SLSKD_SLSK_USERNAME=${config.sops.placeholder.cloudy-soulseek_username}
-      SLSKD_SLSK_PASSWORD=${config.sops.placeholder.cloudy-soulseek_pwd}
-      SLSKD_API_KEY="role=Administrator;cidr=0.0.0.0/0,::/0;${config.sops.placeholder.cloudy-slskd_api}"
-    '';
-  };
-  sops.templates.env_lidarr = {
-    mode = "0444";
-    content = ''
-      LIDARR__AUTH__APIKEY=${config.sops.placeholder.cloudy-lidarr_api}
-    '';
-  };
-  sops.templates.env_soularr = {
-    mode = "0444";
-    content = ''
-      [Lidarr]
-      api_key = ${config.sops.placeholder.cloudy-lidarr_api}
-      host_url = http://${addresses.lidarr.local}:8686
-      download_dir = /downloads
-      
-      [Slskd]
-      api_key = ${config.sops.placeholder.cloudy-slskd_api}
-      host_url = http://${addresses.slskd.local}:5030
-      download_dir = /downloads
     '';
   };
 
@@ -251,11 +215,12 @@ in
     "d /persist/containers/nextcloud/db 0600 root root -"
     "d /persist/containers/audiobookshelf/config 0600 root root -"
     "d /persist/containers/audiobookshelf/audiobooks 0600 root root -"
-    "d /persist/containers/lidarr 0600 root root -"
+    # "d /persist/containers/lidarr 0600 root root -"
     # Podman containers
     "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
     "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 root root -"
+    "d /persist/containers/contractual/app 0600 root root -"
     # Shared media dirs
     "d /persist/media/audiobooks"
     "d /persist/media/music"
@@ -499,18 +464,6 @@ in
                     import rp ${addresses.audiobookshelf.local}:8000
                   }
 
-                  @slskd host slskd.plinta.dev
-                  handle @slskd {
-                    import bot_block
-                    import rp ${addresses.slskd.local}:5030
-                  }
-
-                  @lidarr host lidarr.plinta.dev
-                  handle @lidarr {
-                    import bot_block
-                    import rp ${addresses.lidarr.local}:8686
-                  }
-
                   handle {
                     abort
                   }
@@ -546,19 +499,25 @@ in
                 *.mastermovement.us {
                   import cf
                   #crowdsec
-                #appsec
-                log
-                @www host www.mastermovement.us
-                handle @www {
-                  reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
-                    import tunneled
+                  #appsec
+                  log
+                  @www host www.mastermovement.us
+                  handle @www {
+                    reverse_proxy ${addresses.ws-mastermovement.local}:8000 {
+                      import tunneled
+                    }
+                  }
+
+                  @contractual host app.mastermovement.us
+                  handle @contractual {
+                    import bot_block
+                    import rp ${addresses.contractual-app.local}:80
+                  }
+
+                  handle {
+                    abort
                   }
                 }
-
-                handle {
-                  abort
-                }
-              }
               '';
             };
           }
@@ -819,64 +778,6 @@ in
           }
         );
       };
-
-      slskd = commonWith {
-        localAddress = addresses.slskd.localWithSubnet;
-
-        bindMounts."${config.sops.templates.env_slskd.path}".isReadOnly = true;
-        bindMounts."/downloads:idmap" = {
-          hostPath = "/persist/media/music";
-          isReadOnly = false;
-        };
-
-        config = commonConfigWith (
-          { ... }:
-          {
-            systemd.tmpfiles.rules = [
-              "d /downloads 0755 slskd slskd -"
-            ];
-            users.users.slskd.uid = 306;
-            services.slskd = {
-              enable = true;
-              domain = null;
-              environmentFile = hostConfig.sops.templates.env_slskd.path;
-              settings.directories.downloads = "/downloads";
-              settings.shares.directories = [];
-            };
-          }
-        );
-      };
-
-      lidarr = commonWith {
-        localAddress = addresses.lidarr.localWithSubnet;
-
-        bindMounts."${config.sops.templates.env_lidarr.path}".isReadOnly = true;
-        bindMounts."/downloads:idmap" = {
-          hostPath = "/persist/media/music";
-          isReadOnly = false;
-        };
-        bindMounts."/var/lib/lidarr/.config/Lidarr:idmap" = {
-          hostPath = "/persist/containers/lidarr";
-          isReadOnly = false;
-        };
-
-        config = commonConfigWith (
-          { ... }:
-          {
-            systemd.tmpfiles.rules = [
-              "d /var/lib/lidarr/.config/Lidarr 0755 lidarr lidarr -"
-            ];
-            users.users.lidarr.uid = 306;
-            services.lidarr = {
-              enable = true;
-              settings.server.port = 8686;
-              environmentFiles = [
-                hostConfig.sops.templates.env_lidarr.path
-              ];
-            };
-          }
-        );
-      };
     };
 
   virtualisation.quadlet =
@@ -965,16 +866,34 @@ in
         };
       
         # --- Soularr ---
-        soularr.containerConfig = {
+        # soularr.containerConfig = {
+        #   autoUpdate = "registry";
+        #   image = "docker.io/mrusse08/soularr:latest";
+        #   userns = "auto";
+        #   networks = [ "${networks.net_br0.ref}:ip=${addresses.soularr.local}" ];
+        #   volumes = [
+        #     "${config.sops.templates.env_soularr.path}:/data/config.ini:ro"
+        #     "/persist/media/music:/downloads:ro"
+        #   ];
+        #   environments.SCRIPT_INTERVAL = "300";
+        # };
+
+        # --- Contractual ---
+        contractual-app.containerConfig = {
           autoUpdate = "registry";
-          image = "docker.io/mrusse08/soularr:latest";
+          image = "ghcr.io/mfplinta/contractual:latest";
           userns = "auto";
-          networks = [ "${networks.net_br0.ref}:ip=${addresses.soularr.local}" ];
+          networks = [ "${networks.net_br0.ref}:ip=${addresses.contractual-app.local}" ];
           volumes = [
-            "${config.sops.templates.env_soularr.path}:/data/config.ini:ro"
-            "/persist/media/music:/downloads:ro"
+            "/persist/containers/contractual/app:/app/data:U"
           ];
-          environments.SCRIPT_INTERVAL = "300";
+          environments = {
+            DEBUG = "False";
+            DJANGO_SUPERUSER_USERNAME = "admin";
+            DJANGO_SUPERUSER_PASSWORD = "admin";
+            ALLOWED_HOSTS = "app.mastermovement.us";
+            CSRF_TRUSTED_ORIGINS = "https://app.mastermovement.us";
+          };
         };
       };
     };

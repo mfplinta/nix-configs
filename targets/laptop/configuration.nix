@@ -27,7 +27,8 @@ in
       mode = "1920x1080@60";
     };
   };
-
+  
+  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore-lto-x86_64-v3;
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
     "mem_sleep_default=deep"
@@ -55,6 +56,7 @@ in
 
   users.users.matheus = {
     isNormalUser = true;
+    shell = pkgs.fish;
     extraGroups = [
       "wheel"
       "scanner"

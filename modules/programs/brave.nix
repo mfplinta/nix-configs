@@ -41,6 +41,10 @@
             { id = "bcjindcccaagfpapjjmafapmmgkkhgoa"; } # JSON Formatter
             { id = "fmkadmapgofadopljbjfkapdkoienihi"; } # React DevTools
             { id = "cclelndahbckbenkjhflpdbgdldlbecc"; } # Get cookies.txt
+            { id = "fmkadmapgofadopljbjfkapdkoienihi"; } # React DevTools
+            { id = "lmhkpmbekcpmknklioeibfkpmmfibljd"; } # Redux DevTools
+            { id = "edlifbnjlicfpckhgjhflgkeeibhhcii"; } # Screenshot Tool
+            { id = "mnjggcdmjocbbbhaepdhchncahnbgone"; } # SponsorBlock
           ];
           commandLineArgs = [
             "--disable-features=AutofillSavePaymentMethods"
@@ -75,16 +79,30 @@
         environment.etc."/brave/policies/managed/GroupPolicy.json".source =
           (pkgs.formats.json { }).generate "brave-GroupPolicy"
             {
+              "AutofillAddressEnabled" = false;
+              "AutofillCreditCardEnabled" = false;
               "BraveRewardsDisabled" = true;
               "BraveWalletDisabled" = true;
               "BraveVPNDisabled" = true;
               "BraveAIChatEnabled" = false;
+              "BraveP3AEnabled" = false;
+              "BraveStatsPingEnabled" = false;
+              "BraveNewsDisabled" = true;
+              "BraveTalkDisabled" = true;
+              "BraveWebDiscoveryEnabled" = false;
               "DefaultSearchProviderEnabled" = true;
               "DefaultSearchProviderName" = "Google";
               "DefaultSearchProviderSearchURL" = "https://google.com/search?q={searchTerms}";
               "DefaultSearchProviderSuggestURL" =
                 "https://google.com/complete/search?client=chrome&q={searchTerms}";
               "PasswordManagerEnabled" = false;
+              "TorDisabled" = true;
+              "MetricsReportingEnabled" = false;
+              "FeedbackSurveysEnabled" = false;
+              "ShoppingListEnabled" = false;
+              "PromotionsEnabled" = false;
+              "MediaRecommendationsEnabled" = false;
+              "SyncDisabled" = true;
             };
       };
     };

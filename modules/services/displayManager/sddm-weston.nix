@@ -66,7 +66,7 @@
                   ${mkWestonConfig cfg.outputs}
                 '';
               in
-              "${lib.getExe pkgs.weston} --shell=kiosk -c ${westonIni}";
+              "${lib.getExe pkgs.unstable.weston} --shell=kiosk --renderer=pixman -c ${westonIni}";
           };
         };
       };

@@ -4,6 +4,7 @@
       config,
       pkgs,
       lib,
+      setMimeTypes,
       ...
     }:
     let
@@ -20,6 +21,18 @@
           onlyoffice-desktopeditors
           corefonts
           vista-fonts
+        ];
+
+        xdg.mimeApps.defaultApplications = setMimeTypes "onlyoffice-desktopeditors.desktop" [
+          "application/vnd.ms-excel"
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          "application/msword"
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          "application/vnd.ms-powerpoint"
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+          "application/vnd.oasis.opendocument.presentation"
+          "application/vnd.oasis.opendocument.spreadsheet"
+          "application/vnd.oasis.opendocument.text"
         ];
 
         home.activation.copyOfficeFonts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

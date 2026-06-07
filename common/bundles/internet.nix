@@ -5,7 +5,7 @@
       cfg.programs.qbittorrent.enable = true;
       home.packages = with pkgs; [
         # Internet
-        anydesk
+        unstable.anydesk
         filezilla
       ];
     };

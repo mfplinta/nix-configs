@@ -1,13 +1,13 @@
 {
   inputs = {
-    nixpkgs-old.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    catppuccin.url = "github:catppuccin/nix/release-25.11";
-    home-manager.url = "github:nix-community/home-manager/release-25.11";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    nixvim.url = "github:nix-community/nixvim/nixos-25.11";
-    nixvim.inputs.nixpkgs.follows = "nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
+    catppuccin.url = "github:catppuccin/nix/release-26.05";
+    home-manager.url = "github:nix-community/home-manager/release-26.05";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    nixvim.url = "github:nix-community/nixvim/nixos-26.05";
+    #nixvim.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
@@ -16,7 +16,8 @@
     hyprland.url = "github:hyprwm/Hyprland";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
-    nixd.url = "github:nix-community/nixd";
+    nixd.url = "github:nix-community/nixd/0e07c08c448a2995e7793d1098437b29bbe80b02"; # Linter for nix
+    nixd.inputs.nixpkgs.follows = "nixpkgs-unstable";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
@@ -26,13 +27,18 @@
     nixneovimplugins.url = "github:NixNeovim/NixNeovimPlugins";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     systems.url = "github:nix-systems/default";
+    comfyui-nix.url = "path:/home/matheus/Projects/comfyui-nix"; # AI
+    caveman = {
+      url = "github:JuliusBrussee/caveman";
+      flake = false;
+    };
   };
   outputs =
     inputs@{
       self,
       nixpkgs,
       nixpkgs-unstable,
-      nixpkgs-old,
+      nix-cachyos-kernel,
       disko,
       wrapper-manager,
       home-manager,
@@ -48,6 +54,7 @@
       treefmt-nix,
       systems,
       catppuccin,
+      comfyui-nix,
       ...
     }:
     let
@@ -60,7 +67,7 @@
         "mfp-nix-laptop" = {
           configModule = ./targets/laptop/configuration.nix;
         };
-        "tiny-nix" = {
+        "tiny" = {
           configModule = ./targets/tiny/configuration.nix;
         };
         "cloudy" = {
@@ -102,15 +109,18 @@
                 imports = [
                   "${nixpkgs-crowdsec}/nixos/modules/services/security/crowdsec.nix"
                   (sysImport ./modules)
+                  comfyui-nix.nixosModules.default
                 ];
                 nix.settings = {
                   substituters = [
                     "https://hyprland.cachix.org"
                     "https://devenv.cachix.org"
+                    "https://attic.xuyh0120.win/lantian"
                   ];
                   trusted-public-keys = [
                     "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
                     "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+                    "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
                   ];
                   experimental-features = [
                     "nix-command"
@@ -125,13 +135,14 @@
                 nixpkgs.overlays = [
                   (import ./pkgs)
                   (final: prev: {
-                    old = import nixpkgs-old { inherit (final) system config; };
                     unstable = import nixpkgs-unstable { inherit (final) system config; };
                   })
                   nix-vscode-extensions.overlays.default
                   nixneovimplugins.overlays.default
                   nvibrant.overlays.default
                   nixd.overlays.default
+                  comfyui-nix.overlays.default
+                  nix-cachyos-kernel.overlays.pinned
                 ];
                 networking.hostName = name;
                 system.stateVersion = "24.11";

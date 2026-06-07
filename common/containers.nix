@@ -9,6 +9,7 @@
         act
       ];
       virtualisation.docker.enable = true; # Needed for act
+      virtualisation.docker.package = pkgs.docker;
       virtualisation.docker.rootless = {
         enable = true;
         setSocketVariable = true;
