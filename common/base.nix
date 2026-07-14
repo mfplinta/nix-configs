@@ -47,18 +47,6 @@
         boot.tmp.useTmpfs = true;
         boot.tmp.tmpfsSize = "125%";
 
-        # TODO: Temp dirty frag fix
-        boot.extraModprobeConfig = ''
-          install esp4 ${pkgs.coreutils}/bin/false
-          install esp6 ${pkgs.coreutils}/bin/false
-          install rxrpc ${pkgs.coreutils}/bin/false
-        '';
-        boot.blacklistedKernelModules = [
-          "esp4"
-          "esp6"
-          "rxrpc"
-        ];
-
         # Zram swap
         zramSwap.enable = true;
         zramSwap.memoryPercent = 100;
@@ -104,6 +92,12 @@
         cfg.programs.vim.enable = true;
         cfg.programs.fish.enable = true;
 
+        programs.tmux = {
+          enable = true;
+          historyLimit = 100000;
+          extraConfig = "set -g mouse on";
+        };
+
         environment.systemPackages = with pkgs; [
           wget
           usbutils
@@ -126,6 +120,7 @@
           screen
           nixfmt
           myScripts.rebuild
+          git-filter-repo
         ];
       };
     };

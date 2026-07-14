@@ -27,7 +27,7 @@ in
       mode = "1920x1080@60";
     };
   };
-  
+
   boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore-lto-x86_64-v3;
   boot.kernelParams = [
     "video=${screenName}:1920x1080@60"
@@ -86,6 +86,7 @@ in
         (hmImport ./../../common/bundles/internet.nix)
         (hmImport ./../../common/bundles/utilities.nix)
         (hmImport ./../../common/bundles/office.nix)
+        (hmImport ./../../common/ai-agents.nix)
       ];
 
       cfg.programs.dolphin.enable = true;
@@ -125,7 +126,7 @@ in
             modules-center = [ "hyprland/workspaces" ];
             modules-right = [
               "hyprland/language"
-              "idle_inhibitor"
+              "inhibitor"
               "custom/brightness"
               "wireplumber#sink"
               "wireplumber#source"

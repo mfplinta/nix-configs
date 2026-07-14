@@ -11,32 +11,54 @@
       inherit (lib) mkIf mkEnableOption;
       cfg = config.cfg.programs.dolphin;
 
+      kdeRuntimePackages =
+        with pkgs;
+        with kdePackages;
+        [
+          dolphin-plugins
+          qtsvg
+          kio
+          kio-fuse
+          kio-extras
+          kio-admin
+          calligra
+          ffmpegthumbs
+          kdegraphics-thumbnailers
+          kdesdk-thumbnailers
+          kimageformats
+          qtimageformats
+          phonon-vlc
+          resvg
+        ];
+
       dolphin =
         with pkgs;
         with pkgs.kdePackages;
+        let
+          plasmaMenu = "${plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
+        in
         wrapper-manager.lib.wrapWith pkgs {
           basePackage = kdePackages.dolphin;
-          pathAdd = [
-            dolphin-plugins
-            qtsvg
-            kio-fuse
-            kio-extras
-            kio-admin
-            ffmpegthumbs
-            kdegraphics-thumbnailers
-            kdesdk-thumbnailers
-            qtimageformats
-            phonon-vlc
-            #libheif # Not working
-          ];
+          pathAdd = kdeRuntimePackages;
           wrapperType = "shell";
           wrapFlags = [
             "--prefix"
             "XDG_CONFIG_DIRS"
             ":"
-            "${kdePackages.kservice}/etc/xdg"
+            "${plasma-workspace}/etc/xdg"
+            "--prefix"
+            "XDG_DATA_DIRS"
+            ":"
+            (lib.makeSearchPath "share" ([ plasma-workspace ] ++ kdeRuntimePackages))
+            "--prefix"
+            "QT_PLUGIN_PATH"
+            ":"
+            (lib.makeSearchPath "lib/qt-6/plugins" kdeRuntimePackages)
+            "--set"
+            "XDG_MENU_PREFIX"
+            "plasma-"
             "--run"
-            "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${kdePackages.kservice}/etc/xdg/menus/applications.menu"
+            "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${plasmaMenu}"
           ];
         };
     in
@@ -68,7 +90,8 @@
             };
           };
           configFile."dolphinrc".source = (pkgs.formats.ini { }).generate "dolphinrc" {
-            PreviewSettings."Plugins" = "appimagethumbnail,audiothumbnail,blenderthumbnail,comicbookthumbnail,cursorthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,directorythumbnail,pothumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,mltpreview,mobithumbnail,opendocumentthumbnail,gsthumbnail,rawthumbnail,svgthumbnail,textthumbnail,ffmpegthumbs";
+            PreviewSettings."Plugins" =
+              "appimagethumbnail,audiothumbnail,blenderthumbnail,calligraimagethumbnail,calligrathumbnail,comicbookthumbnail,cursorthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,directorythumbnail,pothumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,mltpreview,mobithumbnail,gsthumbnail,rawthumbnail,svgthumbnail,textthumbnail,ffmpegthumbs";
             VersionControl."enabledPlugins" = "Git";
           };
         };
@@ -78,6 +101,7 @@
         home.packages = [
           dolphin
           pkgs.kdePackages.ark
+          pkgs.kdePackages.kio-extras
         ];
       };
     };

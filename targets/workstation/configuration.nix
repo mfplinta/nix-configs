@@ -92,6 +92,7 @@ in
       TAG+="systemd",\
       ENV{SYSTEMD_WANTS}+="ddcci@$kernel.service"
     SUBSYSTEM=="kvmfr", GROUP="kvm", MODE="0660"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="10d7", ATTRS{idProduct}=="b012", RUN+="/bin/sh -c 'echo -n $kernel > /sys/bus/usb/drivers/usb/unbind'"
   '';
   systemd.services."ddcci@" = {
     scriptArgs = "%i";
@@ -149,7 +150,7 @@ in
     uinput.enable = true;
   };
 
-  # services.comfyui = 
+  # services.comfyui =
   # {
   #   enable = true;
   #   gpuSupport = "cuda";
@@ -339,7 +340,7 @@ in
           modules-center = [ "mpris" ];
           modules-right = [
             "hyprland/language"
-            "idle_inhibitor"
+            "inhibitor"
             "custom/brightness"
             "wireplumber#sink"
             "wireplumber#source"
@@ -388,6 +389,9 @@ in
           blender
           soundwireserver
           unstable.android-studio
+
+          # Backup browsers
+          google-chrome
         ];
     };
 }

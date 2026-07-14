@@ -23,6 +23,7 @@
             font_size = 15;
             background_opacity = 0.8;
             confirm_os_window_close = -1;
+            allow_remote_control = "socket-only";
           };
         };
 

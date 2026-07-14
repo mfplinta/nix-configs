@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+
+KITTY_SOCKET = "unix:@shortcut-help-kitty"
+SHELL_NAMES = {
+    "bash",
+    "dash",
+    "fish",
+    "sh",
+    "zsh",
+}
+KITTY_HELPER_NAMES = {
+    "kitten",
+}
+UNICODE_ESCAPE = re.compile(r"\\U([0-9A-Fa-f]{4,8})|\\u([0-9A-Fa-f]{4})")
+
+
+def run_json(command):
+    try:
+        output = subprocess.check_output(
+            command,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=1,
+        )
+        return json.loads(output)
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        return None
+
+
+def normalize_name(name):
+    name = os.path.basename(name or "")
+    if name.startswith("."):
+        name = name[1:]
+    for suffix in ("-wrapped", ".wrapped"):
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+    return name
+
+
+def decode_unicode_escapes(text):
+    def replace(match):
+        value = match.group(1) or match.group(2)
+        return chr(int(value, 16))
+
+    return UNICODE_ESCAPE.sub(replace, text)
+
+
+def process_names(pid):
+    names = set()
+    try:
+        exe = os.readlink(f"/proc/{pid}/exe")
+        names.add(os.path.basename(exe))
+        names.add(normalize_name(exe))
+    except OSError:
+        pass
+
+    try:
+        comm = Path(f"/proc/{pid}/comm").read_text().strip()
+        names.add(comm)
+        names.add(normalize_name(comm))
+    except OSError:
+        pass
+
+    return {name for name in names if name}
+
+
+def process_table():
+    processes = {}
+    children = defaultdict(list)
+
+    proc_root = Path("/proc")
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+
+        pid = int(entry.name)
+        try:
+            stat = (entry / "stat").read_text()
+            rparen = stat.rfind(")")
+            fields = stat[rparen + 2 :].split()
+            ppid = int(fields[1])
+        except (OSError, IndexError, ValueError):
+            continue
+
+        names = process_names(pid)
+        processes[pid] = names
+        children[ppid].append(pid)
+
+    return processes, children
+
+
+def descendant_names(root_pid):
+    processes, children = process_table()
+    found = set()
+    stack = list(children.get(root_pid, []))
+
+    while stack:
+        pid = stack.pop()
+        names = processes.get(pid, set())
+        if not names.intersection(KITTY_HELPER_NAMES):
+            found.update(names)
+        stack.extend(children.get(pid, []))
+
+    return {name for name in found if name not in SHELL_NAMES}
+
+
+def active_window():
+    window = run_json(["hyprctl", "activewindow", "-j"])
+    if not isinstance(window, dict):
+        return {}
+    return window
+
+
+def active_kitty_process_names():
+    listing = run_json(["kitty", "@", "--to", KITTY_SOCKET, "ls"])
+    if not isinstance(listing, list):
+        return set()
+
+    names = set()
+    fallback_names = set()
+
+    for os_window in listing:
+        os_focused = bool(os_window.get("is_focused") or os_window.get("is_active"))
+        for tab in os_window.get("tabs", []):
+            active_history = tab.get("active_window_history") or []
+            active_window_id = active_history[0] if active_history else None
+            tab_focused = bool(tab.get("is_focused") or tab.get("is_active"))
+
+            for window in tab.get("windows", []):
+                window_focused = bool(
+                    os_focused
+                    or tab_focused
+                    or window.get("is_focused")
+                    or window.get("is_active")
+                    or (active_window_id is not None and window.get("id") == active_window_id)
+                )
+                target = names if window_focused else fallback_names
+                for process in window.get("foreground_processes", []):
+                    cmdline = process.get("cmdline") or []
+                    if cmdline:
+                        target.add(normalize_name(cmdline[0]))
+                    if "pid" in process:
+                        target.update(process_names(process["pid"]))
+
+    return names or fallback_names
+
+
+def match_any(values, detected):
+    return bool(set(values or []).intersection(detected))
+
+
+def format_section(rule_name, rule):
+    title = rule.get("title") or rule_name
+    shortcuts = [line for line in rule.get("shortcuts", []) if line]
+    if not shortcuts:
+        return ""
+    return "\n".join([f"{title} shortcuts", *shortcuts])
+
+
+def matching_sections(config, window):
+    pid = window.get("pid")
+    app_names = set()
+    if isinstance(pid, int):
+        app_names.update(process_names(pid))
+    app_names.update(
+        normalize_name(value)
+        for value in (
+            window.get("class"),
+            window.get("initialClass"),
+            window.get("xdgTag"),
+        )
+        if value
+    )
+    app_classes = {
+        value
+        for value in (
+            window.get("class"),
+            window.get("initialClass"),
+            window.get("xdgTag"),
+        )
+        if value
+    }
+    app_titles = {
+        value
+        for value in (
+            window.get("title"),
+            window.get("initialTitle"),
+            window.get("xdgDescription"),
+        )
+        if value
+    }
+
+    kitty_names = set()
+    is_kitty = "kitty" in app_names or "kitty" in app_classes
+    if is_kitty:
+        kitty_names = active_kitty_process_names()
+        if not kitty_names and isinstance(pid, int):
+            kitty_names = descendant_names(pid)
+
+    sections = []
+    for rule_name, rule in (config.get("rules") or {}).items():
+        match = rule.get("match") or {}
+        matched = False
+
+        matched = matched or match_any(match.get("executables"), app_names)
+        matched = matched or match_any(match.get("classes"), app_classes)
+        matched = matched or match_any(match.get("titles"), app_titles)
+        matched = matched or (
+            is_kitty
+            and match_any(match.get("terminalForegroundExecutables"), kitty_names)
+        )
+
+        if matched:
+            section = format_section(rule_name, rule)
+            if section:
+                sections.append(section)
+
+    return sections
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--global-help")
+    args = parser.parse_args()
+
+    try:
+        config = json.loads(Path(args.config).read_text())
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Unable to read shortcut help config: {error}", file=sys.stderr)
+        return 1
+
+    output = []
+    if args.global_help:
+        try:
+            global_help = decode_unicode_escapes(Path(args.global_help).read_text().strip())
+            if global_help:
+                output.append(global_help)
+        except OSError as error:
+            print(f"Unable to read global shortcut help: {error}", file=sys.stderr)
+            return 1
+
+    sections = matching_sections(config, active_window())
+    if sections:
+        if output:
+            output.append("----------------")
+        output.extend(sections)
+
+    print("\n\n".join(output))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

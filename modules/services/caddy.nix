@@ -81,7 +81,7 @@
               "github.com/hslatman/caddy-crowdsec-bouncer/appsec@v0.12.1"
               "github.com/hslatman/caddy-crowdsec-bouncer/layer4@v0.12.1"
             ];
-            hash = "sha256-fMDqzqWz6eo31sXkEI1dvFLivERPjrp6W7LOZSWnzB4=";
+            hash = "sha256-TH9kAk/hyg8Z+QQKgiTwgRcJPjYF+df9KhnEBysn6hA=";
             doInstallCheck = false;
           };
           configFile =

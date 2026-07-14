@@ -129,6 +129,8 @@
             name = "Flat-Remix-GTK-Red-Darkest";
           };
 
+          gtk4.theme = config.gtk.theme;
+
           cursorTheme = {
             package = pkgs.bibata-cursors;
             size = 32;
@@ -147,6 +149,7 @@
         };
 
         xdg.configFile."uwsm/env".text = ''
+          . /etc/set-environment
           . ${config.home.sessionVariablesPackage}
           export HYPRLAND_CONFIG="${config.xdg.configHome}/hypr/hyprland.lua"
         '';
@@ -195,6 +198,27 @@
           HYPRCURSOR_THEME = XCURSOR_THEME;
           HYPRCURSOR_SIZE = XCURSOR_SIZE;
           SDL_VIDEODRIVER = "wayland";
+        };
+
+        cfg.shortcutHelp.rules = {
+          tmux = {
+            title = "tmux";
+            match.terminalForegroundExecutables = [ "tmux" ];
+            shortcuts = [
+              ''\U2756 + B, C -- Create window''
+              ''\U2756 + B, N -- Move to next window''
+              ''\U2756 + B, P -- Move to previous window''
+              ''\U2756 + B, & -- Close current window''
+            ];
+          };
+          vim = {
+            title = "vim";
+            match.terminalForegroundExecutables = [ "vim" "nvim" ];
+            shortcuts = [
+              ''"+y -- Copy selected to clipboard''
+              '':%s/search/replace/gc -- Find/replace''
+            ];
+          };
         };
       };
     };
@@ -251,8 +275,7 @@
           bluetooth.enable = true;
           bluetooth.powerOnBoot = false;
           bluetooth.settings.General = {
-            ControllerMode = "bredr";
-            Experimental = true;
+            Experimental = "330859bc-7506-492d-9370-9a6f0614037f";
             FastConnectable = true;
           };
           brillo.enable = true;
@@ -264,7 +287,7 @@
         };
 
         # Android MTP/ADB
-        # services.udev.packages = [ pkgs.old.android-udev-rules ];
+        services.udev.packages = [ pkgs.libmtp.out ];
         users.groups.adbusers = { };
 
         services.usbmuxd.enable = true;

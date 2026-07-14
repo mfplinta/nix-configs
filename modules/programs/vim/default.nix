@@ -4,6 +4,7 @@
       pkgs,
       config,
       lib,
+      inputs,
       nixvim,
       ...
     }:
@@ -27,6 +28,7 @@
           (mkIf (!cfg.useBasicVim) (
             nixvim.legacyPackages."${pkgs.stdenv.hostPlatform.system}".makeNixvim {
               enableMan = false;
+              nixpkgs.source = inputs.nixpkgs;
               viAlias = true;
               vimAlias = true;
               keymaps = [

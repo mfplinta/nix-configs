@@ -1,62 +1,61 @@
 #!/usr/bin/env python3
 
+import json
+import math
+import subprocess
+
 scales = [1.0, 1.25, 1.5, 2.0]
 
-import subprocess
-import re
+monitors = json.loads(subprocess.check_output(["hyprctl", "-j", "monitors"]))
+if not monitors:
+    raise SystemExit("no active monitors")
 
-output = subprocess.check_output(["hyprctl", "monitors"]).decode()
-blocks = output.strip().split("\n\n")
-monitors = []
+current_scale = monitors[0]["scale"]
+try:
+    scale_idx = next(
+        index
+        for index, scale in enumerate(scales)
+        if math.isclose(scale, current_scale, abs_tol=0.001)
+    )
+    next_scale = scales[(scale_idx + 1) % len(scales)]
+except StopIteration:
+    next_scale = scales[0]
 
-scale_idx = None
+monitors.sort(
+    key=lambda monitor: monitor["x"],
+    reverse=next_scale < current_scale,
+)
 
-for block in blocks:
-    name = re.search(r"Monitor (\S+)", block).group(1)
-    res_line = re.search(r"\s+(\d+)x(\d+)@([\d.]+) at (-?\d+)x(-?\d+)", block)
-    scale = float(re.search(r"scale: ([\d.]+)", block).group(1))
-    transform = int(re.search(r"transform: (\d+)", block).group(1))
-    width = int(res_line.group(1))
-    height = int(res_line.group(2))
-    refresh = res_line.group(3)
-    pos_x = int(res_line.group(4))
-    pos_y = int(res_line.group(5))
+for monitor in monitors:
+    position = (
+        f'{round(monitor["x"] * current_scale / next_scale)}x'
+        f'{round(monitor["y"] * current_scale / next_scale)}'
+    )
+    mode = (
+        f'{monitor["width"]}x{monitor["height"]}'
+        f'@{monitor["refreshRate"]:.5f}'
+    )
+    spec = {
+        "output": monitor["name"],
+        "mode": mode,
+        "position": position,
+        "scale": next_scale,
+        "transform": monitor["transform"],
+    }
+    fields = []
+    for key, value in spec.items():
+        if isinstance(value, str):
+            value = json.dumps(value, ensure_ascii=False)
+        elif isinstance(value, float):
+            value = repr(value)
+        fields.append(f"{key} = {value}")
 
-    if scale_idx is None:
-        try:
-            scale_idx = scales.index(scale)
+    subprocess.run(
+        ["hyprctl", "eval", f'hl.monitor({{{", ".join(fields)}}})'],
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
 
-            if scale_idx + 1 >= len(scales):
-                scale_idx = 0
-            else:
-                scale_idx += 1
-        except ValueError:
-            scale_idx = 0
+subprocess.run(["pkill", "-USR2", "waybar"], check=False)
 
-    if pos_x < 0 and pos_y == 0:
-        new_pos = 'auto-left'
-    elif pos_x < 0 and pos_y < 0:
-        new_pos = 'auto-left,auto-up'
-    elif pos_x < 0 and pos_y > 0:
-        new_pos = 'auto-left,auto-down'
-    elif pos_x > 0 and pos_y == 0:
-        new_pos = 'auto-right'
-    elif pos_x > 0 and pos_y < 0:
-        new_pos = 'auto-right,auto-up'
-    elif pos_x > 0 and pos_y > 0:
-        new_pos = 'auto-right,auto-down'
-    elif pos_x == 0 and pos_y < 0:
-        new_pos = 'auto-up'
-    elif pos_x == 0 and pos_y > 0:
-        new_pos = 'auto-down'
-    else:
-        new_pos = '0x0'
-
-    cmd = [
-        "hyprctl", "keyword", "monitor",
-        f"{name},{width}x{height}@{refresh},{new_pos},{scales[scale_idx]},transform,{transform}"
-    ]
-
-    subprocess.run(cmd, capture_output=True)
-
-print(scales[scale_idx])
+print(next_scale)

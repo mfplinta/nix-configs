@@ -83,7 +83,7 @@
               "AutofillCreditCardEnabled" = false;
               "BraveRewardsDisabled" = true;
               "BraveWalletDisabled" = true;
-              "BraveVPNDisabled" = true;
+              "BraveVPNDisabled" = 1;
               "BraveAIChatEnabled" = false;
               "BraveP3AEnabled" = false;
               "BraveStatsPingEnabled" = false;
@@ -96,13 +96,27 @@
               "DefaultSearchProviderSuggestURL" =
                 "https://google.com/complete/search?client=chrome&q={searchTerms}";
               "PasswordManagerEnabled" = false;
+              "PasswordLeakDetectionEnabled" = false;
+              "PasswordSharingEnabled" = false;
               "TorDisabled" = true;
               "MetricsReportingEnabled" = false;
               "FeedbackSurveysEnabled" = false;
               "ShoppingListEnabled" = false;
               "PromotionsEnabled" = false;
+              "PromotionalTabsEnabled" = false;
               "MediaRecommendationsEnabled" = false;
               "SyncDisabled" = true;
+              "CloudProfileReportingEnabled" = false;
+              "CloudReportingEnabled" = false;
+              "SuppressUnsupportedOSWarning" = true;
+              "SafeBrowsingExtendedReportingEnabled" = false;
+              "ReportExtensionsAndPluginsData" = false;
+              "ReportMachineIDData" = false;
+              "ReportPolicyData" = false;
+              "ReportUserIDData" = false;
+              "ReportVersionData" = false;
+              "UserFeedbackAllowed" = false;
+              "UrlKeyedAnonymizedDataCollectionEnabled" = false;
             };
       };
     };

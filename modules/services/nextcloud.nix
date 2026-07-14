@@ -75,10 +75,10 @@
 
         services.nextcloud = {
           enable = true;
-          package = pkgs.nextcloud32;
+          package = pkgs.nextcloud33;
           extraAppsEnable = true;
           extraApps = {
-            inherit (pkgs.nextcloud32.packages.apps)
+            inherit (pkgs.nextcloud33.packages.apps)
               bookmarks
               end_to_end_encryption
               memories

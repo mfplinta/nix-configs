@@ -545,6 +545,7 @@ in
                 };
                 security = {
                   admin_password = "$__file{${config.sops.secrets.cloudy-grafana_pwd.path}}";
+                  secret_key = "SW2YcwTIb9zpOOhoPsMm";
                 };
                 users.allow_sign_up = false;
                 users.home_page = "/d/${(builtins.fromJSON (builtins.readFile ./my_devices.json)).uid}";
@@ -864,7 +865,7 @@ in
             "--listening-port=3478"
           ];
         };
-      
+
         # --- Soularr ---
         # soularr.containerConfig = {
         #   autoUpdate = "registry";

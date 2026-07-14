@@ -39,7 +39,7 @@
 #custom-ioperc,
 #language,
 #mpd,
-#idle_inhibitor,
+#inhibitor,
 #custom-brightness,
 #wireplumber,
 #network,
@@ -89,7 +89,7 @@
     color: @crust;
 }
 
-#idle_inhibitor {
+#inhibitor {
     color: @lavender;
 }
 

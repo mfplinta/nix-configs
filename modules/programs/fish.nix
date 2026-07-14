@@ -8,6 +8,7 @@ let
     interactiveShellInit = ''
       set fish_greeting
       set -q DIRENV_DIR; and direnv reload
+      fish_add_path ~/.local/bin
     '';
   };
 in

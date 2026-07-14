@@ -1,6 +1,11 @@
 {
   hmModule =
-    { pkgs, inputs, lib, ... }:
+    {
+      pkgs,
+      inputs,
+      lib,
+      ...
+    }:
     {
       home.packages = with pkgs; [
         nodejs_latest # For ACP in Jetbrains
@@ -29,10 +34,12 @@
         enable = true;
         package = pkgs.unstable.codex;
 
-        context = ''
-          - Available in path:rg|rga(ripgrep|ripgrep-all),ast-grep
-          - At first check devenv.nix to see if devenv used, if not proceed normally
-        '';
+        # context = ''
+        #   - Available in path:rg|rga(ripgrep|ripgrep-all),ast-grep
+        #   - At first check devenv.nix to see if devenv used, if not proceed normally
+        #   - Use caveman lite unless told otherwise, allow it to be dropped
+        #   - If dealing with system nix builds, check if there are no submodules that may make the build fail without ?submodules=1
+        # '';
 
         # settings = {
         #   check_for_update_on_startup = false;

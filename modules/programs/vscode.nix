@@ -23,7 +23,7 @@
         ];
 
         xdg.mimeApps.defaultApplications = setMimeTypes "code.desktop" [
-          "text/plain"
+          #"text/plain"
           "text/x-c++src"
           "text/x-c++hdr"
           "text/x-chdr"
@@ -97,6 +97,14 @@
               "[typescript][typescriptreact][json]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
               # Embedded
               "idf.hasWalkthroughBeenShown" = true;
+              # Golang
+              "go.goroot" = go;
+              "go.alternateTools" = {
+                "gopls" = getExe gopls;
+              };
+              "go.toolsEnvVars" = {
+                "GOPROXY" = "https://golang.org,direct";
+              };
             };
 
             extensions =

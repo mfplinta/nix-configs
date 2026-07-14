@@ -8,7 +8,12 @@
     }:
     let
       inherit (builtins) isAttrs isList;
-      inherit (lib) getExe range;
+      inherit (lib)
+        getExe
+        mkOption
+        range
+        types
+        ;
 
       mod = "SUPER";
       playerctl = getExe pkgs.playerctl;
@@ -23,6 +28,7 @@
       wtype = getExe pkgs.wtype;
       cliphist = getExe pkgs.cliphist;
       toggle-scale = getExe pkgs.myScripts.toggle-scale;
+      shortcut-help = "${getExe pkgs.myScripts.shortcut-help} --config ${shortcutHelpConfig} --global-help ${shortcutHelpGlobal}";
       wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
       cmdHelp = ''
         \U2756 + E -- Show emoji picker
@@ -33,6 +39,12 @@
         \U2756 + S -- Toggle scale
         \U2756 + L -- Lock session
       '';
+      shortcutHelpGlobal = pkgs.writeText "hyprland-global-shortcuts" cmdHelp;
+      shortcutHelpConfig = pkgs.writeText "shortcut-help-config.json" (
+        builtins.toJSON {
+          rules = if config.cfg.shortcutHelp.enable then config.cfg.shortcutHelp.rules else { };
+        }
+      );
 
       mergeHyprland =
         left: right:
@@ -95,7 +107,7 @@
           "${mod}, M, exec, uwsm stop"
           "${mod}, E, exec, uwsm app -- ${wofi-emoji}"
           "${mod}, X, exec, uwsm app -- ${wofi-power-menu}"
-          "${mod}, Return, exec, uwsm app -- kitty"
+          "${mod}, Return, exec, uwsm app -- kitty --single-instance --listen-on ${pkgs.lib.escapeShellArg "unix:@shortcut-help-kitty"}"
           "${mod}, F1, exec, ${wofi-drun}"
           "${mod}, XF86AudioMute, exec, ${wofi-drun}"
           "${mod}, XF86Back, exec, ${wofi-drun}"
@@ -103,9 +115,7 @@
           "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
           "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
           "${mod}_SHIFT, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
-          "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(echo -e \"${
-            builtins.replaceStrings [ "\n" ] [ "\\n" ] cmdHelp
-          }\")\""
+          "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(${shortcut-help})\""
           "${mod}, mouse_down, workspace, e+1"
           "${mod}, mouse_up, workspace, e-1"
         ]
@@ -168,6 +178,87 @@
         type = with lib.types; attrsOf anything;
         default = { };
         description = "Hyprland target-specific configuration merged into Lua-generated config.";
+      };
+
+      options.cfg.shortcutHelp = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Whether Super+Grave includes focused-application shortcut help.";
+        };
+
+        rules = mkOption {
+          type = types.attrsOf (
+            types.submodule (
+              { name, ... }:
+              {
+                options = {
+                  title = mkOption {
+                    type = types.str;
+                    default = name;
+                    description = "Section title shown for this shortcut group.";
+                  };
+
+                  match = {
+                    executables = mkOption {
+                      type = types.listOf types.str;
+                      default = [ ];
+                      description = "Focused application executable basenames that should match this rule.";
+                    };
+
+                    classes = mkOption {
+                      type = types.listOf types.str;
+                      default = [ ];
+                      description = "Focused Hyprland window classes that should match this rule.";
+                    };
+
+                    titles = mkOption {
+                      type = types.listOf types.str;
+                      default = [ ];
+                      description = "Focused Hyprland window titles that should match this rule exactly.";
+                    };
+
+                    terminalForegroundExecutables = mkOption {
+                      type = types.listOf types.str;
+                      default = [ ];
+                      description = "Foreground executable basenames in the active terminal window that should match this rule.";
+                    };
+                  };
+
+                  shortcuts = mkOption {
+                    type = types.listOf types.str;
+                    default = [ ];
+                    example = [
+                      "Ctrl+W -- Close tab"
+                      "Ctrl+P -- Print"
+                    ];
+                    description = "Shortcut lines shown when the rule matches.";
+                  };
+                };
+              }
+            )
+          );
+          default = { };
+          example = {
+            brave = {
+              title = "Brave";
+              match.executables = [ "brave" ];
+              shortcuts = [
+                "Ctrl+W -- Close tab"
+                "Ctrl+P -- Print"
+              ];
+            };
+            tmux = {
+              title = "tmux";
+              match.terminalForegroundExecutables = [ "tmux" ];
+              shortcuts = [
+                "Ctrl+B, C -- Create window"
+                "Ctrl+B, N -- Move to next window"
+              ];
+            };
+          };
+          description = "Manually authored shortcut help rules for the focused application.";
+        };
       };
 
       config = {

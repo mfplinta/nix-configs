@@ -37,6 +37,7 @@
           [
             "${h}/.cache/thumbnails"
             "${h}/.cache/kdenlive"
+            "${h}/.cache/kioexec/krun"
             "${h}/.config/session"
             "${h}/.local/share/kdenlive"
             "${h}/.local/share/stalefiles"
@@ -47,11 +48,21 @@
             options = [
               "rw"
               "user"
-              "mode=1777"
+              "mode=0700"
             ];
           });
 
       systemd.tmpfiles.rules = [
+        "d /home/matheus/.cache 0700 matheus users -"
+        "d /home/matheus/.cache/kioexec 0700 matheus users -"
+        "d /home/matheus/.cache/kioexec/krun 0700 matheus users -"
+        "d /home/matheus/.cache/kdenlive 0700 matheus users -"
+        "d /home/matheus/.cache/thumbnails 0700 matheus users -"
+        "d /home/matheus/.config 0700 matheus users -"
+        "d /home/matheus/.config/session 0700 matheus users -"
+        "d /home/matheus/.local/share 0700 matheus users -"
+        "d /home/matheus/.local/share/kdenlive 0700 matheus users -"
+        "d /home/matheus/.local/share/stalefiles 0700 matheus users -"
         "d /home/matheus/Shared 0755 matheus users -"
       ];
 

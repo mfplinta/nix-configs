@@ -1,6 +1,13 @@
 (final: prev: {
   myScripts = (import ./scripts/default.nix { pkgs = prev; });
   cups-brother-hll3290cdw = prev.callPackage ./cups-brother-hll3290cdw.nix { };
+  sane-backends-runtime-path = prev.sane-backends.overrideAttrs (old: {
+    doInstallCheck = false;
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace backend/Makefile.am \
+        --replace-fail '-DLIBDIR="\"$(libdir)/sane\""' '-DLIBDIR="\"/etc/sane-libs\""'
+    '';
+  });
   flat-remix-kde = prev.callPackage ./flat-remix-kde.nix { };
   django-imagekit = ps: ps.callPackage ./django-imagekit.nix { };
   django-turnstile = ps: ps.callPackage ./django-turnstile.nix { };

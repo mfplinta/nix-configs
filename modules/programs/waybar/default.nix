@@ -73,10 +73,13 @@
                 "hyprland/language".format = "󰌌 {}";
                 "hyprland/language".format-en = "US";
                 "hyprland/language".format-en-intl = "US (Intl)";
-                idle_inhibitor.format = "{icon}";
-                idle_inhibitor.format-icons = {
-                  activated = "󰒳";
-                  deactivated = "󰒲";
+                inhibitor = {
+                  what = "idle";
+                  format = "{icon}";
+                  format-icons = {
+                    activated = "󰒳";
+                    deactivated = "󰒲";
+                  };
                 };
                 network.interval = 2;
                 network.format-ethernet = "󰈀 ( {bandwidthUpBytes}) ( {bandwidthDownBytes})";

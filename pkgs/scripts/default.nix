@@ -8,10 +8,22 @@ with pkgs;
     name = "toggle-scale";
     runtimeInputs = [
       hyprland
+      procps
       python3
     ];
     text = ''
       exec python3 ${./toggle-scale} "$@"
+    '';
+  };
+  shortcut-help = writeShellApplication {
+    name = "shortcut-help";
+    runtimeInputs = [
+      hyprland
+      kitty
+      python3
+    ];
+    text = ''
+      exec python3 ${./shortcut-help} "$@"
     '';
   };
   get-current-brightness = writeShellApplication {
