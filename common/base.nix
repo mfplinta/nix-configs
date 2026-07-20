@@ -14,6 +14,37 @@
       };
 
       config = {
+        _module.args.mkMutableGeneratedFile =
+          {
+            source,
+            target,
+            backupExtension ? "old-hm",
+            mode ? "0600",
+          }:
+          let
+            sourcePath = toString source;
+            targetPath = "${config.home.homeDirectory}/${target}";
+            backupPath = "${targetPath}.${backupExtension}";
+          in
+          lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+            generated=${lib.escapeShellArg sourcePath}
+            target=${lib.escapeShellArg targetPath}
+            backup=${lib.escapeShellArg backupPath}
+
+            if [[ ( -e "$target" || -L "$target" ) ]] && ${lib.getExe' pkgs.diffutils "cmp"} --silent -- "$generated" "$target"; then
+              verboseEcho "Skipping '$target' because its content is unchanged"
+            else
+              if [[ -e "$target" || -L "$target" ]]; then
+                if [[ -e "$backup" || -L "$backup" ]]; then
+                  run ${lib.getExe' pkgs.coreutils "rm"} -f "$backup"
+                fi
+                run ${lib.getExe' pkgs.coreutils "mv"} "$target" "$backup"
+              fi
+
+              run ${lib.getExe' pkgs.coreutils "install"} -Dm${lib.escapeShellArg mode} -- "$generated" "$target"
+            fi
+          '';
+
         xdg = {
           configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.cfg.kdeglobals;
           userDirs.enable = true;
