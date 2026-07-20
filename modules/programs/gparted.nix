@@ -8,36 +8,26 @@
       ...
     }:
     let
-      inherit (lib) mkIf mkEnableOption;
+      inherit (lib) mkEnableOption mkIf;
       cfg = config.cfg.programs.gparted;
     in
     {
-      options.cfg.programs.gparted = {
-        enable = mkEnableOption "gparted";
-      };
+      options.cfg.programs.gparted.enable = mkEnableOption "gparted";
 
       config = mkIf cfg.enable {
-        home.packages = with pkgs; [
+        home.packages = [
           (wrapper-manager.lib.wrapWith pkgs {
-            basePackage = gparted;
-            pathAdd = [
-              e2fsprogs
-              exfatprogs
-              ntfs3g
-              btrfs-progs
-              xfsprogs
-            ];
+            basePackage = pkgs.gparted-full;
             wrapperType = "shell";
             wrapFlags = [
               "--run"
               ''
                 pkexec env \
-                PATH=\"\$PATH\" \
-                WAYLAND_DISPLAY=\"\$WAYLAND_DISPLAY\" \
-                XDG_RUNTIME_DIR=\"\$XDG_RUNTIME_DIR\" \
-                XDG_DATA_DIRS=\"\$XDG_DATA_DIRS\" \
-                XDG_CONFIG_HOME=\"\$XDG_CONFIG_HOME\" \
-                ${gparted}/libexec/gpartedbin
+                  WAYLAND_DISPLAY=\"\$WAYLAND_DISPLAY\" \
+                  XDG_RUNTIME_DIR=\"\$XDG_RUNTIME_DIR\" \
+                  XDG_DATA_DIRS=\"\$XDG_DATA_DIRS\" \
+                  XDG_CONFIG_HOME=\"\$XDG_CONFIG_HOME\" \
+                  ${pkgs.gparted-full}/libexec/gpartedbin
               ''
               "--run"
               "exit 0"

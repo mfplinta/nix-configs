@@ -91,21 +91,35 @@ in
 
       cfg.programs.dolphin.enable = true;
 
-      cfg.hyprland = with pkgs.lib; {
+      wayland.windowManager.hyprland.settings = with pkgs.lib; {
         monitor = [
-          "${screenName},1920x1080@60,0x0,1"
+          {
+            output = screenName;
+            mode = "1920x1080@60";
+            position = "0x0";
+            scale = 1;
+          }
         ];
-        workspace = map (i: "${toString i},monitor:${screenName},persistent:true") (range 1 9);
-        windowrule = [
-          "match:title (flameshot),size 1920 1080"
+        workspace_rule = map (i: {
+          workspace = toString i;
+          monitor = screenName;
+          persistent = true;
+        }) (range 1 9);
+        window_rule = [
+          {
+            name = "laptop-flameshot-size";
+            match.title = "(flameshot)";
+            size = "1920 1080";
+          }
         ];
-        general = {
-          gaps_in = 5;
-          gaps_out = 2;
-          border_size = 2;
+        config = {
+          general = {
+            gaps_in = 5;
+            gaps_out = 2;
+            border_size = 2;
+          };
+          misc.middle_click_paste = false;
         };
-        misc.vfr = true; # Power-saving
-        misc.middle_click_paste = false;
       };
 
       cfg.programs.hyprlock.monitor = screenName;

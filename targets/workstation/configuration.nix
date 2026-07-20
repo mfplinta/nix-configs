@@ -150,39 +150,6 @@ in
     uinput.enable = true;
   };
 
-  # services.comfyui =
-  # {
-  #   enable = true;
-  #   gpuSupport = "cuda";
-  #   cudaCapabilities = [ "7.5" ];
-  #   dataDir = "/home/matheus/comfyui-data";
-  #   user = "matheus";
-  #   group = "users";
-  #   createUser = false;
-  #   enableManager = true;
-  #   extraArgs = [ "--lowvram" ];
-  #   customNodes = {
-  #     ComfyUI-SeedVR2_VideoUpscaler = pkgs.fetchFromGitHub {
-  #       owner = "numz";
-  #       repo = "ComfyUI-SeedVR2_VideoUpscaler";
-  #       rev = "4490bd1";
-  #       hash = "sha256-6nsqFflLw9vYH/du35ET46fdAm1NMjjTe2bA8JmaBE4=";
-  #     };
-  #     comfyui-seedvr2-tilingupscaler = pkgs.fetchFromGitHub {
-  #       owner = "moonwhaler";
-  #       repo = "comfyui-seedvr2-tilingupscaler";
-  #       rev = "595df01";
-  #       hash = "sha256-bv6jpshAon77t/P3XlBslCqQcqSzXT9aqiu8zZP8sGY=";
-  #     };
-  #     comfyui-moonpack = pkgs.fetchFromGitHub {
-  #       owner = "moonwhaler";
-  #       repo = "comfyui-moonpack";
-  #       rev = "7c28182";
-  #       hash = "sha256-2YKqUIrPHk3S/8LEhuzZ2y/TELI+8xuniIwRB7IGTWw=";
-  #     };
-  #   };
-  # };
-
   cfg.services.nvidia_oc = {
     enable = true;
     powerLimit = 200;
@@ -284,39 +251,77 @@ in
         (hmImport ./../../common/ai-agents.nix)
       ];
 
-      cfg.hyprland = with pkgs.lib; {
+      wayland.windowManager.hyprland.settings = with pkgs.lib; {
         monitor = [
-          "${centerMonitor},3840x2160@60,1080x0,1"
-          "${leftMonitor},1920x1080@74.97,0x0,1,transform,3"
-          "${rightMonitor},1920x1080@74.97,4920x0,1,transform,1"
+          {
+            output = centerMonitor;
+            mode = "3840x2160@60";
+            position = "1080x0";
+            scale = 1;
+          }
+          {
+            output = leftMonitor;
+            mode = "1920x1080@74.97";
+            position = "0x0";
+            scale = 1;
+            transform = 3;
+          }
+          {
+            output = rightMonitor;
+            mode = "1920x1080@74.97";
+            position = "4920x0";
+            scale = 1;
+            transform = 1;
+          }
         ];
-        workspace =
-          map (
-            i:
-            "${toString i},monitor:${
-              elemAt [ "${centerMonitor}" "${leftMonitor}" "${rightMonitor}" ] ((i - 1) / 3)
-            },persistent:true${if i == 1 then ",default:true" else ""}"
-          ) (range 1 9)
+        workspace_rule =
+          map (i: {
+            workspace = toString i;
+            monitor = elemAt [ centerMonitor leftMonitor rightMonitor ] ((i - 1) / 3);
+            persistent = true;
+            default = i == 1;
+          }) (range 1 9)
           ++ [
-            "name:win,monitor:${centerMonitor},persistent:false"
+            {
+              workspace = "name:win";
+              monitor = centerMonitor;
+              persistent = false;
+            }
           ];
-        windowrule =
+        window_rule = [
+          {
+            name = "workstation-flameshot-layout";
+            match.title = "(flameshot)";
+            monitor = leftMonitor; # Flameshot 0x0 on left monitor
+            size = "6000 2160";
+          }
+          {
+            name = "moonlight-game-workspace";
+            match.initial_title = "^(.*)(- Moonlight)";
+            workspace = "name:win";
+            fullscreen = true;
+            idle_inhibit = "focus";
+          }
+        ];
+        bind =
           let
-            moonlight = "match:initial_title ^(.*)(- Moonlight)";
+            luaInline = generators.mkLuaInline;
+            toLua = generators.toLua { };
           in
           [
-            "match:title (flameshot),monitor ${leftMonitor}" # Flameshot 0x0 on left monitor
-            "match:title (flameshot),size 6000 2160"
-
-            "${moonlight},workspace name:win"
-            "${moonlight},fullscreen 1"
-            "${moonlight},idle_inhibit focus"
+            {
+              _args = [
+                "SUPER + W"
+                (luaInline ''hl.dsp.focus({ workspace = "name:win" })'')
+              ];
+            }
+            {
+              _args = [
+                "XF86Calculator"
+                (luaInline "hl.dsp.exec_cmd(${toLua "uwsm app -- ${getExe pkgs.qalculate-gtk}"})")
+              ];
+            }
           ];
-        bind = [
-          "SUPER, W, workspace, name:win"
-          ", XF86Calculator, exec, uwsm app -- ${getExe pkgs.qalculate-gtk}"
-        ];
-        #cursor."no_hardware_cursors" = 1;
       };
 
       cfg.programs.dolphin.enable = true;

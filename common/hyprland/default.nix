@@ -7,7 +7,6 @@
       ...
     }:
     let
-      inherit (builtins) isAttrs isList;
       inherit (lib)
         getExe
         mkOption
@@ -15,21 +14,25 @@
         types
         ;
 
-      mod = "SUPER";
+      luaInline = lib.generators.mkLuaInline;
+      toLua = lib.generators.toLua { };
+
       playerctl = getExe pkgs.playerctl;
       brillo = getExe pkgs.brillo;
       wofi-emoji = getExe pkgs.wofi-emoji;
       wofi-power-menu = getExe pkgs.wofi-power-menu;
       galaxy-buds-client = getExe pkgs.galaxy-buds-client;
       kwallet = "${pkgs.kdePackages.kwallet}/bin/kwalletd6";
-      flameshot = getExe (pkgs.unstable.flameshot.override { enableWlrSupport = true; });
+      flameshot = getExe config.services.flameshot.package;
       wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
       wl-paste = "${pkgs.wl-clipboard}/bin/wl-paste";
       wtype = getExe pkgs.wtype;
       cliphist = getExe pkgs.cliphist;
+      cliphistRuntime = ''${cliphist} -db-path "$XDG_RUNTIME_DIR/cliphist.db"'';
       toggle-scale = getExe pkgs.myScripts.toggle-scale;
       shortcut-help = "${getExe pkgs.myScripts.shortcut-help} --config ${shortcutHelpConfig} --global-help ${shortcutHelpGlobal}";
-      wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/\.desktop /.desktop:/')";
+      wofi-drun = "uwsm app -- $(wofi --show drun --define=drun-print_desktop_file=true -i | sed 's/[.]desktop /.desktop:/')";
+
       cmdHelp = ''
         \U2756 + E -- Show emoji picker
         \U2756 + X -- Show power menu
@@ -46,140 +49,197 @@
         }
       );
 
-      mergeHyprland =
-        left: right:
-        lib.zipAttrsWith
-          (
-            _: values:
-            let
-              kept = builtins.filter (value: value != null) values;
-            in
-            if kept == [ ] then
-              null
-            else if builtins.all isList kept then
-              lib.concatLists kept
-            else if builtins.all isAttrs kept then
-              builtins.foldl' mergeHyprland { } kept
-            else
-              lib.last kept
-          )
-          [
-            left
-            right
-          ];
+      bind = key: action: flags: {
+        _args = [
+          key
+          action
+        ]
+        ++ lib.optional (flags != { }) flags;
+      };
+      exec = command: luaInline "hl.dsp.exec_cmd(${toLua command})";
+      focusWorkspace = workspace: luaInline "hl.dsp.focus({ workspace = ${toLua workspace} })";
+      moveToWorkspace = workspace: luaInline "hl.dsp.window.move({ workspace = ${toLua workspace} })";
 
       baseSettings = {
-        exec-once = [
-          "uwsm app -- ${galaxy-buds-client} /StartMinimized"
-          "uwsm app -- ${wl-paste} --type text --watch ${cliphist} store"
-          "uwsm app -- ${wl-paste} --type image --watch ${cliphist} store"
-          "uwsm app -- ${kwallet}"
+        config = lib.mapAttrsRecursive (_: lib.mkDefault) {
+          ecosystem = {
+            enforce_permissions = false;
+            no_donation_nag = true;
+            no_update_news = true;
+          };
+          general = {
+            gaps_in = 5;
+            gaps_out = 5;
+            border_size = 2;
+            col = {
+              active_border = {
+                colors = [
+                  "rgba(33ccffee)"
+                  "rgba(00ff99ee)"
+                ];
+                angle = 45;
+              };
+              inactive_border = "rgba(595959aa)";
+            };
+          };
+          input = {
+            kb_layout = "us,us";
+            kb_variant = ",intl";
+            kb_options = "grp:win_space_toggle";
+          };
+          misc = {
+            force_default_wallpaper = 1;
+            disable_hyprland_logo = true;
+            disable_splash_rendering = true;
+            enable_anr_dialog = false;
+            disable_watchdog_warning = true;
+          };
+        };
+
+        window_rule = lib.mkBefore [
+          {
+            name = "fix-xwayland-drags";
+            match = {
+              class = "^$";
+              title = "^$";
+              xwayland = true;
+              float = true;
+              fullscreen = false;
+              pin = false;
+            };
+            no_focus = true;
+          }
+          {
+            name = "floating-tools-at-cursor";
+            match.title = "^(Picture in picture|Syncthing Tray|Bitwarden)";
+            float = true;
+            pin = true;
+            no_anim = true;
+            move = "onscreen cursor -50% -50%";
+            opaque = true;
+            border_size = 0;
+          }
+          {
+            name = "flameshot-overlay";
+            match.title = "(flameshot)";
+            pin = true;
+            float = true;
+            no_anim = true;
+            move = "0 0";
+          }
+          {
+            name = "onlyoffice-floating";
+            match = {
+              class = "(ONLYOFFICE)";
+              float = true;
+            };
+            no_anim = true;
+            border_size = 0;
+          }
+          {
+            name = "onlyoffice-editor";
+            match.class = "(DesktopEditors)";
+            center = true;
+            pin = true;
+          }
+          {
+            name = "picture-in-picture-ratio";
+            match.title = "^(Picture in picture)";
+            keep_aspect_ratio = true;
+          }
         ];
-        windowrule =
-          let
-            floatInCursorMatcher = "match:title ^(Picture in picture|Syncthing Tray|Bitwarden)";
-          in
+
+        bind = lib.mkBefore (
           [
-            "match:class ^$,match:title ^$,match:xwayland 1,match:float 1,match:fullscreen 0,match:pin 0,no_initial_focus 1"
+            (bind "SUPER + Q" (luaInline "hl.dsp.window.close()") { })
+            (bind "SUPER + L" (exec "loginctl lock-session") { })
+            (bind "SUPER + M" (exec "uwsm stop") { })
+            (bind "SUPER + E" (exec "uwsm app -- ${wofi-emoji}") { })
+            (bind "SUPER + X" (exec "uwsm app -- ${wofi-power-menu}") { })
+            (bind "SUPER + Return"
+              (exec "uwsm app -- kitty --single-instance --listen-on unix:@shortcut-help-kitty")
+              { }
+            )
+            (bind "SUPER + F1" (exec wofi-drun) { })
+            (bind "SUPER + XF86AudioMute" (exec wofi-drun) { })
+            (bind "SUPER + XF86Back" (exec wofi-drun) { })
+            (bind "Print" (exec "uwsm app -- ${flameshot} gui --raw | ${wl-copy}") { })
+            (bind "SUPER + C"
+              (exec "${cliphistRuntime} list | uwsm app -- wofi -S dmenu | ${cliphistRuntime} decode | ${wtype} -")
+              { }
+            )
+            (bind "SUPER + S" (exec ''hyprctl notify -1 2000 0 "Scale: $(${toggle-scale})x"'') { })
+            (bind "SUPER + SHIFT + C"
+              (exec "${cliphistRuntime} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'")
+              { }
+            )
+            (bind "SUPER + Grave" (exec ''hyprctl notify -1 5000 0 "$(${shortcut-help})"'') { })
+            (bind "SUPER + mouse_down" (focusWorkspace "e+1") { })
+            (bind "SUPER + mouse_up" (focusWorkspace "e-1") { })
+          ]
+          ++ map (workspace: bind "SUPER + ${toString workspace}" (focusWorkspace (toString workspace)) { }) (
+            range 1 9
+          )
+          ++ map (
+            workspace: bind "SUPER + SHIFT + ${toString workspace}" (moveToWorkspace (toString workspace)) { }
+          ) (range 1 9)
+          ++ [
+            (bind "SUPER + mouse:272" (luaInline "hl.dsp.window.drag()") { mouse = true; })
+            (bind "SUPER + mouse:273" (luaInline "hl.dsp.window.resize()") { mouse = true; })
+            (bind "ALT + mouse:272" (luaInline "hl.dsp.window.resize()") { mouse = true; })
+            (bind "XF86AudioRaiseVolume"
+              (exec "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ && pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/audio-volume-change.oga")
+              {
+                locked = true;
+                repeating = true;
+              }
+            )
+            (bind "XF86AudioLowerVolume"
+              (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/audio-volume-change.oga")
+              {
+                locked = true;
+                repeating = true;
+              }
+            )
+            (bind "XF86AudioMute" (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") {
+              locked = true;
+              repeating = true;
+            })
+            (bind "XF86AudioMicMute" (exec "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle") {
+              locked = true;
+              repeating = true;
+            })
+            (bind "XF86MonBrightnessUp" (exec "${brillo} -e -A 5") {
+              locked = true;
+              repeating = true;
+            })
+            (bind "XF86MonBrightnessDown" (exec "${brillo} -e -U 5") {
+              locked = true;
+              repeating = true;
+            })
+            (bind "XF86AudioNext" (exec "${playerctl} next") { locked = true; })
+            (bind "XF86AudioPause" (exec "${playerctl} play-pause") { locked = true; })
+            (bind "XF86AudioPlay" (exec "${playerctl} play-pause") { locked = true; })
+            (bind "XF86AudioPrev" (exec "${playerctl} previous") { locked = true; })
+          ]
+        );
 
-            "${floatInCursorMatcher},float 1"
-            "${floatInCursorMatcher},pin 1"
-            "${floatInCursorMatcher},no_anim 1"
-            "${floatInCursorMatcher},move onscreen cursor -50% -50%"
-            "${floatInCursorMatcher},opaque 1"
-            "${floatInCursorMatcher},border_size 0"
-
-            "match:title (flameshot),pin 1"
-            "match:title (flameshot),float 1"
-            "match:title (flameshot),no_anim 1"
-            "match:title (flameshot),move 0 0"
-
-            "match:class (ONLYOFFICE),match:float 1,no_anim 1"
-            "match:class (ONLYOFFICE),match:float 1,border_size 0"
-            "match:class (DesktopEditors),center 1"
-            "match:class (DesktopEditors),pin 1"
-
-            "match:title ^(Picture in picture),keep_aspect_ratio 1"
+        on = {
+          _args = [
+            "hyprland.start"
+            (luaInline ''
+              function()
+                hl.exec_cmd(${toLua "uwsm app -- ${galaxy-buds-client} /StartMinimized"})
+                hl.exec_cmd(${toLua "uwsm app -- ${wl-paste} --type text --watch ${cliphistRuntime} store"})
+                hl.exec_cmd(${toLua "uwsm app -- ${wl-paste} --type image --watch ${cliphistRuntime} store"})
+                hl.exec_cmd(${toLua "uwsm app -- ${kwallet}"})
+              end
+            '')
           ];
-        bind = [
-          "${mod}, Q, killactive"
-          "${mod}, L, exec, loginctl lock-session"
-          "${mod}, M, exec, uwsm stop"
-          "${mod}, E, exec, uwsm app -- ${wofi-emoji}"
-          "${mod}, X, exec, uwsm app -- ${wofi-power-menu}"
-          "${mod}, Return, exec, uwsm app -- kitty --single-instance --listen-on ${pkgs.lib.escapeShellArg "unix:@shortcut-help-kitty"}"
-          "${mod}, F1, exec, ${wofi-drun}"
-          "${mod}, XF86AudioMute, exec, ${wofi-drun}"
-          "${mod}, XF86Back, exec, ${wofi-drun}"
-          ",Print, exec, uwsm app -- ${flameshot} gui --raw | ${wl-copy}"
-          "${mod}, C, exec, ${cliphist} list | uwsm app -- wofi -S dmenu | ${cliphist} decode | ${wtype} -"
-          "${mod}, S, exec, hyprctl notify -1 2000 0 \"Scale: $(${toggle-scale})x\""
-          "${mod}_SHIFT, C, exec, ${cliphist} wipe && ${wl-copy} --clear && hyprctl notify -1 2000 0 'Clipboard was cleared'"
-          "${mod}, Grave, exec, hyprctl notify -1 5000 0 \"$(${shortcut-help})\""
-          "${mod}, mouse_down, workspace, e+1"
-          "${mod}, mouse_up, workspace, e-1"
-        ]
-        ++ map (x: "${mod}, ${toString x}, workspace, ${toString x}") (range 1 9)
-        ++ map (x: "${mod} SHIFT, ${toString x}, movetoworkspace, ${toString x}") (range 1 9);
-        bindm = [
-          "${mod}, mouse:272, movewindow"
-          "${mod}, mouse:273, resizewindow"
-          "ALT, mouse:272, resizewindow"
-        ];
-        bindel = [
-          ", XF86AudioRaiseVolume, exec, wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ && pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/audio-volume-change.oga"
-          ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && pw-play ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/audio-volume-change.oga"
-          ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-          ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-          ", XF86MonBrightnessUp, exec, ${brillo} -e -A 5"
-          ", XF86MonBrightnessDown, exec, ${brillo} -e -U 5"
-        ];
-        bindl = [
-          ", XF86AudioNext, exec, ${playerctl} next"
-          ", XF86AudioPause, exec, ${playerctl} play-pause"
-          ", XF86AudioPlay, exec, ${playerctl} play-pause"
-          ", XF86AudioPrev, exec, ${playerctl} previous"
-        ];
-        input = {
-          kb_layout = "us,us";
-          kb_variant = ",intl";
-          kb_options = "grp:win_space_toggle";
-        };
-        general = {
-          gaps_in = 5;
-          gaps_out = 5;
-          border_size = 2;
-          "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-          "col.inactive_border" = "rgba(595959aa)";
-        };
-        misc = {
-          "force_default_wallpaper" = 1;
-          "disable_hyprland_logo" = true;
-          "disable_splash_rendering" = true;
-          "enable_anr_dialog" = false;
-          "disable_watchdog_warning" = true;
-        };
-        ecosystem = {
-          "no_update_news" = true;
-          "no_donation_nag" = true;
-          "enforce_permissions" = false;
         };
       };
-
-      settings = mergeHyprland baseSettings config.cfg.hyprland;
-      settingsJson = pkgs.writeText "hyprland-settings.json" (builtins.toJSON settings);
-      lua = pkgs.lua5_4.withPackages (ps: [ ps.dkjson ]);
-      generatedConfig = pkgs.runCommand "hyprland-generated.lua" { nativeBuildInputs = [ lua ]; } ''
-        lua ${./generator.lua} ${settingsJson} > $out
-      '';
     in
     {
-      options.cfg.hyprland = lib.mkOption {
-        type = with lib.types; attrsOf anything;
-        default = { };
-        description = "Hyprland target-specific configuration merged into Lua-generated config.";
-      };
-
       options.cfg.shortcutHelp = {
         enable = mkOption {
           type = types.bool;
@@ -265,10 +325,7 @@
         wayland.windowManager.hyprland = {
           enable = true;
           configType = "lua";
-          settings = { };
-          extraConfig = ''
-            dofile("${generatedConfig}")
-          '';
+          settings = baseSettings;
 
           package = null;
           portalPackage = null;

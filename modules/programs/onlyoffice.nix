@@ -10,6 +10,13 @@
     let
       inherit (lib) mkIf mkEnableOption;
       cfg = config.cfg.programs.onlyoffice;
+      officeFonts = pkgs.symlinkJoin {
+        name = "onlyoffice-fonts";
+        paths = with pkgs; [
+          corefonts
+          vista-fonts
+        ];
+      };
     in
     {
       options.cfg.programs.onlyoffice = {
@@ -17,11 +24,12 @@
       };
 
       config = mkIf cfg.enable {
-        home.packages = with pkgs; [
-          onlyoffice-desktopeditors
-          corefonts
-          vista-fonts
-        ];
+        home.packages = [ pkgs.onlyoffice-desktopeditors ];
+
+        xdg.dataFile."fonts/onlyoffice" = {
+          source = "${officeFonts}/share/fonts";
+          recursive = true;
+        };
 
         xdg.mimeApps.defaultApplications = setMimeTypes "onlyoffice-desktopeditors.desktop" [
           "application/vnd.ms-excel"
@@ -38,13 +46,6 @@
           "text/csv"
         ];
 
-        home.activation.copyOfficeFonts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          rm -rf ~/.local/share/fonts
-          mkdir -p ~/.local/share/fonts
-          cp -Lr ${config.xdg.stateHome}/home-manager/gcroots/current-home/home-path/share/fonts/* \
-            ~/.local/share/fonts/
-          chmod -R 755 ~/.local/share/fonts
-        '';
       };
     };
 }

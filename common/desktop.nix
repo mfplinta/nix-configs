@@ -3,7 +3,6 @@
     {
       pkgs,
       lib,
-      inputs,
       config,
       ...
     }:
@@ -171,7 +170,7 @@
         fonts.fontconfig.enable = true;
 
         home.packages = with pkgs; [
-          inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland # hyprctl in PATH
+          hyprland # hyprctl in PATH
 
           # Spell checking
           hunspell
@@ -213,10 +212,13 @@
           };
           vim = {
             title = "vim";
-            match.terminalForegroundExecutables = [ "vim" "nvim" ];
+            match.terminalForegroundExecutables = [
+              "vim"
+              "nvim"
+            ];
             shortcuts = [
               ''"+y -- Copy selected to clipboard''
-              '':%s/search/replace/gc -- Find/replace''
+              ":%s/search/replace/gc -- Find/replace"
             ];
           };
         };
@@ -226,7 +228,6 @@
   sysModule =
     {
       pkgs,
-      inputs,
       lib,
       ...
     }:
@@ -322,18 +323,6 @@
           }/share/sddm/themes/catppuccin-mocha-mauve";
         };
 
-        systemd.services.lock-before-suspend = {
-          enable = true;
-          description = "Lock sessions before suspend";
-          before = [ "sleep.target" ];
-          wantedBy = [ "sleep.target" ];
-          script = ''
-            loginctl lock-sessions
-            sleep 1
-          '';
-          serviceConfig.Type = "oneshot";
-        };
-
         services.udisks2.enable = true;
         services.blueman.enable = true;
         services.pipewire = {
@@ -347,9 +336,8 @@
           withUWSM = true;
           xwayland.enable = true;
 
-          package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-          portalPackage =
-            inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+          package = pkgs.hyprland;
+          portalPackage = pkgs.xdg-desktop-portal-hyprland;
         };
 
         xdg.portal = {
@@ -359,7 +347,7 @@
             lib.mkForce [
               kdePackages.xdg-desktop-portal-kde
               xdg-desktop-portal-gtk
-              inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
+              xdg-desktop-portal-hyprland
             ];
 
           config = {
