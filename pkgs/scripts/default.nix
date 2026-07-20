@@ -21,9 +21,104 @@ with pkgs;
       hyprland
       kitty
       python3
+      tmux
     ];
     text = ''
       exec python3 ${./shortcut-help} "$@"
+    '';
+  };
+  upmove = writeShellApplication {
+    name = "upmove-contents";
+    runtimeInputs = [
+      coreutils
+      findutils
+      util-linux
+    ];
+    text = ''
+      if (( $# > 1 )) || [[ "''${1:-}" == "--help" ]]; then
+        echo "Usage: upmove-contents [DIRECTORY]" >&2
+        echo "Move DIRECTORY's contents into its parent, then remove DIRECTORY." >&2
+        exit $(( $# > 1 ? 2 : 0 ))
+      fi
+
+      raw_source=''${1:-"$PWD"}
+      if [[ ! -d "$raw_source" ]]; then
+        printf 'Not a directory: %s\n' "$raw_source" >&2
+        exit 2
+      fi
+      if [[ -L "$raw_source" ]]; then
+        printf 'Refusing symlinked source directory: %s\n' "$raw_source" >&2
+        exit 2
+      fi
+
+      source_dir=$(realpath -- "$raw_source")
+      parent_dir=$(dirname -- "$source_dir")
+      home_dir=$(realpath -- "$HOME")
+
+      if [[ "$source_dir" == / || "$source_dir" == "$home_dir" || "$parent_dir" == / ]]; then
+        printf 'Refusing protected directory: %s\n' "$source_dir" >&2
+        exit 2
+      fi
+      if mountpoint --quiet -- "$source_dir"; then
+        printf 'Refusing mount point: %s\n' "$source_dir" >&2
+        exit 2
+      fi
+      if [[ ! -w "$source_dir" || ! -w "$parent_dir" ]]; then
+        echo "Source and parent directories must both be writable." >&2
+        exit 2
+      fi
+
+      mapfile -d $'\0' -t entries < <(
+        find "$source_dir" -mindepth 1 -maxdepth 1 -print0 | sort --zero-terminated
+      )
+
+      printf 'Source:      %s\n' "$source_dir"
+      printf 'Destination: %s\n' "$parent_dir"
+      printf 'Entries:     %d\n\n' "''${#entries[@]}"
+
+      blocked=0
+      for entry in "''${entries[@]}"; do
+        name=''${entry##*/}
+        destination="$parent_dir/$name"
+        printf '  %q\n    -> %q\n' "$entry" "$destination"
+
+        if [[ -e "$destination" || -L "$destination" ]]; then
+          printf '    BLOCKED: destination already exists\n' >&2
+          blocked=1
+        elif mountpoint --quiet -- "$entry"; then
+          printf '    BLOCKED: entry is a mount point\n' >&2
+          blocked=1
+        fi
+      done
+
+      if (( blocked != 0 )); then
+        echo "No files moved. Resolve blocked entries first." >&2
+        exit 1
+      fi
+
+      printf '\nThe source directory will be removed after every move succeeds.\n'
+      printf 'This multi-file operation is not atomic.\n'
+      read -r -p "Proceed? [y/N] " reply
+      case "$reply" in
+        y | Y | yes | YES) ;;
+        *)
+          echo "Cancelled. No files moved."
+          exit 1
+          ;;
+      esac
+
+      for entry in "''${entries[@]}"; do
+        name=''${entry##*/}
+        destination="$parent_dir/$name"
+        if [[ -e "$destination" || -L "$destination" ]]; then
+          printf 'Destination appeared after confirmation; stopping: %s\n' "$destination" >&2
+          exit 1
+        fi
+        mv --no-target-directory -- "$entry" "$destination"
+      done
+
+      rmdir -- "$source_dir"
+      printf 'Moved %d entries and removed %s\n' "''${#entries[@]}" "$source_dir"
     '';
   };
   get-current-brightness = writeShellApplication {
