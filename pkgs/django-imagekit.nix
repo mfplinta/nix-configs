@@ -20,8 +20,8 @@ buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "matthewwithanm";
     repo = pname;
-    rev = "master";
-    hash = "sha256-WW74CjAooj0dB9bE6XSE0VwlvmUbEWW2PxPJLscssQI=";
+    rev = "ab2458b2043034e2528c1f9969d6b631a3d69a4a";
+    hash = "sha256-+UOvDjLTrMy9i5T2P70DoBOoxdshkGHEwxcu3Hfzf+4=";
   };
 
   nativeBuildInputs = [ setuptools ];

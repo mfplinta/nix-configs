@@ -13,7 +13,6 @@
     wrapper-manager.url = "github:viperML/wrapper-manager";
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
-    hyprland.url = "github:hyprwm/Hyprland";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-vscode-extensions.inputs.nixpkgs.follows = "nixpkgs";
     nixd.url = "github:nix-community/nixd/0e07c08c448a2995e7793d1098437b29bbe80b02"; # Linter for nix
@@ -23,11 +22,13 @@
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
     nvibrant.url = "github:mfplinta/nix-nvibrant";
     nvibrant.inputs.nixpkgs.follows = "nixpkgs";
-    nixpkgs-crowdsec.url = "github:TornaxO7/nixpkgs/a4ff7e18d1440a41f4b5a75274cfac6c96df558a";
     nixneovimplugins.url = "github:NixNeovim/NixNeovimPlugins";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     systems.url = "github:nix-systems/default";
-    comfyui-nix.url = "path:/home/matheus/Projects/comfyui-nix"; # AI
+    mastermovement = {
+      url = "github:mfplinta/mastermovement";
+      flake = false;
+    };
     caveman = {
       url = "github:JuliusBrussee/caveman";
       flake = false;
@@ -49,12 +50,10 @@
       sops-nix,
       quadlet-nix,
       nvibrant,
-      nixpkgs-crowdsec,
       nixneovimplugins,
       treefmt-nix,
       systems,
       catppuccin,
-      comfyui-nix,
       ...
     }:
     let
@@ -103,23 +102,15 @@
             (
               { config, ... }:
               {
-                disabledModules = [
-                  "services/security/crowdsec.nix"
-                ];
                 imports = [
-                  "${nixpkgs-crowdsec}/nixos/modules/services/security/crowdsec.nix"
                   (sysImport ./modules)
-                  comfyui-nix.nixosModules.default
                 ];
                 nix.settings = {
                   substituters = [
-                    "https://hyprland.cachix.org"
                     "https://devenv.cachix.org"
                     "https://attic.xuyh0120.win/lantian"
                   ];
-                  trusted-substituters = [ "https://hyprland.cachix.org" ];
                   trusted-public-keys = [
-                    "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
                     "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
                     "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
                   ];
@@ -145,7 +136,6 @@
                   nixneovimplugins.overlays.default
                   nvibrant.overlays.default
                   nixd.overlays.default
-                  comfyui-nix.overlays.default
                   nix-cachyos-kernel.overlays.pinned
                 ];
                 networking.hostName = name;

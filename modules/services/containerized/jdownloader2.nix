@@ -32,6 +32,8 @@
           autoStart = true;
           containerConfig = {
             image = "jlesage/jdownloader-2";
+            user = "0";
+            userns = "keep-id:uid=1000,gid=1000";
             volumes = [
               "%h/Downloads/JD:/output"
               "%h/.config/containers/jdownloader2:/config"

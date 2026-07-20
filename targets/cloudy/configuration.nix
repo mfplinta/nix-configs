@@ -2,6 +2,7 @@
   pkgs,
   lib,
   config,
+  inputs,
   sysImport,
   private,
   ...
@@ -12,9 +13,25 @@ let
   hostAddress = "10.0.0.104";
   bridgeAddress = "192.168.100.1";
   hostConfig = config;
-  containerNames =
+  configuredContainerNames =
     (builtins.attrNames config.containers)
     ++ (builtins.attrNames config.virtualisation.quadlet.containers);
+  containerNames = [
+    "audiobookshelf"
+    "gitea"
+    "monitoring"
+    "nextcloud"
+    "reverseProxy"
+    "vaultwarden"
+    "ws-blog"
+    "ws-mastermovement"
+    "ws-ots"
+    "contractual-app"
+    "coturn"
+    "quartz"
+    "stirling-pdf"
+    "tmdb-addon"
+  ];
   addresses = lib.listToAttrs (
     lib.imap0 (i: name: {
       inherit name;
@@ -26,6 +43,14 @@ let
   );
 in
 {
+  assertions = [
+    {
+      assertion =
+        lib.sort builtins.lessThan configuredContainerNames == lib.sort builtins.lessThan containerNames;
+      message = "Cloudy container names changed; update containerNames explicitly to allocate a stable IP";
+    }
+  ];
+
   imports = [
     ./hardware-configuration.nix
     ./disko.nix
@@ -44,15 +69,6 @@ in
   sops.defaultSopsFile = private.secretsFile;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
-  sops.secrets.cloudy-crowdsec_token = {
-    mode = "0444";
-  };
-  sops.secrets.cloudy-crowdsec_caddy_bouncer_key = {
-    mode = "0444";
-  };
-  sops.secrets.cloudy-crowdsec_firewall_bouncer_key = {
-    mode = "0444";
-  };
   sops.secrets.cloudy-http_auth_bcrypt = { };
   sops.secrets.cloudy-grafana_pwd = {
     mode = "0444";
@@ -95,20 +111,14 @@ in
       HTTP_AUTH_PWD=${config.sops.placeholder.cloudy-http_auth_bcrypt}
     '';
   };
-  sops.templates.env_caddy_crowdsec = {
-    mode = "0444";
-    content = ''
-      CROWDSEC_API_KEY=${config.sops.placeholder.cloudy-crowdsec_caddy_bouncer_key}
-    '';
-  };
   sops.templates.env_blog = {
-    mode = "0444";
+    mode = "0400";
     content = ''
       SECRET_KEY=${config.sops.placeholder.cloudy-blog_secretkey}
     '';
   };
   sops.templates.env_ots = {
-    mode = "0444";
+    mode = "0400";
     content = ''
       SECRET_KEY=${config.sops.placeholder.cloudy-ots_secretkey}
       TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-ots_turnstile_sitekey}
@@ -116,7 +126,7 @@ in
     '';
   };
   sops.templates.env_mastermovement = {
-    mode = "0444";
+    mode = "0400";
     content = ''
       SECRET_KEY=${config.sops.placeholder.cloudy-mm_secretkey}
       TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-mm_turnstile_sitekey}
@@ -206,9 +216,7 @@ in
     # NixOS containers
     "d /persist/containers/reverseProxy/caddy 0600 root root -"
     "d /persist/containers/reverseProxy/log 0600 root root -"
-    "d /persist/containers/ws-blog/app 0600 root root -"
-    "d /persist/containers/ws-ots 0600 root root -"
-    "d /persist/containers/ws-mastermovement 0600 root root -"
+    "d /persist/containers/ws-mastermovement 0700 root root -"
     "d /persist/containers/gitea 0600 root root -"
     "d /persist/containers/vaultwarden 0600 root root -"
     "d /persist/containers/nextcloud/app 0600 root root -"
@@ -217,6 +225,8 @@ in
     "d /persist/containers/audiobookshelf/audiobooks 0600 root root -"
     # "d /persist/containers/lidarr 0600 root root -"
     # Podman containers
+    "d /persist/containers/ws-blog/app 0700 root root -"
+    "d /persist/containers/ws-ots 0700 root root -"
     "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
     "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
     "d /persist/containers/stirling-pdf 0600 root root -"
@@ -283,6 +293,42 @@ in
             (removeAttrs extra [ "imports" ])
           ];
         };
+
+      djangoWebsite =
+        {
+          name,
+          source,
+          appName,
+          envFile,
+          hostStatePath,
+          extraPythonPackages ? (_: [ ]),
+          validateMigrations ? true,
+        }:
+        commonWith {
+          localAddress = addresses.${name}.localWithSubnet;
+
+          bindMounts."${envFile}:idmap" = {
+            hostPath = envFile;
+            isReadOnly = true;
+          };
+          bindMounts."/var/lib/django-website:idmap" = {
+            hostPath = hostStatePath;
+            isReadOnly = false;
+          };
+
+          config = commonConfigWith {
+            cfg.services.django-website = {
+              enable = true;
+              inherit
+                appName
+                envFile
+                extraPythonPackages
+                source
+                validateMigrations
+                ;
+            };
+          };
+        };
     in
     {
       reverseProxy = commonWith {
@@ -290,7 +336,6 @@ in
 
         bindMounts."${config.sops.secrets.cloudy-private_wg.path}".isReadOnly = true;
         bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
-        bindMounts."${config.sops.templates.env_caddy_crowdsec.path}".isReadOnly = true;
         bindMounts."/var/lib/caddy:idmap" = {
           hostPath = "/persist/containers/reverseProxy/caddy";
           isReadOnly = false;
@@ -337,11 +382,6 @@ in
               metrics.enable = true;
               metrics.loki.enable = true;
               metrics.loki.endpoint = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push";
-              crowdsec.enable = false;
-              crowdsec.apiKeyEnv = config.sops.templates.env_caddy_crowdsec.path;
-              crowdsec.api_url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.port}";
-              crowdsec.appsec.enable = false;
-              crowdsec.appsec.url = "http://${bridgeAddress}:${toString hostConfig.cfg.services.crowdsec.modules.caddy.appsecPort}";
               config = /* caddy */ ''
                 (cf) {
                   tls {
@@ -365,8 +405,6 @@ in
 
                 *.plinta.dev {
                   import cf
-                  #crowdsec
-                  #appsec
                   log
                   @www host www.plinta.dev
                   handle @www {
@@ -476,8 +514,6 @@ in
 
                 *.optimaltech.us {
                   import cf
-                  #crowdsec
-                  #appsec
                   log
                   @www host www.optimaltech.us
                   handle @www {
@@ -498,8 +534,6 @@ in
 
                 *.mastermovement.us {
                   import cf
-                  #crowdsec
-                  #appsec
                   log
                   @www host www.mastermovement.us
                   handle @www {
@@ -604,58 +638,13 @@ in
         );
       };
 
-      ws-blog = commonWith {
-        localAddress = addresses.ws-blog.localWithSubnet;
-
-        bindMounts."${config.sops.templates.env_blog.path}".isReadOnly = true;
-        bindMounts."/app:idmap" = {
-          hostPath = "/persist/containers/ws-blog/app";
-          isReadOnly = false;
-        };
-
-        config = commonConfigWith {
-          cfg.services.django-website = {
-            enable = true;
-            appName = "matheusplintacom";
-            envFile = config.sops.templates.env_blog.path;
-          };
-        };
-      };
-
-      ws-ots = commonWith {
-        localAddress = addresses.ws-ots.localWithSubnet;
-
-        bindMounts."${config.sops.templates.env_ots.path}".isReadOnly = true;
-        bindMounts."/app:idmap" = {
-          hostPath = "/persist/containers/ws-ots";
-          isReadOnly = false;
-        };
-
-        config = commonConfigWith {
-          cfg.services.django-website = {
-            enable = true;
-            appName = "otswebsite";
-            envFile = config.sops.templates.env_ots.path;
-          };
-        };
-      };
-
-      ws-mastermovement = commonWith {
-        localAddress = addresses.ws-mastermovement.localWithSubnet;
-
-        bindMounts."${config.sops.templates.env_mastermovement.path}".isReadOnly = true;
-        bindMounts."/app:idmap" = {
-          hostPath = "/persist/containers/ws-mastermovement";
-          isReadOnly = false;
-        };
-
-        config = commonConfigWith {
-          cfg.services.django-website = {
-            enable = true;
-            appName = "mastermovement";
-            envFile = config.sops.templates.env_mastermovement.path;
-          };
-        };
+      ws-mastermovement = djangoWebsite {
+        name = "ws-mastermovement";
+        source = inputs.mastermovement;
+        appName = "mastermovement";
+        envFile = config.sops.templates.env_mastermovement.path;
+        hostStatePath = "/persist/containers/ws-mastermovement";
+        extraPythonPackages = pythonPackages: [ (pkgs.django-turnstile pythonPackages) ];
       };
 
       gitea = commonWith {
@@ -797,6 +786,68 @@ in
         };
       };
       containers = {
+        ws-blog = {
+          serviceConfig.Restart = "on-failure";
+          containerConfig = {
+            autoUpdate = "registry";
+            image = "ghcr.io/mfplinta/portfolio:latest";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.ws-blog.local}" ];
+            volumes = [
+              "/persist/containers/ws-blog/app:/app/data:U"
+            ];
+            environmentFiles = [ config.sops.templates.env_blog.path ];
+            environments = {
+              DJANGO_ALLOWED_HOSTS = "matheusplinta.com,www.matheusplinta.com,plinta.dev,www.plinta.dev";
+              DJANGO_CSRF_TRUSTED_ORIGINS = "https://matheusplinta.com,https://www.matheusplinta.com,https://plinta.dev,https://www.plinta.dev";
+            };
+            dropCapabilities = [ "ALL" ];
+            noNewPrivileges = true;
+            readOnly = true;
+            readOnlyTmpfs = true;
+            tmpfses = [ "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777" ];
+            pidsLimit = 128;
+            healthCmd = "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\"";
+            healthInterval = "30s";
+            healthTimeout = "5s";
+            healthStartPeriod = "30s";
+            healthRetries = 3;
+            healthOnFailure = "kill";
+            notify = "healthy";
+          };
+        };
+
+        ws-ots = {
+          serviceConfig.Restart = "on-failure";
+          containerConfig = {
+            autoUpdate = "registry";
+            image = "ghcr.io/mfplinta/ots-website:latest";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.ws-ots.local}" ];
+            volumes = [
+              "/persist/containers/ws-ots:/app/data:U"
+            ];
+            environmentFiles = [ config.sops.templates.env_ots.path ];
+            environments = {
+              DJANGO_ALLOWED_HOSTS = "optimaltech.us,www.optimaltech.us";
+              DJANGO_CSRF_TRUSTED_ORIGINS = "https://optimaltech.us,https://www.optimaltech.us";
+            };
+            dropCapabilities = [ "ALL" ];
+            noNewPrivileges = true;
+            readOnly = true;
+            readOnlyTmpfs = true;
+            tmpfses = [ "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777" ];
+            pidsLimit = 128;
+            healthCmd = "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\"";
+            healthInterval = "30s";
+            healthTimeout = "5s";
+            healthStartPeriod = "30s";
+            healthRetries = 3;
+            healthOnFailure = "kill";
+            notify = "healthy";
+          };
+        };
+
         # --- Quartz ---
         quartz.containerConfig = {
           image = "docker.io/mfplinta016/dockerized-quartz:latest";
@@ -890,8 +941,6 @@ in
           ];
           environments = {
             DEBUG = "False";
-            DJANGO_SUPERUSER_USERNAME = "admin";
-            DJANGO_SUPERUSER_PASSWORD = "admin";
             ALLOWED_HOSTS = "app.mastermovement.us";
             CSRF_TRUSTED_ORIGINS = "https://app.mastermovement.us";
           };
@@ -899,19 +948,6 @@ in
       };
     };
 
-  cfg.services.crowdsec.enable = false;
-  cfg.services.crowdsec.port = 30000;
-  cfg.services.crowdsec.tokenFile = config.sops.secrets.cloudy-crowdsec_token.path;
-  cfg.services.crowdsec.modules.caddy = {
-    enable = true;
-    appsecPort = 7422;
-    logfile = "/persist/containers/reverseProxy/log/access.log";
-    apiKeyFile = config.sops.secrets.cloudy-crowdsec_caddy_bouncer_key.path;
-  };
-  cfg.services.crowdsec.modules.sshd = {
-    enable = true;
-    apiKeyFile = config.sops.secrets.cloudy-crowdsec_firewall_bouncer_key.path;
-  };
   cfg.services.vmagent.enable = true;
   cfg.services.vmagent.logs.enable = true;
   cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";

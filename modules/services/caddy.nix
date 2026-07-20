@@ -30,17 +30,6 @@
         metrics.loki.endpoint = mkOption {
           type = types.str;
         };
-        crowdsec.enable = mkEnableOption "caddy crowdsec";
-        crowdsec.apiKeyEnv = mkOption {
-          type = types.path;
-        };
-        crowdsec.api_url = mkOption {
-          type = types.str;
-        };
-        crowdsec.appsec.enable = mkEnableOption "caddy crowdsec appsec";
-        crowdsec.appsec.url = mkOption {
-          type = types.str;
-        };
         environmentFile = mkOption {
           type = types.nullOr types.path;
           default = null;
@@ -61,15 +50,9 @@
             assertion = !cfg.metrics.loki.enable || cfg.metrics.enable;
             message = "metrics.loki requires metrics to be enabled.";
           }
-          {
-            assertion = !cfg.crowdsec.appsec.enable || cfg.crowdsec.enable;
-            message = "crowdsec.appsec requires crowdsec to be enabled.";
-          }
         ];
         systemd.services.caddy.serviceConfig.EnvironmentFile =
-          cfg.environmentFiles
-          ++ lib.optional (cfg.environmentFile != null) cfg.environmentFile
-          ++ lib.optional cfg.crowdsec.enable cfg.crowdsec.apiKeyEnv;
+          cfg.environmentFiles ++ lib.optional (cfg.environmentFile != null) cfg.environmentFile;
         services.caddy = {
           enable = true;
           package = pkgs.caddy.withPlugins {
@@ -77,11 +60,8 @@
               "github.com/caddy-dns/cloudflare@v0.2.1"
               "github.com/caddyserver/replace-response@v0.0.0-20250618171559-80962887e4c6"
               "github.com/WeidiDeng/caddy-cloudflare-ip@v0.0.0-20231130002422-f53b62aa13cb"
-              "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.12.1"
-              "github.com/hslatman/caddy-crowdsec-bouncer/appsec@v0.12.1"
-              "github.com/hslatman/caddy-crowdsec-bouncer/layer4@v0.12.1"
             ];
-            hash = "sha256-TH9kAk/hyg8Z+QQKgiTwgRcJPjYF+df9KhnEBysn6hA=";
+            hash = "sha256-WHFV14UAkGm95G8TWSB8aaXj3LSOAB3Oukx8LyqEz24=";
             doInstallCheck = false;
           };
           configFile =
@@ -109,27 +89,6 @@
                     :${toString cfg.metrics.port} {
                       metrics
                     }
-                  ''
-                else
-                  "";
-              crowdsecCfg =
-                if cfg.crowdsec.enable then
-                  ''
-                                    order crowdsec first
-                                    crowdsec {
-                                      api_url ${cfg.crowdsec.api_url}
-                                      api_key {env.CROWDSEC_API_KEY}
-                                      ticker_interval 15s
-                    		${
-                        if cfg.crowdsec.appsec.enable then
-                          ''
-                            		  appsec_url ${cfg.crowdsec.appsec.url}
-                            		}
-                            		order appsec after crowdsec
-                            	        ''
-                        else
-                          "}"
-                      }
                   ''
                 else
                   "";
@@ -162,7 +121,6 @@
                   }
                 }
                 ${metricsGlobalCfg}
-                ${crowdsecCfg}
               }
 
               ${metricsEndpointCfg}
