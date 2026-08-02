@@ -744,7 +744,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\", instance=\"tiny-nix\"}[5m])) * 100)",
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\", instance=\"tiny\"}[5m])) * 100)",
           "legendFormat": "Usage",
           "range": true,
           "refId": "A"
@@ -839,7 +839,7 @@
       "targets": [
         {
           "editorMode": "builder",
-          "expr": "irate(namedprocess_namegroup_cpu_seconds_total{instance=\"tiny-nix\"}[1m]) / 4",
+          "expr": "irate(namedprocess_namegroup_cpu_seconds_total{instance=\"tiny\"}[1m]) / 4",
           "hide": false,
           "legendFormat": "{{groupname}}",
           "range": true,
@@ -982,7 +982,7 @@
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
-          "expr": "node_memory_MemTotal_bytes{instance=\"tiny-nix\"}",
+          "expr": "node_memory_MemTotal_bytes{instance=\"tiny\"}",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -990,7 +990,7 @@
         },
         {
           "editorMode": "code",
-          "expr": "node_memory_MemTotal_bytes{instance=\"tiny-nix\"} -\nnode_memory_MemFree_bytes{instance=\"tiny-nix\"} -\nnode_memory_Buffers_bytes{instance=\"tiny-nix\"} -\nnode_memory_Cached_bytes{instance=\"tiny-nix\"}",
+          "expr": "node_memory_MemTotal_bytes{instance=\"tiny\"} -\nnode_memory_MemFree_bytes{instance=\"tiny\"} -\nnode_memory_Buffers_bytes{instance=\"tiny\"} -\nnode_memory_Cached_bytes{instance=\"tiny\"}",
           "legendFormat": "Used",
           "range": true,
           "refId": "A"
@@ -1001,7 +1001,7 @@
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
-          "expr": "node_memory_Buffers_bytes{instance=\"tiny-nix\"}",
+          "expr": "node_memory_Buffers_bytes{instance=\"tiny\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "Buffers",
@@ -1014,7 +1014,7 @@
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
-          "expr": "node_memory_Cached_bytes{instance=\"tiny-nix\"} +\nnode_memory_SReclaimable_bytes{instance=\"tiny-nix\"} -\nnode_memory_Shmem_bytes{instance=\"tiny-nix\"}",
+          "expr": "node_memory_Cached_bytes{instance=\"tiny\"} +\nnode_memory_SReclaimable_bytes{instance=\"tiny\"} -\nnode_memory_Shmem_bytes{instance=\"tiny\"}",
           "hide": false,
           "legendFormat": "Cache",
           "range": true,
@@ -1029,7 +1029,7 @@
             "configRefId": "B",
             "mappings": [
               {
-                "fieldName": "{__name__=\"node_memory_MemTotal_bytes\", instance=\"tiny-nix\", job=\"node-exporter\"}",
+                "fieldName": "{__name__=\"node_memory_MemTotal_bytes\", instance=\"tiny\", job=\"node-exporter\"}",
                 "handlerKey": "max"
               }
             ]
@@ -1124,7 +1124,7 @@
       "targets": [
         {
           "editorMode": "builder",
-          "expr": "sort(namedprocess_namegroup_memory_bytes{memtype=\"resident\", instance=\"tiny-nix\"})",
+          "expr": "sort(namedprocess_namegroup_memory_bytes{memtype=\"resident\", instance=\"tiny\"})",
           "hide": false,
           "legendFormat": "{{groupname}}",
           "range": true,

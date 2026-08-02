@@ -41,7 +41,6 @@
             { id = "bcjindcccaagfpapjjmafapmmgkkhgoa"; } # JSON Formatter
             { id = "fmkadmapgofadopljbjfkapdkoienihi"; } # React DevTools
             { id = "cclelndahbckbenkjhflpdbgdldlbecc"; } # Get cookies.txt
-            { id = "fmkadmapgofadopljbjfkapdkoienihi"; } # React DevTools
             { id = "lmhkpmbekcpmknklioeibfkpmmfibljd"; } # Redux DevTools
             { id = "edlifbnjlicfpckhgjhflgkeeibhhcii"; } # Screenshot Tool
             { id = "mnjggcdmjocbbbhaepdhchncahnbgone"; } # SponsorBlock

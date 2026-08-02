@@ -15,6 +15,7 @@ in
     (sysImport ./../../common/base.nix)
     (sysImport ./../../common/desktop.nix)
     (sysImport ./../../common/shares.nix)
+    (sysImport ./../../common/containers.nix)
 
     (sysImport ./../../common/bundles/internet.nix)
   ];
@@ -46,7 +47,11 @@ in
 
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
+  services.mullvad-vpn.enable = true;
+  services.resolved.enable = false;
+
   cfg.services.printing.enable = true;
+  cfg.virtualisation.distrobox.enable = true;
 
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend";

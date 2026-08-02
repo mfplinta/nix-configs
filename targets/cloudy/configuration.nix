@@ -2,7 +2,6 @@
   pkgs,
   lib,
   config,
-  inputs,
   sysImport,
   private,
   ...
@@ -12,7 +11,19 @@ let
   hostNic = "eth0";
   hostAddress = "10.0.0.104";
   bridgeAddress = "192.168.100.1";
-  hostConfig = config;
+  onlyofficeUid = 997;
+  containerSecrets = {
+    reverseProxy = "/run/container-secrets/reverseProxy";
+    monitoring = "/run/container-secrets/monitoring";
+    nextcloud = "/run/container-secrets/nextcloud";
+    coturn = "/run/container-secrets/coturn";
+  };
+  prepareCoturnSecrets = pkgs.writeShellScript "prepare-coturn-secrets" ''
+    ${pkgs.coreutils}/bin/install -m 0400 -o 0 -g 0 \
+      ${config.sops.templates.env_coturn.path} \
+      ${containerSecrets.coturn}/turnserver.conf
+  '';
+  djangoHealthCmd = "python -c \"import os, urllib.request; assert os.access('/app/data', os.R_OK | os.W_OK | os.X_OK); urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\"";
   configuredContainerNames =
     (builtins.attrNames config.containers)
     ++ (builtins.attrNames config.virtualisation.quadlet.containers);
@@ -66,12 +77,16 @@ in
     "boot.panic_on_fail"
   ];
 
+  # Prefer zram over reclaiming useful server page cache, without over-swapping.
+  boot.kernel.sysctl."vm.swappiness" = lib.mkForce 133;
+
   sops.defaultSopsFile = private.secretsFile;
   sops.age.keyFile = "/root/.config/sops/age/keys.txt";
   sops.secrets.cf_api_key = { };
   sops.secrets.cloudy-http_auth_bcrypt = { };
   sops.secrets.cloudy-grafana_pwd = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "container@monitoring.service" ];
   };
   sops.secrets.cloudy-blog_secretkey = { };
   sops.secrets.cloudy-ots_secretkey = { };
@@ -81,21 +96,25 @@ in
   sops.secrets.cloudy-mm_turnstile_sitekey = { };
   sops.secrets.cloudy-mm_turnstile_secret = { };
   sops.secrets.cloudy-nextcloud_admin = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "container@nextcloud.service" ];
   };
   sops.secrets.cloudy-nextcloud_onlyoffice_jwt = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "container@nextcloud.service" ];
   };
   sops.secrets.cloudy-nextcloud_onlyoffice_nonce = { };
   sops.secrets.cloudy-private_wg = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "container@reverseProxy.service" ];
   };
   sops.secrets.cloudy-tmdb_api = { };
   sops.secrets.cloudy-fanart_api = { };
   sops.secrets.cloudy-tmdb_mongodb_uri = { };
   sops.secrets.cloudy-coturn_pwd = { };
   sops.templates.env_tmdb = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "tmdb-addon.service" ];
     content = ''
       TMDB_API=${config.sops.placeholder.cloudy-tmdb_api}
       FANART_API=${config.sops.placeholder.cloudy-fanart_api}
@@ -105,7 +124,8 @@ in
     '';
   };
   sops.templates.env_caddy = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "container@reverseProxy.service" ];
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
       HTTP_AUTH_PWD=${config.sops.placeholder.cloudy-http_auth_bcrypt}
@@ -113,12 +133,14 @@ in
   };
   sops.templates.env_blog = {
     mode = "0400";
+    restartUnits = [ "ws-blog.service" ];
     content = ''
       SECRET_KEY=${config.sops.placeholder.cloudy-blog_secretkey}
     '';
   };
   sops.templates.env_ots = {
     mode = "0400";
+    restartUnits = [ "ws-ots.service" ];
     content = ''
       SECRET_KEY=${config.sops.placeholder.cloudy-ots_secretkey}
       TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-ots_turnstile_sitekey}
@@ -127,6 +149,7 @@ in
   };
   sops.templates.env_mastermovement = {
     mode = "0400";
+    restartUnits = [ "ws-mastermovement.service" ];
     content = ''
       SECRET_KEY=${config.sops.placeholder.cloudy-mm_secretkey}
       TURNSTILE_SITEKEY=${config.sops.placeholder.cloudy-mm_turnstile_sitekey}
@@ -134,13 +157,15 @@ in
     '';
   };
   sops.templates.nextcloud_nonce = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "container@nextcloud.service" ];
     content = ''
       set $secure_link_secret "${config.sops.placeholder.cloudy-nextcloud_onlyoffice_nonce}";
     '';
   };
   sops.templates.env_coturn = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "coturn.service" ];
     content = ''
       user=ha:${config.sops.placeholder.cloudy-coturn_pwd}
     '';
@@ -214,38 +239,66 @@ in
 
   systemd.tmpfiles.rules = [
     # NixOS containers
-    "d /persist/containers/reverseProxy/caddy 0600 root root -"
-    "d /persist/containers/reverseProxy/log 0600 root root -"
-    "d /persist/containers/ws-mastermovement 0700 root root -"
-    "d /persist/containers/gitea 0600 root root -"
-    "d /persist/containers/vaultwarden 0600 root root -"
-    "d /persist/containers/nextcloud/app 0600 root root -"
-    "d /persist/containers/nextcloud/db 0600 root root -"
-    "d /persist/containers/audiobookshelf/config 0600 root root -"
-    "d /persist/containers/audiobookshelf/audiobooks 0600 root root -"
-    # "d /persist/containers/lidarr 0600 root root -"
-    # Podman containers
-    "d /persist/containers/ws-blog/app 0700 root root -"
-    "d /persist/containers/ws-ots 0700 root root -"
-    "d /persist/containers/ws-blog/quartz-vault 0600 root root -"
-    "d /persist/containers/ws-blog/quartz-repo 0600 root root -"
-    "d /persist/containers/stirling-pdf 0600 root root -"
-    "d /persist/containers/contractual/app 0600 root root -"
+    # Ownership is established inside each idmapped container mount.
+    "d /persist/containers/reverseProxy/caddy 0700 - - -"
+    "d /persist/containers/reverseProxy/log 0700 - - -"
+    "d /persist/containers/gitea 0700 - - -"
+    "d /persist/containers/vaultwarden 0700 - - -"
+    "d /persist/containers/nextcloud/app 0700 - - -"
+    "d /persist/containers/nextcloud/db 0700 - - -"
+    "d /persist/containers/audiobookshelf/config 0700 - - -"
+    # Parent of the separately managed Stirling PDF state mounts.
+    "d /persist/containers/stirling-pdf 0700 root root -"
     # Shared media dirs
-    "d /persist/media/audiobooks"
-    "d /persist/media/music"
+    "d /persist/media/audiobooks 0700 - - -"
+    "d /persist/media/music 0755 root root -"
   ];
 
-  # Restart containers when systemd-tmpfiles config changes
-  systemd.services.systemd-tmpfiles-resetup = {
-    serviceConfig.ExecStartPost =
-      let
-        names = builtins.attrNames config.containers;
-        units = map (n: "container@${n}.service") names;
-      in
-      lib.mkIf (names != [ ]) [
-        "+${config.systemd.package}/bin/systemctl restart ${lib.concatStringsSep " " units}"
-      ];
+  systemd.services = {
+    "container@reverseProxy" = {
+      serviceConfig = {
+        RuntimeDirectory = "container-secrets/reverseProxy";
+        RuntimeDirectoryMode = "0700";
+      };
+      preStart = ''
+        ${pkgs.coreutils}/bin/install -m 0400 -o 0 -g 0 \
+          ${config.sops.secrets.cloudy-private_wg.path} \
+          ${containerSecrets.reverseProxy}/wireguard-private-key
+        ${pkgs.coreutils}/bin/install -m 0400 -o 0 -g 0 \
+          ${config.sops.templates.env_caddy.path} \
+          ${containerSecrets.reverseProxy}/caddy.env
+      '';
+    };
+
+    "container@monitoring" = {
+      serviceConfig = {
+        RuntimeDirectory = "container-secrets/monitoring";
+        RuntimeDirectoryMode = "0711";
+      };
+      preStart = ''
+        ${pkgs.coreutils}/bin/install -m 0400 -o ${toString config.ids.uids.grafana} -g 0 \
+          ${config.sops.secrets.cloudy-grafana_pwd.path} \
+          ${containerSecrets.monitoring}/grafana-password
+      '';
+    };
+
+    "container@nextcloud" = {
+      serviceConfig = {
+        RuntimeDirectory = "container-secrets/nextcloud";
+        RuntimeDirectoryMode = "0700";
+      };
+      preStart = ''
+        ${pkgs.coreutils}/bin/install -m 0400 -o 0 -g 0 \
+          ${config.sops.secrets.cloudy-nextcloud_admin.path} \
+          ${containerSecrets.nextcloud}/admin-password
+        ${pkgs.coreutils}/bin/install -m 0400 -o 0 -g 0 \
+          ${config.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path} \
+          ${containerSecrets.nextcloud}/onlyoffice-jwt
+        ${pkgs.coreutils}/bin/install -m 0400 -o 0 -g 0 \
+          ${config.sops.templates.nextcloud_nonce.path} \
+          ${containerSecrets.nextcloud}/onlyoffice-nonce.conf
+      '';
+    };
   };
 
   cfg.virtualisation.quadlet.enable = true;
@@ -283,7 +336,6 @@ in
         in
         {
           imports = (extra.imports or [ ]) ++ [
-            (sysImport ../../modules/services/django-website.nix)
             (sysImport ../../modules/services/caddy.nix)
             (sysImport ../../modules/services/nextcloud.nix)
           ];
@@ -294,48 +346,15 @@ in
           ];
         };
 
-      djangoWebsite =
-        {
-          name,
-          source,
-          appName,
-          envFile,
-          hostStatePath,
-          extraPythonPackages ? (_: [ ]),
-          validateMigrations ? true,
-        }:
-        commonWith {
-          localAddress = addresses.${name}.localWithSubnet;
-
-          bindMounts."${envFile}:idmap" = {
-            hostPath = envFile;
-            isReadOnly = true;
-          };
-          bindMounts."/var/lib/django-website:idmap" = {
-            hostPath = hostStatePath;
-            isReadOnly = false;
-          };
-
-          config = commonConfigWith {
-            cfg.services.django-website = {
-              enable = true;
-              inherit
-                appName
-                envFile
-                extraPythonPackages
-                source
-                validateMigrations
-                ;
-            };
-          };
-        };
     in
     {
       reverseProxy = commonWith {
         localAddress = addresses.reverseProxy.localWithSubnet;
 
-        bindMounts."${config.sops.secrets.cloudy-private_wg.path}".isReadOnly = true;
-        bindMounts."${config.sops.templates.env_caddy.path}".isReadOnly = true;
+        bindMounts."${containerSecrets.reverseProxy}:idmap" = {
+          hostPath = containerSecrets.reverseProxy;
+          isReadOnly = true;
+        };
         bindMounts."/var/lib/caddy:idmap" = {
           hostPath = "/persist/containers/reverseProxy/caddy";
           isReadOnly = false;
@@ -353,7 +372,7 @@ in
               group = "caddy";
             };
             systemd.tmpfiles.rules = [
-              "d /var/log/caddy 0644 caddy caddy -"
+              "d /var/log/caddy 0750 caddy caddy -"
             ];
 
             networking = {
@@ -361,7 +380,7 @@ in
               wireguard.interfaces.wg0 = {
                 ips = [ "10.69.69.1/24" ];
                 listenPort = 51820;
-                privateKeyFile = "${config.sops.secrets.cloudy-private_wg.path}";
+                privateKeyFile = "${containerSecrets.reverseProxy}/wireguard-private-key";
                 peers = [
                   {
                     publicKey = "urDeyjQQPARSSxK/J/WKH3m46Xg0zQjhCHwiWP2LEnM=";
@@ -378,7 +397,7 @@ in
 
             cfg.services.caddy = {
               enable = true;
-              environmentFile = config.sops.templates.env_caddy.path;
+              environmentFile = "${containerSecrets.reverseProxy}/caddy.env";
               metrics.enable = true;
               metrics.loki.enable = true;
               metrics.loki.endpoint = "http://${addresses.monitoring.local}:9428/insert/loki/api/v1/push";
@@ -458,13 +477,6 @@ in
                     import bot_block
                     import rp ${addresses.nextcloud.local}:8001 {
                       header_up Accept-Encoding identity
-                    }
-
-                    replace stream {
-                      match {
-                        header Content-Type text/javascript*
-                      }
-                      re `(function +\w+\(\w+\) *\{ *function +\w+\(\)) *\{ *(\w+)\.open\((\w+),(\w+),(\w+)\);` ` $1 {if( $4 && $4 .length>5&& $4 .substring(0,5)=="http:"){ $4 = $4 .replace("http:/","https:/");} $2 .open( $3 , $4 , $5 );`
                     }
                   }
 
@@ -561,7 +573,10 @@ in
       monitoring = commonWith {
         localAddress = addresses.monitoring.localWithSubnet;
 
-        bindMounts."${config.sops.secrets.cloudy-grafana_pwd.path}".isReadOnly = true;
+        bindMounts."${containerSecrets.monitoring}:idmap" = {
+          hostPath = containerSecrets.monitoring;
+          isReadOnly = true;
+        };
 
         config = commonConfigWith (
           { ... }:
@@ -578,7 +593,7 @@ in
                   http_port = 3000;
                 };
                 security = {
-                  admin_password = "$__file{${config.sops.secrets.cloudy-grafana_pwd.path}}";
+                  admin_password = "$__file{${containerSecrets.monitoring}/grafana-password}";
                   secret_key = "SW2YcwTIb9zpOOhoPsMm";
                 };
                 users.allow_sign_up = false;
@@ -636,15 +651,6 @@ in
             };
           }
         );
-      };
-
-      ws-mastermovement = djangoWebsite {
-        name = "ws-mastermovement";
-        source = inputs.mastermovement;
-        appName = "mastermovement";
-        envFile = config.sops.templates.env_mastermovement.path;
-        hostStatePath = "/persist/containers/ws-mastermovement";
-        extraPythonPackages = pythonPackages: [ (pkgs.django-turnstile pythonPackages) ];
       };
 
       gitea = commonWith {
@@ -710,9 +716,10 @@ in
       nextcloud = commonWith {
         localAddress = addresses.nextcloud.localWithSubnet;
 
-        bindMounts."${config.sops.secrets.cloudy-nextcloud_admin.path}".isReadOnly = true;
-        bindMounts."${config.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path}".isReadOnly = true;
-        bindMounts."${config.sops.templates.nextcloud_nonce.path}".isReadOnly = true;
+        bindMounts."${containerSecrets.nextcloud}:idmap" = {
+          hostPath = containerSecrets.nextcloud;
+          isReadOnly = true;
+        };
 
         bindMounts."/var/lib/nextcloud:idmap" = {
           hostPath = "/persist/containers/nextcloud/app";
@@ -727,15 +734,19 @@ in
         config = commonConfigWith (
           { ... }:
           {
+            users.users.onlyoffice.uid = onlyofficeUid;
+            users.groups.onlyoffice.gid = onlyofficeUid;
+
             cfg.services.nextcloud = {
               enable = true;
-              adminPasswordFile = hostConfig.sops.secrets.cloudy-nextcloud_admin.path;
+              adminPasswordFile = "${containerSecrets.nextcloud}/admin-password";
+              externalUrl = "https://nextcloud.plinta.dev";
               trustedDomains = [ "nextcloud.plinta.dev" ];
               trustedProxies = [ addresses.reverseProxy.local ];
               onlyoffice = {
                 enable = true;
-                jwtSecretFile = hostConfig.sops.secrets.cloudy-nextcloud_onlyoffice_jwt.path;
-                securityNonceFile = hostConfig.sops.templates.nextcloud_nonce.path;
+                jwtSecretFile = "${containerSecrets.nextcloud}/onlyoffice-jwt";
+                securityNonceFile = "${containerSecrets.nextcloud}/onlyoffice-nonce.conf";
               };
             };
           }
@@ -788,17 +799,20 @@ in
       containers = {
         ws-blog = {
           serviceConfig.Restart = "on-failure";
+          stateMounts = {
+            uid = 10001;
+            mounts."/persist/containers/ws-blog/app" = {
+              containerPath = "/app/data";
+            };
+          };
           containerConfig = {
             autoUpdate = "registry";
             image = "ghcr.io/mfplinta/portfolio:latest";
             userns = "auto";
             networks = [ "${networks.net_br0.ref}:ip=${addresses.ws-blog.local}" ];
-            volumes = [
-              "/persist/containers/ws-blog/app:/app/data:U"
-            ];
             environmentFiles = [ config.sops.templates.env_blog.path ];
             environments = {
-              DJANGO_ALLOWED_HOSTS = "matheusplinta.com,www.matheusplinta.com,plinta.dev,www.plinta.dev";
+              DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1,matheusplinta.com,www.matheusplinta.com,plinta.dev,www.plinta.dev";
               DJANGO_CSRF_TRUSTED_ORIGINS = "https://matheusplinta.com,https://www.matheusplinta.com,https://plinta.dev,https://www.plinta.dev";
             };
             dropCapabilities = [ "ALL" ];
@@ -807,7 +821,7 @@ in
             readOnlyTmpfs = true;
             tmpfses = [ "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777" ];
             pidsLimit = 128;
-            healthCmd = "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\"";
+            healthCmd = djangoHealthCmd;
             healthInterval = "30s";
             healthTimeout = "5s";
             healthStartPeriod = "30s";
@@ -819,17 +833,20 @@ in
 
         ws-ots = {
           serviceConfig.Restart = "on-failure";
+          stateMounts = {
+            uid = 10001;
+            mounts."/persist/containers/ws-ots" = {
+              containerPath = "/app/data";
+            };
+          };
           containerConfig = {
             autoUpdate = "registry";
             image = "ghcr.io/mfplinta/ots-website:latest";
             userns = "auto";
             networks = [ "${networks.net_br0.ref}:ip=${addresses.ws-ots.local}" ];
-            volumes = [
-              "/persist/containers/ws-ots:/app/data:U"
-            ];
             environmentFiles = [ config.sops.templates.env_ots.path ];
             environments = {
-              DJANGO_ALLOWED_HOSTS = "optimaltech.us,www.optimaltech.us";
+              DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1,optimaltech.us,www.optimaltech.us";
               DJANGO_CSRF_TRUSTED_ORIGINS = "https://optimaltech.us,https://www.optimaltech.us";
             };
             dropCapabilities = [ "ALL" ];
@@ -838,7 +855,41 @@ in
             readOnlyTmpfs = true;
             tmpfses = [ "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777" ];
             pidsLimit = 128;
-            healthCmd = "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\"";
+            healthCmd = djangoHealthCmd;
+            healthInterval = "30s";
+            healthTimeout = "5s";
+            healthStartPeriod = "30s";
+            healthRetries = 3;
+            healthOnFailure = "kill";
+            notify = "healthy";
+          };
+        };
+
+        ws-mastermovement = {
+          serviceConfig.Restart = "on-failure";
+          stateMounts = {
+            uid = 10001;
+            mounts."/persist/containers/ws-mastermovement" = {
+              containerPath = "/app/data";
+            };
+          };
+          containerConfig = {
+            autoUpdate = "registry";
+            image = "ghcr.io/mfplinta/mastermovement:latest";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.ws-mastermovement.local}" ];
+            environmentFiles = [ config.sops.templates.env_mastermovement.path ];
+            environments = {
+              DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1,mastermovement.us,www.mastermovement.us";
+              DJANGO_CSRF_TRUSTED_ORIGINS = "https://mastermovement.us,https://www.mastermovement.us";
+            };
+            dropCapabilities = [ "ALL" ];
+            noNewPrivileges = true;
+            readOnly = true;
+            readOnlyTmpfs = true;
+            tmpfses = [ "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777" ];
+            pidsLimit = 128;
+            healthCmd = djangoHealthCmd;
             healthInterval = "30s";
             healthTimeout = "5s";
             healthStartPeriod = "30s";
@@ -849,17 +900,26 @@ in
         };
 
         # --- Quartz ---
-        quartz.containerConfig = {
-          image = "docker.io/mfplinta016/dockerized-quartz:latest";
-          userns = "auto";
-          networks = [ "${networks.net_br0.ref}:ip=${addresses.quartz.local}" ];
-          volumes = [
-            "/persist/containers/ws-blog/quartz-vault:/vault:ro,U"
-            "/persist/containers/ws-blog/quartz-repo:/usr/src/app/quartz:U"
-          ];
-          environments = {
-            GIT_BRANCH = "jackyzha0/v4";
-            AUTO_REBUILD = "true";
+        quartz = {
+          stateMounts = {
+            mounts = {
+              "/persist/containers/ws-blog/quartz-vault" = {
+                containerPath = "/vault";
+                readOnly = true;
+              };
+              "/persist/containers/ws-blog/quartz-repo" = {
+                containerPath = "/usr/src/app/quartz";
+              };
+            };
+          };
+          containerConfig = {
+            image = "docker.io/mfplinta016/dockerized-quartz:latest";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.quartz.local}" ];
+            environments = {
+              GIT_BRANCH = "jackyzha0/v4";
+              AUTO_REBUILD = "true";
+            };
           };
         };
 
@@ -873,76 +933,95 @@ in
         };
 
         # --- Stirling PDF ---
-        stirling-pdf.containerConfig = {
-          autoUpdate = "registry";
-          image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
-          userns = "auto";
-          networks = [ "${networks.net_br0.ref}:ip=${addresses.stirling-pdf.local}" ];
-          volumes = [
-            "/persist/containers/stirling-pdf/trainingData:/usr/share/tessdata:U"
-            "/persist/containers/stirling-pdf/extraConfigs:/configs:U"
-            "/persist/containers/stirling-pdf/customFiles:/customFiles:U"
-            "/persist/containers/stirling-pdf/logs:/logs:U"
-            "/persist/containers/stirling-pdf/pipeline:/pipeline:U"
-          ];
-          environments = {
-            DISABLE_ADDITIONAL_FEATURES = "false";
-            LANGS = "en_US";
+        stirling-pdf = {
+          stateMounts = {
+            uid = 1000;
+            mounts = {
+              "/persist/containers/stirling-pdf/trainingData" = {
+                containerPath = "/usr/share/tessdata";
+                uid = 0;
+              };
+              "/persist/containers/stirling-pdf/extraConfigs" = {
+                containerPath = "/configs";
+              };
+              "/persist/containers/stirling-pdf/customFiles" = {
+                containerPath = "/customFiles";
+              };
+              "/persist/containers/stirling-pdf/logs" = {
+                containerPath = "/logs";
+              };
+              "/persist/containers/stirling-pdf/pipeline" = {
+                containerPath = "/pipeline";
+              };
+            };
+          };
+          containerConfig = {
+            autoUpdate = "registry";
+            image = "docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.stirling-pdf.local}" ];
+            environments = {
+              DISABLE_ADDITIONAL_FEATURES = "false";
+              LANGS = "en_US";
+            };
           };
         };
 
         # --- Coturn ---
-        coturn.containerConfig = {
-          autoUpdate = "registry";
-          image = "docker.io/coturn/coturn:latest";
-          userns = "auto";
-          networks = [ "${networks.net_br0.ref}:ip=${addresses.coturn.local}" ];
-          environments = {
-            #DETECT_EXTERNAL_IP = "yes";
+        coturn = {
+          serviceConfig = {
+            RuntimeDirectory = "container-secrets/coturn";
+            RuntimeDirectoryMode = "0700";
+            ExecStartPre = prepareCoturnSecrets;
           };
-          volumes = [
-            "${config.sops.templates.env_coturn.path}:/etc/turnserver.conf"
-          ];
-          exec = [
-            "--external-ip=161.153.3.153"
-            "--log-file=stdout"
-            "--verbose"
-            "--realm=plinta.dev"
-            "--min-port=10000"
-            "--max-port=20000"
-            "--fingerprint"
-            "--lt-cred-mech"
-            "--listening-ip=0.0.0.0"
-            "--listening-port=3478"
-          ];
+          containerConfig = {
+            autoUpdate = "registry";
+            image = "docker.io/coturn/coturn:latest";
+            user = "0:0";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.coturn.local}" ];
+            environments = {
+              #DETECT_EXTERNAL_IP = "yes";
+            };
+            volumes = [
+              "${containerSecrets.coturn}:/run/container-secrets/coturn:ro,idmap"
+            ];
+            exec = [
+              "-c"
+              "${containerSecrets.coturn}/turnserver.conf"
+              "--external-ip=161.153.3.153"
+              "--log-file=stdout"
+              "--verbose"
+              "--realm=plinta.dev"
+              "--min-port=10000"
+              "--max-port=20000"
+              "--fingerprint"
+              "--lt-cred-mech"
+              "--proc-user=nobody"
+              "--proc-group=nogroup"
+              "--listening-ip=0.0.0.0"
+              "--listening-port=3478"
+            ];
+          };
         };
 
-        # --- Soularr ---
-        # soularr.containerConfig = {
-        #   autoUpdate = "registry";
-        #   image = "docker.io/mrusse08/soularr:latest";
-        #   userns = "auto";
-        #   networks = [ "${networks.net_br0.ref}:ip=${addresses.soularr.local}" ];
-        #   volumes = [
-        #     "${config.sops.templates.env_soularr.path}:/data/config.ini:ro"
-        #     "/persist/media/music:/downloads:ro"
-        #   ];
-        #   environments.SCRIPT_INTERVAL = "300";
-        # };
-
         # --- Contractual ---
-        contractual-app.containerConfig = {
-          autoUpdate = "registry";
-          image = "ghcr.io/mfplinta/contractual:latest";
-          userns = "auto";
-          networks = [ "${networks.net_br0.ref}:ip=${addresses.contractual-app.local}" ];
-          volumes = [
-            "/persist/containers/contractual/app:/app/data:U"
-          ];
-          environments = {
-            DEBUG = "False";
-            ALLOWED_HOSTS = "app.mastermovement.us";
-            CSRF_TRUSTED_ORIGINS = "https://app.mastermovement.us";
+        contractual-app = {
+          stateMounts = {
+            mounts."/persist/containers/contractual" = {
+              containerPath = "/app/data";
+            };
+          };
+          containerConfig = {
+            autoUpdate = "registry";
+            image = "ghcr.io/mfplinta/contractual:latest";
+            userns = "auto";
+            networks = [ "${networks.net_br0.ref}:ip=${addresses.contractual-app.local}" ];
+            environments = {
+              DEBUG = "False";
+              ALLOWED_HOSTS = "app.mastermovement.us";
+              CSRF_TRUSTED_ORIGINS = "https://app.mastermovement.us";
+            };
           };
         };
       };

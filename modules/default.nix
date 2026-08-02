@@ -9,11 +9,12 @@
         (sysImport ./programs/vim)
         (sysImport ./programs/vlc.nix)
 
+        (sysImport ./security/sops-permissions.nix)
+
         (sysImport ./services/displayManager/sddm-weston.nix)
         (sysImport ./services/samba/client.nix)
         (sysImport ./services/samba/host.nix)
         (sysImport ./services/caddy.nix)
-        (sysImport ./services/django-website.nix)
         (sysImport ./services/nextcloud.nix)
         (sysImport ./services/nvidia_oc.nix)
         (sysImport ./services/printing.nix)
@@ -21,6 +22,7 @@
 
         (sysImport ./virtualisation/distrobox.nix)
         (sysImport ./virtualisation/quadlet.nix)
+        (sysImport ./virtualisation/quadlet-state.nix)
         (sysImport ./virtualisation/libvirt.nix)
       ];
     };

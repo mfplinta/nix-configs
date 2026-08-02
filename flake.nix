@@ -2,12 +2,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
+    nixpkgs-jetbrains.url = "github:NixOS/nixpkgs/4975a89f37fd5e13ddd0c6539886a052ce2efc52";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     catppuccin.url = "github:catppuccin/nix/release-26.05";
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixvim.url = "github:nix-community/nixvim/nixos-26.05";
-    #nixvim.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko/latest";
     disko.inputs.nixpkgs.follows = "nixpkgs";
     wrapper-manager.url = "github:viperML/wrapper-manager";
@@ -25,12 +25,12 @@
     nixneovimplugins.url = "github:NixNeovim/NixNeovimPlugins";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     systems.url = "github:nix-systems/default";
-    mastermovement = {
-      url = "github:mfplinta/mastermovement";
-      flake = false;
-    };
     caveman = {
       url = "github:JuliusBrussee/caveman";
+      flake = false;
+    };
+    humanizer = {
+      url = "github:blader/humanizer";
       flake = false;
     };
   };
@@ -39,6 +39,7 @@
       self,
       nixpkgs,
       nixpkgs-unstable,
+      nixpkgs-jetbrains,
       nix-cachyos-kernel,
       disko,
       wrapper-manager,
@@ -100,7 +101,7 @@
             home-manager.nixosModules.default
             ./private/default.nix
             (
-              { config, ... }:
+              { config, private, ... }:
               {
                 imports = [
                   (sysImport ./modules)
@@ -131,6 +132,17 @@
                       inherit (final) config;
                       inherit (final.stdenv.hostPlatform) system;
                     };
+                    jetbrains =
+                      let
+                        pinned = import nixpkgs-jetbrains {
+                          inherit (final) config;
+                          inherit (final.stdenv.hostPlatform) system;
+                        };
+                      in
+                      pinned.jetbrains
+                      // {
+                        android-studio = pinned.android-studio;
+                      };
                   })
                   nix-vscode-extensions.overlays.default
                   nixneovimplugins.overlays.default
@@ -150,7 +162,12 @@
                   catppuccin.homeModules.catppuccin
                 ];
                 home-manager.extraSpecialArgs = {
-                  inherit inputs hmImport wrapper-manager;
+                  inherit
+                    inputs
+                    hmImport
+                    private
+                    wrapper-manager
+                    ;
                   sysConfig = config;
                 };
               }

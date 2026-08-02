@@ -38,13 +38,15 @@ in
   sops.secrets.cloudy-http_auth_plain = { };
   sops.secrets.tiny-ha_token = { };
   sops.templates.env_caddy = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "caddy.service" ];
     content = ''
       CF_API_KEY=${config.sops.placeholder.cf_api_key}
     '';
   };
   sops.templates.env_matterhub = {
-    mode = "0444";
+    mode = "0400";
+    restartUnits = [ "matterhub.service" ];
     content = ''
       HAMH_HOME_ASSISTANT_ACCESS_TOKEN=${config.sops.placeholder.tiny-ha_token}
     '';
@@ -180,7 +182,7 @@ in
         # --- Home Assistant ---
         hass.containerConfig = {
           autoUpdate = "registry";
-          image = "ghcr.io/home-assistant/home-assistant:2026.4";
+          image = "ghcr.io/home-assistant/home-assistant:2026.6";
           addCapabilities = [
             "CAP_NET_RAW" # Needed for ping
           ];
@@ -202,7 +204,6 @@ in
           autoUpdate = "registry";
           image = "docker.io/zwavejs/zwave-js-ui:11.16";
           userns = "auto";
-          # exec = "/usr/bin/env node --prof server/bin/www";
           volumes = [ "${paths.source.zwavejs}:/usr/src/app/store:U" ];
           devices = [
             "/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00:/dev/serial/by-id/usb-Zooz_800_Z-Wave_Stick_533D004242-if00"

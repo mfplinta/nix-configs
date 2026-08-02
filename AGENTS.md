@@ -13,6 +13,10 @@ This repository is a NixOS flake for multiple machines. `flake.nix` defines inpu
 
 Known hosts include `mfp-nix-workstation`, `mfp-nix-laptop`, `tiny`, `cloudy`, and `gateway`.
 
+## Binary Cache Policy
+
+Prefer package definitions that can be fetched from configured binary caches. Do not override package arguments, sources, or build inputs when that would force an expensive local rebuild. Make an exception only when the change is a cheap post-build adjustment, such as patching compiled binaries or shebangs, and does not require recompiling the package or its dependency closure.
+
 ## Coding Style & Naming Conventions
 
 Use Nix formatting from `treefmt.nix`; do not hand-align code against formatter output. Prefer small focused modules with explicit option names and imports. Name host directories after their flake configuration host, and keep reusable package definitions under `pkgs/*.nix`. Shell scripts in `pkgs/scripts/` should be executable and use clear lowercase names such as `rebuild` or `toggle-scale`.

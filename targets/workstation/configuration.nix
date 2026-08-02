@@ -147,7 +147,6 @@ in
     };
     i2c.enable = true;
     opentabletdriver.enable = true;
-    uinput.enable = true;
   };
 
   cfg.services.nvidia_oc = {
@@ -393,7 +392,7 @@ in
           moonlight-qt
           blender
           soundwireserver
-          unstable.android-studio
+          jetbrains.android-studio
 
           # Backup browsers
           google-chrome

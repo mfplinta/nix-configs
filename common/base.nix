@@ -4,6 +4,8 @@
       pkgs,
       lib,
       config,
+      private,
+      sysConfig,
       ...
     }:
     {
@@ -47,6 +49,13 @@
 
         xdg = {
           configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" config.cfg.kdeglobals;
+          configFile."gh/config.yml".source = (pkgs.formats.yaml { }).generate "gh-config.yml" {
+            version = "1";
+            git_protocol = "https";
+            telemetry = "disabled";
+          };
+          configFile."gh/hosts.yml".source =
+            config.lib.file.mkOutOfStoreSymlink sysConfig.sops.templates.gh-hosts.path;
           userDirs.enable = true;
           userDirs.createDirectories = true;
           userDirs.setSessionVariables = true;
@@ -58,6 +67,26 @@
 
         programs.nix-index.enable = true;
         programs.nix-index.symlinkToCacheHome = true;
+
+        programs.ssh = {
+          enable = true;
+          enableDefaultConfig = false;
+          settings = {
+            "*" = {
+              ForwardAgent = false;
+              AddKeysToAgent = "no";
+              Compression = false;
+              ServerAliveInterval = 0;
+              ServerAliveCountMax = 3;
+              HashKnownHosts = false;
+              UserKnownHostsFile = "~/.ssh/known_hosts";
+              ControlMaster = "no";
+              ControlPath = "~/.ssh/master-%r@%n:%p";
+              ControlPersist = "no";
+            };
+          }
+          // private.ssh.settings;
+        };
 
         home.stateVersion = "24.11";
       };
@@ -82,8 +111,6 @@
         zramSwap.enable = true;
         zramSwap.memoryPercent = 100;
         boot.kernel.sysctl."vm.swappiness" = 180;
-        boot.kernel.sysctl."vm.watermark_boost_factor" = 0;
-        boot.kernel.sysctl."vm.watermark_scale_factor" = 125;
         boot.kernel.sysctl."vm.page-cluster" = 0;
 
         system.modulesTree = [ (lib.getOutput "modules" config.boot.kernelPackages.kernel) ];
@@ -120,6 +147,32 @@
           };
         };
 
+        sops.secrets.github_pat_readonly = lib.mkIf (config.home-manager.users ? matheus) {
+          owner = "matheus";
+          mode = "0400";
+        };
+        sops.templates.gh-hosts = lib.mkIf (config.home-manager.users ? matheus) {
+          owner = "matheus";
+          mode = "0400";
+          content = ''
+            github.com:
+              user: mfplinta
+              oauth_token: ${config.sops.placeholder.github_pat_readonly}
+              git_protocol: https
+              users:
+                mfplinta:
+                  oauth_token: ${config.sops.placeholder.github_pat_readonly}
+          '';
+        };
+
+        programs.nh = {
+          enable = true;
+          clean = {
+            enable = true;
+            extraArgs = "--keep 5";
+          };
+        };
+
         cfg.programs.vim.enable = true;
         cfg.programs.fish.enable = true;
 
@@ -139,6 +192,9 @@
           zip
           bind
           jq
+          gh
+          file
+          ripgrep
           smartmontools
           netcat-gnu
           sops

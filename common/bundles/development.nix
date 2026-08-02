@@ -12,7 +12,7 @@
       programs.direnv.enable = true;
 
       home.packages = with pkgs; [
-        unstable.jetbrains.pycharm
+        jetbrains.pycharm
         inkscape
         unstable.devenv
         sqlitebrowser

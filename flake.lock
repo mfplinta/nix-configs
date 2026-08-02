@@ -200,19 +200,19 @@
         "type": "github"
       }
     },
-    "mastermovement": {
+    "humanizer": {
       "flake": false,
       "locked": {
-        "lastModified": 1758696992,
-        "narHash": "sha256-VDlszQB+VF/0VjRuyWEHRMi8gQdZEG4Jjm+pqSKz8oA=",
-        "owner": "mfplinta",
-        "repo": "mastermovement",
-        "rev": "754cf74cae1da0500049899e9afca8188e1c168f",
+        "lastModified": 1784701552,
+        "narHash": "sha256-qJIMwaas5Wnz270rUbPa4E5v2GQ62SQ1rKT0jmjYhyw=",
+        "owner": "blader",
+        "repo": "humanizer",
+        "rev": "523374dee72d67c7b2b5f858ea0094ffda49c3ac",
         "type": "github"
       },
       "original": {
-        "owner": "mfplinta",
-        "repo": "mastermovement",
+        "owner": "blader",
+        "repo": "humanizer",
         "type": "github"
       }
     },
@@ -357,6 +357,22 @@
         "url": "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz"
       }
     },
+    "nixpkgs-jetbrains": {
+      "locked": {
+        "lastModified": 1784581574,
+        "narHash": "sha256-N1q/UMQ7KonSoFCEXmlno4MRrAYaOyOS+f8mkJcA1BY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "4975a89f37fd5e13ddd0c6539886a052ce2efc52",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "4975a89f37fd5e13ddd0c6539886a052ce2efc52",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1777168982,
@@ -389,11 +405,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1783917952,
-        "narHash": "sha256-pvyd64ONrEBL2slRfoecEXj0SqEmNNLDyyB14X+K9yA=",
+        "lastModified": 1784581574,
+        "narHash": "sha256-N1q/UMQ7KonSoFCEXmlno4MRrAYaOyOS+f8mkJcA1BY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fae94d33a5775d6bc8aef651bde99c2a430222e7",
+        "rev": "4975a89f37fd5e13ddd0c6539886a052ce2efc52",
         "type": "github"
       },
       "original": {
@@ -571,13 +587,14 @@
         "caveman": "caveman",
         "disko": "disko",
         "home-manager": "home-manager",
-        "mastermovement": "mastermovement",
+        "humanizer": "humanizer",
         "nix-cachyos-kernel": "nix-cachyos-kernel",
         "nix-index-database": "nix-index-database",
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixd": "nixd",
         "nixneovimplugins": "nixneovimplugins",
         "nixpkgs": "nixpkgs_4",
+        "nixpkgs-jetbrains": "nixpkgs-jetbrains",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixvim": "nixvim",
         "nvibrant": "nvibrant",

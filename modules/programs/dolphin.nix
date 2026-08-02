@@ -34,9 +34,6 @@
       dolphin =
         with pkgs;
         with pkgs.kdePackages;
-        let
-          plasmaMenu = "${plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
-        in
         wrapper-manager.lib.wrapWith pkgs {
           basePackage = kdePackages.dolphin;
           pathAdd = kdeRuntimePackages;
@@ -57,8 +54,6 @@
             "--set"
             "XDG_MENU_PREFIX"
             "plasma-"
-            "--run"
-            "${kdePackages.kservice}/bin/kbuildsycoca6 --noincremental ${plasmaMenu}"
           ];
         };
     in

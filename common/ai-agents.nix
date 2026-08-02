@@ -5,11 +5,12 @@
       inputs,
       lib,
       mkMutableGeneratedFile,
+      private,
       ...
     }:
     let
       codexContext = pkgs.writeText "codex-AGENTS.md" ''
-        - Available in path: rg(ripgrep),rga(ripgrep-all),ast-grep,node,jq
+        - Available in path: rg(ripgrep),rga(ripgrep-all),ast-grep,node,jq,file
         - If requiring sudo for any operation, spawn a new instance of the default terminal that asks for sudo and ensures it doesn't leak the password into the model's chat/context
         - At first check devenv.nix to see if devenv used, if not proceed normally
         - Use caveman lite unless told otherwise, allow it to be dropped
@@ -21,6 +22,8 @@
         service_tier = "default";
         model = "gpt-5.6-sol";
         model_reasoning_effort = "medium";
+        approval_policy = "on-request";
+        approvals_reviewer = "auto_review";
 
         tui = {
           status_line = [
@@ -60,6 +63,7 @@
         ripgrep
         ripgrep-all
         ast-grep
+        file
       ];
 
       home.file.".jetbrains/acp.json".text = builtins.toJSON {
@@ -88,7 +92,9 @@
           caveman-stats = "${inputs.caveman}/skills/caveman-stats";
           caveman-help = "${inputs.caveman}/skills/caveman-help";
           cavecrew = "${inputs.caveman}/skills/cavecrew";
-        };
+          humanizer = "${inputs.humanizer}";
+        }
+        // private.ai_skills;
       };
 
       home.activation.installMutableCodexConfig = mkMutableGeneratedFile {

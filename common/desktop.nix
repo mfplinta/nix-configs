@@ -35,7 +35,7 @@
         xdg.configFile."hypr/xdph.conf".source = (
           pkgs.writeText "xdph" ''
             screencopy {
-              allow_token_by_default = true
+              max_fps = 60
             }
           ''
         );
@@ -153,6 +153,16 @@
           export HYPRLAND_CONFIG="${config.xdg.configHome}/hypr/hyprland.lua"
         '';
 
+        # KService expects an applications menu even outside a Plasma session.
+        # UWSM prefixes the lookup with the compositor name, while shells
+        # outside UWSM use the unprefixed name.
+        xdg.configFile = {
+          "menus/applications.menu".source =
+            "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
+          "menus/hyprland-applications.menu".source =
+            "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
+        };
+
         xdg.desktopEntries.scrcpy = {
           name = "Scrcpy";
           exec = lib.getExe pkgs.myScripts.scrcpy;
@@ -231,6 +241,45 @@
       lib,
       ...
     }:
+    let
+      rustdeskSudo = pkgs.writeShellScriptBin "sudo" ''
+        exec ${pkgs.sudo}/bin/sudo \
+          --set-home \
+          --preserve-env=WAYLAND_DISPLAY,DISPLAY,DBUS_SESSION_BUS_ADDRESS,XDG_CURRENT_DESKTOP,XDG_SESSION_TYPE,GST_PLUGIN_SYSTEM_PATH_1_0 \
+          "$@"
+      '';
+      rustdeskService = pkgs.writeShellApplication {
+        name = "rustdesk-service";
+        runtimeInputs = with pkgs; [ systemd ];
+        text = ''
+          session_id=$(loginctl show-seat seat0 --property=ActiveSession --value)
+          session_user=$(loginctl show-session "$session_id" --property=Name --value)
+          session_environment=$(systemctl --user --machine="$session_user@.host" show-environment)
+
+          session_var() {
+            local wanted=$1
+            local key
+            local value
+
+            while IFS='=' read -r key value; do
+              if [[ $key == "$wanted" ]]; then
+                printf '%s' "$value"
+                return
+              fi
+            done <<< "$session_environment"
+          }
+
+          WAYLAND_DISPLAY="$(session_var WAYLAND_DISPLAY)"
+          DISPLAY="$(session_var DISPLAY)"
+          DBUS_SESSION_BUS_ADDRESS="$(session_var DBUS_SESSION_BUS_ADDRESS)"
+          XDG_CURRENT_DESKTOP="$(session_var XDG_CURRENT_DESKTOP)"
+          XDG_SESSION_TYPE="$(session_var XDG_SESSION_TYPE)"
+          export WAYLAND_DISPLAY DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
+          exec ${lib.getExe pkgs.rustdesk} --service
+        '';
+      };
+    in
     {
       config = {
         boot.kernel.sysctl."kernel.printk" = "3 3 3 3";
@@ -331,6 +380,53 @@
         };
         programs.dconf.enable = true;
 
+        # RustDesk's unprivileged GUI uses this helper for Wayland input injection.
+        # With the helper running it captures through ScreenCast, which XDPH supports,
+        # instead of requiring the unsupported RemoteDesktop portal.
+        hardware.uinput.enable = true;
+        systemd.services.rustdesk = {
+          description = "RustDesk service";
+          after = [ "systemd-user-sessions.service" ];
+
+          path = with pkgs; [
+            rustdeskSudo
+            coreutils
+            procps
+            systemd
+          ];
+
+          serviceConfig = {
+            Type = "simple";
+            ExecStart = lib.getExe rustdeskService;
+            StateDirectory = "rustdesk-helper";
+            KillMode = "mixed";
+            TimeoutStopSec = 30;
+            LimitNOFILE = 100000;
+          };
+
+          environment = {
+            HOME = "/var/lib/rustdesk-helper";
+            PULSE_LATENCY_MSEC = "60";
+            PIPEWIRE_LATENCY = "1024/48000";
+            # RustDesk 1.4.7 creates `pipewiresrc` directly, but its Nix wrapper
+            # only includes GStreamer's core and base plugins.
+            GST_PLUGIN_SYSTEM_PATH_1_0 = "${pkgs.pipewire}/lib/gstreamer-1.0";
+          };
+        };
+
+        # Let an active local administrator start/stop only this immutable unit.
+        # The Home Manager launcher starts it on demand; `rustdesk-off` stops it.
+        security.polkit.extraConfig = ''
+          polkit.addRule(function(action, subject) {
+            if (action.id == "org.freedesktop.systemd1.manage-units" &&
+                action.lookup("unit") == "rustdesk.service" &&
+                ["start", "stop", "restart"].indexOf(action.lookup("verb")) >= 0 &&
+                subject.active && subject.local && subject.isInGroup("wheel")) {
+              return polkit.Result.YES;
+            }
+          });
+        '';
+
         programs.hyprland = {
           enable = true;
           withUWSM = true;
@@ -352,6 +448,10 @@
 
           config = {
             common = {
+              default = [
+                "hyprland"
+                "gtk"
+              ];
               "org.freedesktop.impl.portal.FileChooser" = "kde";
             };
           };
