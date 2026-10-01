@@ -3,6 +3,7 @@
     {
       config,
       lib,
+      pkgs,
       ...
     }:
     let
@@ -17,6 +18,7 @@
       config = mkIf cfg.enable {
         services.hypridle = {
           enable = true;
+          package = pkgs.unstable.hypridle;
           settings = {
             general = {
               before_sleep_cmd = "loginctl lock-session";
@@ -30,7 +32,6 @@
               {
                 timeout = 30;
                 on-timeout = "pidof hyprlock && hyprctl dispatch 'hl.dsp.dpms({ action = \"disable\" })'";
-                on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"enable\" })'";
               }
               {
                 timeout = 300;
@@ -39,7 +40,6 @@
               {
                 timeout = 330;
                 on-timeout = "hyprctl dispatch 'hl.dsp.dpms({ action = \"disable\" })'";
-                on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"enable\" })'";
               }
             ];
           };

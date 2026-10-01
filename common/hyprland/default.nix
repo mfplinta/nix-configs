@@ -93,6 +93,8 @@
             disable_splash_rendering = true;
             enable_anr_dialog = false;
             disable_watchdog_warning = true;
+            mouse_move_enables_dpms = true;
+            key_press_enables_dpms = true;
           };
         };
 

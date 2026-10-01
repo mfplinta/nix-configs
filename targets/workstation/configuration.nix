@@ -2,6 +2,26 @@ let
   leftMonitor = "DP-1";
   centerMonitor = "DP-2";
   rightMonitor = "DP-3";
+  waybarWorkspaces = {
+    persistent-only = true;
+    persistent-workspaces = {
+      "${leftMonitor}" = [
+        4
+        5
+        6
+      ];
+      "${centerMonitor}" = [
+        1
+        2
+        3
+      ];
+      "${rightMonitor}" = [
+        7
+        8
+        9
+      ];
+    };
+  };
 in
 {
   pkgs,
@@ -323,16 +343,48 @@ in
           ];
       };
 
+      wayland.windowManager.hyprland.extraConfig = ''
+        local removable_monitor_workspaces = {
+          [${builtins.toJSON leftMonitor}] = { 4, 6 },
+          [${builtins.toJSON rightMonitor}] = { 7, 9 },
+        }
+
+        local function move_workspaces(first, last, monitor)
+          for workspace = first, last do
+            hl.dispatch(hl.dsp.workspace.move({
+              workspace = workspace,
+              monitor = monitor,
+            }))
+          end
+        end
+
+        hl.on("monitor.removed", function(monitor)
+          local workspaces = removable_monitor_workspaces[monitor.name]
+          if workspaces then
+            move_workspaces(workspaces[1], workspaces[2], ${builtins.toJSON centerMonitor})
+          end
+        end)
+
+        hl.on("monitor.added", function(monitor)
+          local workspaces = removable_monitor_workspaces[monitor.name]
+          if workspaces then
+            move_workspaces(workspaces[1], workspaces[2], monitor.name)
+          end
+        end)
+      '';
+
       cfg.programs.dolphin.enable = true;
       cfg.programs.hyprlock.monitor = centerMonitor;
       cfg.programs.waybar.enable = true;
       cfg.programs.waybar.settings = [
         {
           output = leftMonitor;
+          "hyprland/workspaces" = waybarWorkspaces;
           modules-center = [ "hyprland/workspaces" ];
         }
         {
           output = centerMonitor;
+          "hyprland/workspaces" = waybarWorkspaces;
           modules-left = [
             "hyprland/workspaces"
             "cpu"
@@ -355,6 +407,7 @@ in
         }
         {
           output = rightMonitor;
+          "hyprland/workspaces" = waybarWorkspaces;
           modules-center = [ "hyprland/workspaces" ];
         }
       ];

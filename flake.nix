@@ -33,6 +33,11 @@
       url = "github:blader/humanizer";
       flake = false;
     };
+    codex-cli-nix.url = "github:sadjow/codex-cli-nix";
+    waybar = {
+      url = "github:Alexays/Waybar/6d60c8e02be67bb85bb9b1ea803f2fbcf0722002";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
   outputs =
     inputs@{
@@ -110,10 +115,12 @@
                   substituters = [
                     "https://devenv.cachix.org"
                     "https://attic.xuyh0120.win/lantian"
+                    "https://codex-cli.cachix.org"
                   ];
                   trusted-public-keys = [
                     "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
                     "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
+                    "codex-cli.cachix.org-1:1Br3H1hHoRYG22n//cGKJOk3cQXgYobUel6O8DgSing="
                   ];
                   experimental-features = [
                     "nix-command"

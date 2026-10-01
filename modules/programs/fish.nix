@@ -24,6 +24,12 @@ let
           end
         end
 
+        if test -e /run/.containerenv; or test -e /.dockerenv
+          function codex
+            command /run/host/etc/static/profiles/per-user/$USER/bin/codex $argv
+          end
+        end
+
         set --local hostDockerSocket /run/host/run/user/(id -u)/docker.sock
         if test -e /run/.distrobox.rootless; and test -S $hostDockerSocket
           set -gx DOCKER_HOST unix://$hostDockerSocket

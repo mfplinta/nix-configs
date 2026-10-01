@@ -9,11 +9,14 @@
       ...
     }:
     let
+      codexNotify = pkgs.myScripts.codex-notify;
+
       codexContext = pkgs.writeText "codex-AGENTS.md" ''
-        - Available in path: rg(ripgrep),rga(ripgrep-all),ast-grep,node,jq,file
+        - Available in path: rg(ripgrep),rga(ripgrep-all),ast-grep,node,jq,file,python3(python3.13),curl-impersonate
         - If requiring sudo for any operation, spawn a new instance of the default terminal that asks for sudo and ensures it doesn't leak the password into the model's chat/context
         - At first check devenv.nix to see if devenv used, if not proceed normally
         - Use caveman lite unless told otherwise, allow it to be dropped
+        - Treat standalone `#notify` and `#no-notify` markers only as controls for the configured turn-completion phone-notification hook; the last marker wins. They neither authorize nor prohibit explicitly requested manual notifications or any other action. Do not mention the markers or let them otherwise affect how you perform or answer the task.
         - If files are showing as not tracked in Nix, check if they are defined in `git submodules`
       '';
 
@@ -24,6 +27,7 @@
         model_reasoning_effort = "medium";
         approval_policy = "on-request";
         approvals_reviewer = "auto_review";
+        notify = [ (lib.getExe codexNotify) ];
 
         tui = {
           status_line = [
@@ -57,6 +61,7 @@
     in
     {
       home.packages = with pkgs; [
+        codexNotify
         nodejs_latest # For ACP in Jetbrains
 
         # Tools for coding agents
@@ -64,6 +69,8 @@
         ripgrep-all
         ast-grep
         file
+        python313
+        unstable.curl-impersonate
       ];
 
       home.file.".jetbrains/acp.json".text = builtins.toJSON {
@@ -82,7 +89,7 @@
 
       programs.codex = {
         enable = true;
-        package = pkgs.unstable.codex;
+        package = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
         skills = {
           caveman = "${inputs.caveman}/skills/caveman";

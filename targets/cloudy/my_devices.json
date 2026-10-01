@@ -579,15 +579,20 @@
             },
             "insertNulls": false,
             "lineWidth": 0,
-            "spanNulls": true
+            "spanNulls": false
           },
           "mappings": [
             {
               "options": {
+                "-1": {
+                  "color": "gray",
+                  "index": 2,
+                  "text": "Unknown"
+                },
                 "0": {
                   "color": "red",
                   "index": 1,
-                  "text": "Unhealthy"
+                  "text": "Failed"
                 },
                 "1": {
                   "color": "green",
@@ -596,8 +601,19 @@
                 }
               },
               "type": "value"
+            },
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "gray",
+                  "text": "Unknown"
+                }
+              },
+              "type": "special"
             }
           ],
+          "noValue": "Unknown",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -617,6 +633,7 @@
         "y": 34
       },
       "id": 7,
+      "description": "Independent HTTP probes every 30s; they never exclude backends from routing. Healthy/Failed reflect the service response. Unknown means the exporter could not be scraped or the last probe is over 90s old; absent data is not healthy. Public targets also check TLS and proxy routing. VictoriaMetrics is internal-only; Quartz, Home Assistant and the TMDB manifest check HTTP availability rather than full readiness.",
       "options": {
         "alignValue": "left",
         "legend": {
@@ -636,14 +653,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "editorMode": "builder",
-          "expr": "caddy_reverse_proxy_upstreams_healthy{instance=\"cloudy\"}",
-          "legendFormat": "{{upstream}}",
+          "editorMode": "code",
+          "expr": "((probe_success{job=\"http-health\",host=\"cloudy\"} + 0) and on(job,instance) (up{job=\"http-health\",host=\"cloudy\"} == 1) and on(job,instance) (time() - timestamp(probe_success{job=\"http-health\",host=\"cloudy\"}) < 90)) or on(job,instance) (up{job=\"http-health\",host=\"cloudy\"} * 0 - 1)",
+          "legendFormat": "{{service}} ({{scope}} / {{check}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Reverse proxy upstreams",
+      "title": "Service availability",
       "type": "state-timeline"
     },
     {
@@ -1175,16 +1192,16 @@
       },
       {
         "current": {
-          "text": "!~\"UptimeRobot\"",
-          "value": "!~\"UptimeRobot\""
+          "text": "!~\"UptimeRobot|CloudyHealthProbe\"",
+          "value": "!~\"UptimeRobot|CloudyHealthProbe\""
         },
         "description": "",
         "label": "Hide uptime requests",
         "name": "hide_uptime_requests",
         "options": [
           {
-            "text": "!~\"UptimeRobot\"",
-            "value": "!~\"UptimeRobot\""
+            "text": "!~\"UptimeRobot|CloudyHealthProbe\"",
+            "value": "!~\"UptimeRobot|CloudyHealthProbe\""
           },
           {
             "text": "~\".*\"",

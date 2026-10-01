@@ -16,6 +16,8 @@
       home.packages = with pkgs; [
         # Office
         simpleScanWithRuntimeSane
+        xournalpp
+        zoom-us
       ];
     };
 }

@@ -57,50 +57,33 @@ in
       net = networkConfig.device.tiny;
     in
     {
-      firewall.allowedTCPPorts = [
-        80
-        443
-      ];
+      firewall.allowedTCPPorts = [ 53 80 443 ];
+      firewall.allowedUDPPorts = [ 53 ];
       firewall.checkReversePath = "loose";
       useDHCP = false;
-      vlans = {
-        vlan1 = {
-          id = 1;
-          interface = nicName;
-        };
-        vlan2 = {
-          id = 2;
-          interface = nicName;
-        };
-        vlan3 = {
-          id = 3;
-          interface = nicName;
-        };
-      };
-      interfaces = {
-        vlan1.ipv4.addresses = [
-          {
-            address = net.vlan."1".address;
-            prefixLength = net.vlan."1".prefixLength;
-          }
-        ];
-        vlan2.ipv4.addresses = [
-          {
-            address = net.vlan."2".address;
-            prefixLength = net.vlan."2".prefixLength;
-          }
-        ];
-        vlan3.ipv4.addresses = [
-          {
-            address = net.vlan."3".address;
-            prefixLength = net.vlan."3".prefixLength;
-          }
-        ];
-      };
+      nameservers = [ net.vlan."1".dns ];
       defaultGateway = {
         address = net.vlan."1".gateway;
+        interface = "eth0";
       };
-      nameservers = [ net.vlan."1".dns ];
+      interfaces."eth0".ipv4.addresses = [
+        {
+          address = net.vlan."1".address;
+          prefixLength = net.vlan."1".prefixLength;
+        }
+      ];
+      interfaces."eth1".ipv4.addresses = [
+        {
+          address = net.vlan."2".address;
+          prefixLength = net.vlan."2".prefixLength;
+        }
+      ];
+      interfaces."eth2".ipv4.addresses = [
+        {
+          address = net.vlan."3".address;
+          prefixLength = net.vlan."3".prefixLength;
+        }
+      ];
     };
 
   cfg.virtualisation.quadlet.enable = true;

@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  bootdisk.id = "/dev/disk/by-id/ata-SAMSUNG_MZNTY128HDHP-000L1_S2YRNB0J434099";
+  bootdisk.id = "/dev/disk/by-path/pci-0000:09:01.0-scsi-0:0:0:0";
 in
 {
   disko.devices = {

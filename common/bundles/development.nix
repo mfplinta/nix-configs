@@ -16,6 +16,7 @@
         inkscape
         unstable.devenv
         sqlitebrowser
+        dbeaver-bin
         postman
       ];
 

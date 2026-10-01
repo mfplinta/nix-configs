@@ -151,6 +151,10 @@
           owner = "matheus";
           mode = "0400";
         };
+        sops.secrets.ntfy-topic = lib.mkIf (config.home-manager.users ? matheus) {
+          owner = "matheus";
+          mode = "0400";
+        };
         sops.templates.gh-hosts = lib.mkIf (config.home-manager.users ? matheus) {
           owner = "matheus";
           mode = "0400";
@@ -178,7 +182,7 @@
 
         programs.tmux = {
           enable = true;
-          historyLimit = 100000;
+          historyLimit = 500000;
           extraConfig = "set -g mouse on";
         };
 
@@ -193,6 +197,7 @@
           bind
           jq
           gh
+          xxd
           file
           ripgrep
           smartmontools

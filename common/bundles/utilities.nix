@@ -58,7 +58,8 @@
         # Utilities
         qalculate-gtk
         font-manager
-        unstable.yt-dlp
+        # Disabled: curl-cffi tests fail with curl-impersonate 2.1.0 in nixpkgs-unstable.
+        # unstable.yt-dlp
         qdirstat
         rustdeskOnDemand
         rustdeskOff

@@ -4,6 +4,16 @@ let
 in
 with pkgs;
 {
+  codex-notify = writeShellApplication {
+    name = "codex-notify";
+    runtimeInputs = [
+      coreutils
+      curl
+      jq
+      python3
+    ];
+    text = builtins.readFile ./codex-notify;
+  };
   toggle-scale = writeShellApplication {
     name = "toggle-scale";
     runtimeInputs = [

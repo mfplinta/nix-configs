@@ -52,6 +52,89 @@ let
       };
     }) containerNames
   );
+  # Independent probes report availability without changing Caddy routing.
+  httpHealthTargets = [
+    {
+      name = "contractual";
+      url = "https://app.mastermovement.us/api/healthz";
+      http.fail_if_body_json_not_matches_cel = ''body.status == "ok"'';
+    }
+    {
+      name = "grafana";
+      url = "https://grafana.plinta.dev/api/health";
+      http.fail_if_body_json_not_matches_cel = ''body.database == "ok"'';
+    }
+    {
+      name = "victoriametrics";
+      # Keep the public route authenticated; probe the private backend instead.
+      url = "http://${addresses.monitoring.local}:8428/health";
+      http.fail_if_body_not_matches_regexp = [ "^OK[[:space:]]*$" ];
+    }
+    {
+      name = "gitea";
+      url = "https://gitea.plinta.dev/api/healthz";
+      http.fail_if_body_json_not_matches_cel = ''body.status == "pass"'';
+    }
+    {
+      name = "nextcloud";
+      url = "https://nextcloud.plinta.dev/status.php";
+      http.fail_if_body_json_not_matches_cel = "body.installed == true && body.maintenance == false && body.needsDbUpgrade == false";
+    }
+    {
+      name = "onlyoffice";
+      url = "https://nextcloud-ds.plinta.dev/healthcheck";
+      http.fail_if_body_not_matches_regexp = [ "^[[:space:]]*true[[:space:]]*$" ];
+    }
+    {
+      name = "audiobookshelf";
+      url = "https://audiobooks.plinta.dev/ping";
+      http.fail_if_body_json_not_matches_cel = "body.success == true";
+    }
+    {
+      name = "vaultwarden";
+      url = "https://vaultwarden.plinta.dev/alive";
+      http.fail_if_body_not_matches_regexp = [ ''^"[0-9]{4}-[0-9]{2}-[0-9]{2}T'' ];
+    }
+    {
+      name = "stirling-pdf";
+      url = "https://pdf.plinta.dev/api/v1/info/status";
+      http.fail_if_body_json_not_matches_cel = ''body.status == "UP"'';
+    }
+    {
+      name = "tmdb-addon";
+      url = "https://tmdb-addon-stremio.plinta.dev/manifest.json";
+      check = "http";
+      http.fail_if_body_json_not_matches_cel = "has(body.id) && has(body.catalogs)";
+    }
+    {
+      name = "portfolio";
+      url = "https://www.plinta.dev/healthz";
+      http.fail_if_body_not_matches_regexp = [ "^[[:space:]]*ok[[:space:]]*$" ];
+    }
+    {
+      name = "mastermovement";
+      url = "https://www.mastermovement.us/healthz";
+      http.fail_if_body_not_matches_regexp = [ "^[[:space:]]*ok[[:space:]]*$" ];
+    }
+    {
+      name = "optimaltech";
+      url = "https://www.optimaltech.us/healthz";
+      http.fail_if_body_not_matches_regexp = [ "^[[:space:]]*ok[[:space:]]*$" ];
+    }
+    # These routes have no unauthenticated readiness API; check HTTP availability.
+    {
+      name = "quartz";
+      url = "https://www.plinta.dev/blog/";
+      check = "http";
+      http.fail_if_body_not_matches_regexp = [ "(?i)<html" ];
+    }
+    {
+      name = "home-assistant";
+      url = "https://ha.plinta.dev/";
+      check = "http";
+      http.fail_if_body_not_matches_regexp = [ "(?i)<html" ];
+    }
+  ];
 in
 {
   assertions = [
@@ -249,6 +332,7 @@ in
     "d /persist/containers/audiobookshelf/config 0700 - - -"
     # Parent of the separately managed Stirling PDF state mounts.
     "d /persist/containers/stirling-pdf 0700 root root -"
+    "C+ /persist/containers/stirling-pdf/trainingData/eng.traineddata 0644 1000 1000 - ${pkgs.tesseract.languages.eng}"
     # Shared media dirs
     "d /persist/media/audiobooks 0700 - - -"
     "d /persist/media/music 0755 root root -"
@@ -410,11 +494,8 @@ in
                 }
 
                 (rp) {
-                  reverse_proxy {args[0]} {
-                  fail_duration 30s
-                  unhealthy_status 5xx
-                  unhealthy_latency 10s
-                  }
+                  # Each route has one backend; an isolated failure must not exclude it.
+                  reverse_proxy {args[0]}
                 }
 
                 http://plinta.dev, https://plinta.dev {
@@ -703,6 +784,7 @@ in
 
             services.vaultwarden = {
               enable = true;
+              package = pkgs.unstable.vaultwarden;
               config.ROCKET_ADDRESS = "0.0.0.0";
               config.ROCKET_PORT = 8222;
               config.DATA_FOLDER = "/var/lib/vaultwarden";
@@ -939,7 +1021,6 @@ in
             mounts = {
               "/persist/containers/stirling-pdf/trainingData" = {
                 containerPath = "/usr/share/tessdata";
-                uid = 0;
               };
               "/persist/containers/stirling-pdf/extraConfigs" = {
                 containerPath = "/configs";
@@ -1027,6 +1108,50 @@ in
       };
     };
 
+  services.prometheus.exporters.blackbox = {
+    enable = true;
+    listenAddress = "127.0.0.1";
+    port = 9115;
+    openFirewall = false;
+    configFile = pkgs.writeText "cloudy-http-health.json" (
+      builtins.toJSON {
+        modules = lib.listToAttrs (
+          map (target: {
+            inherit (target) name;
+            value = {
+              prober = "http";
+              timeout = "5s";
+              http = {
+                method = "GET";
+                valid_status_codes = [ 200 ];
+                follow_redirects = false;
+                fail_if_not_ssl = lib.hasPrefix "https://" target.url;
+                # Cloudy's published service addresses are IPv4.
+                preferred_ip_protocol = "ip4";
+                ip_protocol_fallback = false;
+                body_size_limit = "1MiB";
+                headers = {
+                  User-Agent = "CloudyHealthProbe/1.0";
+                  Cache-Control = "no-cache";
+                };
+              }
+              // target.http;
+            };
+          }) httpHealthTargets
+        );
+      }
+    );
+  };
+  # HTTP-only probes need no raw-socket capabilities.
+  systemd.services.prometheus-blackbox-exporter.serviceConfig = {
+    AmbientCapabilities = lib.mkForce [ ];
+    CapabilityBoundingSet = lib.mkForce [ ];
+  };
+  systemd.services.vmagent = {
+    wants = [ "prometheus-blackbox-exporter.service" ];
+    after = [ "prometheus-blackbox-exporter.service" ];
+  };
+
   cfg.services.vmagent.enable = true;
   cfg.services.vmagent.logs.enable = true;
   cfg.services.vmagent.remoteWriteUrl = "http://${addresses.monitoring.local}:8428/api/v1/write";
@@ -1038,6 +1163,46 @@ in
         {
           targets = [ "${addresses.reverseProxy.local}:9101" ];
           labels.instance = config.networking.hostName;
+        }
+      ];
+    }
+    {
+      job_name = "http-health";
+      scrape_interval = "30s";
+      scrape_timeout = "10s";
+      metrics_path = "/probe";
+      static_configs = map (target: {
+        targets = [ target.url ];
+        labels = {
+          service = target.name;
+          host = config.networking.hostName;
+          scope = if lib.hasPrefix "https://" target.url then "public" else "internal";
+          check = target.check or "readiness";
+          __param_module = target.name;
+        };
+      }) httpHealthTargets;
+      relabel_configs = [
+        {
+          source_labels = [ "__address__" ];
+          target_label = "__param_target";
+        }
+        {
+          source_labels = [ "__param_target" ];
+          target_label = "instance";
+        }
+        {
+          target_label = "__address__";
+          replacement = "127.0.0.1:9115";
+        }
+      ];
+    }
+    {
+      job_name = "blackbox-exporter";
+      scrape_interval = "30s";
+      static_configs = [
+        {
+          targets = [ "127.0.0.1:9115" ];
+          labels.host = config.networking.hostName;
         }
       ];
     }

@@ -21,6 +21,7 @@
           "application/json"
           "application/octet-stream"
           "application/xml"
+          "text/javascript"
           "text/plain"
         ];
 
@@ -30,18 +31,21 @@
               servers = {
                 nix = {
                   command = [ (lib.getExe pkgs.nixd) ];
-                  url = "https://github.com/nix-community/nixd";
                 };
                 json = {
                   command = [
                     (lib.getExe pkgs.vscode-json-languageserver)
                     "--stdio"
                   ];
-                  url = "https://github.com/microsoft/vscode/tree/main/extensions/json-language-features/server";
+                };
+                markdown = {
+                  command = [
+                    (lib.getExe pkgs.marksman)
+                    "server"
+                  ];
                 };
                 xml = {
                   command = [ (lib.getExe pkgs.lemminx) ];
-                  url = "https://github.com/redhat-developer/vscode-xml#lemminx-binary";
                 };
               };
             };

@@ -193,6 +193,7 @@
           obsidian
           android-tools
           nwg-displays
+          cameractrls-gtk4
 
           # Fonts
           gyre-fonts
@@ -323,7 +324,7 @@
         hardware = {
           graphics.enable = true;
           bluetooth.enable = true;
-          bluetooth.powerOnBoot = false;
+          bluetooth.powerOnBoot = true;
           bluetooth.settings.General = {
             Experimental = "330859bc-7506-492d-9370-9a6f0614037f";
             FastConnectable = true;

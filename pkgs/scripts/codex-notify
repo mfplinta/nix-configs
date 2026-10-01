@@ -1,0 +1,78 @@
+if (( $# != 1 )); then
+  echo "Usage: codex-notify JSON_PAYLOAD" >&2
+  exit 2
+fi
+
+payload=$1
+if [[ $(jq -r '.type // empty' <<<"$payload") != "agent-turn-complete" ]]; then
+  exit 0
+fi
+
+notify_command=$(
+  jq -r '
+    [
+      ."input-messages"[]?
+      | gsub("[[:space:]]+"; " ")
+      | split(" ")[]
+      | ascii_downcase
+      | select(. == "#notify" or . == "#no-notify")
+    ]
+    | last // empty
+  ' <<<"$payload"
+)
+if [[ "$notify_command" != "#notify" ]]; then
+  exit 0
+fi
+
+topic_file=/run/secrets/ntfy-topic
+if [[ ! -r "$topic_file" && -L /run/host/run/secrets ]]; then
+  host_secrets_target=$(readlink -- /run/host/run/secrets)
+  host_topic_file="/run/host${host_secrets_target}/ntfy-topic"
+  if [[ "$host_secrets_target" == /* && -r "$host_topic_file" ]]; then
+    topic_file=$host_topic_file
+  fi
+fi
+if [[ ! -r "$topic_file" ]]; then
+  echo "Codex ntfy topic is unavailable: $topic_file" >&2
+  exit 1
+fi
+
+topic=$(<"$topic_file")
+if [[ ! "$topic" =~ ^[A-Za-z0-9_-]{20,128}$ ]]; then
+  echo "Codex ntfy topic has an unexpected format" >&2
+  exit 1
+fi
+
+truncate_utf8() {
+  python3 -c 'import sys; limit = int(sys.argv[1]); data = sys.stdin.buffer.read()[:limit]; sys.stdout.write(data.decode("utf-8", errors="ignore"))' "$1"
+}
+
+cwd=$(jq -r '.cwd // empty' <<<"$payload" | truncate_utf8 512)
+project=$(basename -- "$cwd")
+[[ -n "$project" && "$project" != "." ]] || project="unknown project"
+project=$(printf '%s' "$project" | truncate_utf8 200)
+last_message=$(
+  jq -r '."last-assistant-message" // "Turn complete."' <<<"$payload" \
+    | truncate_utf8 3000
+)
+
+jq -cn \
+  --arg topic "$topic" \
+  --arg title "Codex finished: $project" \
+  --arg cwd "$cwd" \
+  --arg last_message "$last_message" \
+  '{
+    topic: $topic,
+    title: $title,
+    message: (
+      "**Directory:** `" + ($cwd | gsub("`"; "\\`")) +
+      "`\n\n---\n\n" + $last_message
+    ),
+    markdown: true,
+    tags: ["white_check_mark", "computer"]
+  }' \
+  | curl --fail --silent --show-error --max-time 10 \
+    --output /dev/null \
+    --header "Content-Type: application/json" \
+    --data-binary @- \
+    https://ntfy.sh/

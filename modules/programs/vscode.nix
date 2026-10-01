@@ -6,11 +6,82 @@
       pkgs,
       lib,
       setMimeTypes,
+      mkMutableGeneratedFile,
       ...
     }:
     let
       inherit (lib) getExe mkIf mkEnableOption;
       cfg = config.cfg.programs.vscode;
+      vscodeSettings = with pkgs; {
+        # General
+        "update.mode" = "none";
+        "extensions.ignoreRecommendations" = true;
+        "extensions.autoCheckUpdates" = false;
+        "extensions.autoUpdate" = false;
+        "security.workspace.trust.untrustedFiles" = "open";
+        "telemetry.telemetryLevel" = "off";
+        "editor.selectionClipboard" = false;
+        "editor.fontFamily" = "'DroidSansM Nerd Font', monospace";
+        "cSpell.diagnosticLevel" = "Hint";
+        # Terminal
+        "terminal.integrated.defaultProfile.linux" = "fish";
+        "terminal.integrated.profiles.linux" = {
+          fish = {
+            path = getExe fish;
+            args = [ "--login" ];
+          };
+          bash = {
+            path = getExe bashInteractive;
+          };
+        };
+        "terminal.integrated.env.linux" = {
+          fish_features = "no-query-term";
+        };
+        # Containers
+        "containers.containerClient" = "com.microsoft.visualstudio.containers.docker";
+        "dev.containers.dockerPath" = getExe docker;
+        "containers.containerCommand" = getExe docker;
+        "containers.composeCommand" = getExe docker-compose;
+        # Visual
+        "workbench.colorTheme" = "Catppuccin Mocha";
+        "workbench.iconTheme" = "material-icon-theme";
+        # Nix
+        "nix.enableLanguageServer" = true;
+        "nix.serverPath" = getExe nixd;
+        "nix.serverSettings"."nixd" = {
+          "formatting.command" = [ (getExe nixfmt) ];
+          "options" = {
+            "nixos.expr" =
+              "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options";
+            "home-manager.expr" =
+              "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options.home-manager.users.type.getSubOptions []";
+          };
+        };
+        "nix.hiddenLanguageServerErrors" = [
+          "textDocument/definition"
+        ];
+        # C/C++
+        "cmake.cmakePath" = getExe cmake;
+        "cmake.environment" = rec {
+          PATH = "${gcc}/bin:${cmake}/bin:${coreutils}/bin:${bash}/bin:${ninja}/bin";
+          LD_LIBRARY_PATH = PATH;
+        };
+        "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
+        # Python
+        "python.analysis.typeCheckingMode" = "basic";
+        # Typescript
+        "[typescript][typescriptreact][json]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
+        # Embedded
+        "idf.hasWalkthroughBeenShown" = true;
+        # Golang
+        "go.goroot" = go;
+        "go.alternateTools" = {
+          "gopls" = getExe gopls;
+        };
+        "go.toolsEnvVars" = {
+          "GOPROXY" = "https://golang.org,direct";
+        };
+      };
     in
     {
       options.cfg.programs.vscode = {
@@ -36,77 +107,6 @@
           enable = true;
           package = (unstable.vscode.override { commandLineArgs = "--password-store=kwallet6"; }).fhs;
           profiles.default = {
-            userSettings = {
-              # General
-              "update.mode" = "none";
-              "extensions.ignoreRecommendations" = true;
-              "extensions.autoCheckUpdates" = false;
-              "extensions.autoUpdate" = false;
-              "security.workspace.trust.untrustedFiles" = "open";
-              "telemetry.telemetryLevel" = "off";
-              "editor.selectionClipboard" = false;
-              "editor.fontFamily" = "'DroidSansM Nerd Font', monospace";
-              "cSpell.diagnosticLevel" = "Hint";
-              # Terminal
-              "terminal.integrated.defaultProfile.linux" = "fish";
-              "terminal.integrated.profiles.linux" = {
-                fish = {
-                  path = getExe fish;
-                  args = [ "--login" ];
-                };
-                bash = {
-                  path = getExe bashInteractive;
-                };
-              };
-              "terminal.integrated.env.linux" = {
-                fish_features = "no-query-term";
-              };
-              # Containers
-              "containers.containerClient" = "com.microsoft.visualstudio.containers.docker";
-              "dev.containers.dockerPath" = getExe docker;
-              "containers.containerCommand" = getExe docker;
-              "containers.composeCommand" = getExe docker-compose;
-              # Visual
-              "workbench.colorTheme" = "Catppuccin Mocha";
-              "workbench.iconTheme" = "material-icon-theme";
-              # Nix
-              "nix.enableLanguageServer" = true;
-              "nix.serverPath" = getExe nixd;
-              "nix.serverSettings"."nixd" = {
-                "formatting.command" = [ (getExe nixfmt) ];
-                "options" = {
-                  "nixos.expr" =
-                    "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options";
-                  "home-manager.expr" =
-                    "(builtins.getFlake (builtins.toString ./.)).nixosConfigurations.${sysConfig.networking.hostName}.options.home-manager.users.type.getSubOptions []";
-                };
-              };
-              "nix.hiddenLanguageServerErrors" = [
-                "textDocument/definition"
-              ];
-              # C/C++
-              "cmake.cmakePath" = getExe cmake;
-              "cmake.environment" = rec {
-                PATH = "${gcc}/bin:${cmake}/bin:${coreutils}/bin:${bash}/bin:${ninja}/bin";
-                LD_LIBRARY_PATH = PATH;
-              };
-              "C_Cpp.default.compilerPath" = "${gcc}/bin/gcc";
-              # Python
-              "python.analysis.typeCheckingMode" = "basic";
-              # Typescript
-              "[typescript][typescriptreact][json]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
-              # Embedded
-              "idf.hasWalkthroughBeenShown" = true;
-              # Golang
-              "go.goroot" = go;
-              "go.alternateTools" = {
-                "gopls" = getExe gopls;
-              };
-              "go.toolsEnvVars" = {
-                "GOPROXY" = "https://golang.org,direct";
-              };
-            };
-
             extensions =
               let
                 ext = (forVSCodeVersion config.programs.vscode.package.version).vscode-marketplace;
@@ -159,6 +159,11 @@
                 ext.paulober.pico-w-go
               ];
           };
+        };
+
+        home.activation.installMutableVscodeSettings = mkMutableGeneratedFile {
+          source = (pkgs.formats.json { }).generate "vscode-settings.json" vscodeSettings;
+          target = ".config/Code/User/settings.json";
         };
 
         home.packages = with pkgs; [
